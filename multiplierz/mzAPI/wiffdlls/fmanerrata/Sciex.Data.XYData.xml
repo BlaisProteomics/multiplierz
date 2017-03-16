@@ -1,0 +1,1221 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Sciex.Data.XYData</name>
+    </assembly>
+    <members>
+        <member name="T:Sciex.Data.XYData.GenericXYData">
+            <summary>
+            An abstract data object.
+            </summary>
+        </member>
+        <member name="F:Sciex.Data.XYData.GenericXYData.fGoodMinMaxEtc">
+            <summary>
+            Are parameters below valid?
+            </summary>
+        </member>
+        <member name="F:Sciex.Data.XYData.GenericXYData.fMinX">
+            <summary>
+            Minimum x-value (if valid)
+            </summary>
+        </member>
+        <member name="F:Sciex.Data.XYData.GenericXYData.fMaxX">
+            <summary>
+            Maximum x-value (if valid)
+            </summary>
+        </member>
+        <member name="F:Sciex.Data.XYData.GenericXYData.fMinY">
+            <summary>
+            Minimum y-value (if valid)
+            </summary>
+        </member>
+        <member name="F:Sciex.Data.XYData.GenericXYData.fMaxY">
+            <summary>
+            Maximum y-value (if valid)
+            </summary>
+        </member>
+        <member name="F:Sciex.Data.XYData.GenericXYData.fSortedX">
+            <summary>
+            Are x-values sorted? (if valid)
+            </summary>
+        </member>
+        <member name="F:Sciex.Data.XYData.GenericXYData.fHaveLogicalXRange">
+            <summary>
+            Is logical x-range valid?
+            </summary>
+        </member>
+        <member name="F:Sciex.Data.XYData.GenericXYData.fMinLogicalX">
+            <summary>
+            Minimum "logical" x-value
+            </summary>
+        </member>
+        <member name="F:Sciex.Data.XYData.GenericXYData.fMaxLogicalX">
+            <summary>
+            Maximum "logical" x-value
+            </summary>
+        </member>
+        <member name="F:Sciex.Data.XYData.GenericXYData.fHaveLogicalYRange">
+            <summary>
+            Is logical y-range valid?
+            </summary>
+        </member>
+        <member name="F:Sciex.Data.XYData.GenericXYData.fMinLogicalY">
+            <summary>
+            Minimum "logical" y-value
+            </summary>
+        </member>
+        <member name="F:Sciex.Data.XYData.GenericXYData.fMaxLogicalY">
+            <summary>
+            Maximum "logical" y-value
+            </summary>
+        </member>
+        <member name="F:Sciex.Data.XYData.GenericXYData.fShortName">
+            <summary>
+            Short name of this data
+            </summary>
+        </member>
+        <member name="F:Sciex.Data.XYData.GenericXYData.fLongName">
+            <summary>
+            Long name of this data
+            </summary>
+        </member>
+        <member name="F:Sciex.Data.XYData.GenericXYData.fID">
+            <summary>
+            Arbitary ID
+            </summary>
+        </member>
+        <member name="F:Sciex.Data.XYData.GenericXYData.fXName">
+            <summary>
+            Name of x-values
+            </summary>
+        </member>
+        <member name="F:Sciex.Data.XYData.GenericXYData.fXUnits">
+            <summary>
+            Name of x-units
+            </summary>
+        </member>
+        <member name="F:Sciex.Data.XYData.GenericXYData.fYName">
+            <summary>
+            Name of y-values
+            </summary>
+        </member>
+        <member name="F:Sciex.Data.XYData.GenericXYData.fYUnits">
+            <summary>
+            Name of y-units
+            </summary>
+        </member>
+        <member name="F:Sciex.Data.XYData.GenericXYData.fDisplayFormat">
+            <summary>
+            Display format for x-values (or null)
+            </summary>
+        </member>
+        <member name="F:Sciex.Data.XYData.GenericXYData.fMoreChangesComing">
+            <summary>
+            Are more data-changed events expected?
+            </summary>
+        </member>
+        <member name="F:Sciex.Data.XYData.GenericXYData.fXShiftForStepSize">
+            <summary>
+            Amount we need to offset x-values for step size
+            </summary>
+        </member>
+        <member name="M:Sciex.Data.XYData.GenericXYData.#ctor">
+            <summary>
+            Constructor.
+            </summary>
+        </member>
+        <member name="M:Sciex.Data.XYData.GenericXYData.#ctor(Sciex.Data.XYData.GenericXYData)">
+            <summary>
+            Copy constructor.
+            </summary>
+            <param name="toCopy">The object to copy.</param>
+        </member>
+        <member name="M:Sciex.Data.XYData.GenericXYData.#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <summary>
+            Constructor used when de-serialising.
+            </summary>
+            <param name="info">Object with data.</param>
+            <param name="context">Not used.</param>
+        </member>
+        <member name="M:Sciex.Data.XYData.GenericXYData.GetObjectData(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <summary>
+            Serialises this object.
+            </summary>
+            <param name="info">Object which holds data to write.</param>
+            <param name="context">Not used.</param>
+        </member>
+        <member name="M:Sciex.Data.XYData.GenericXYData.Clone">
+            <summary>
+            We must define this method since we support the ICloneable interface. 
+            Subclasses must override this method to create a new instance (we can't
+            create a new instance here directly since GenericXYData is abstract). The
+            new instance should be a DEEP copy.
+            </summary>
+            <returns>A new (subclass of) GenericXYData.</returns>
+        </member>
+        <member name="M:Sciex.Data.XYData.GenericXYData.GetDescription(System.Boolean)">
+            <summary>
+            Returns a description of this data object. Callers specify whether a
+            short or long version is wanted.
+            </summary>
+            <param name="details">Are details wanted?</param>
+            <returns>The description.</returns>
+        </member>
+        <member name="M:Sciex.Data.XYData.GenericXYData.GetFullDescription">
+            <summary>
+            Returns a full description of this data object. 
+            </summary>
+            <returns>The description.</returns>
+        </member>
+        <member name="M:Sciex.Data.XYData.GenericXYData.SetDescription(System.String,System.String)">
+            <summary>
+            Subclasses will call this method to set our description.
+            </summary>
+            <param name="shortDescription">The short description.</param>
+            <param name="longDescription">The long description.</param>
+        </member>
+        <member name="M:Sciex.Data.XYData.GenericXYData.SetDescription(System.String)">
+            <summary>
+            Sets both our short and long descriptions to the provided value.
+            </summary>
+            <param name="description">Description.</param>
+        </member>
+        <member name="M:Sciex.Data.XYData.GenericXYData.GetXValue(System.Int32)">
+            <summary>
+            Subclasses will override this method to obtain the x-value for the given index.
+            </summary>
+            <param name="index">The 0-based index.</param>
+            <returns>The x-value.</returns>
+        </member>
+        <member name="M:Sciex.Data.XYData.GenericXYData.GetYValue(System.Int32)">
+            <summary>
+            Subclasses will override this method to obtain the y-value for the given index.
+            </summary>
+            <param name="index">The 0-based index.</param>
+            <returns>The y-value.</returns>
+        </member>
+        <member name="M:Sciex.Data.XYData.GenericXYData.SetAxisNamesAndUnits(System.String,System.String,System.String,System.String)">
+            <summary>
+            This method is used to set the names (and their units) of the x-values and the y-values.
+            </summary>
+            <param name="xName">Name of x-values.</param>
+            <param name="xUnits">Name of x-units.</param>
+            <param name="yName">Name of y-values.</param>
+            <param name="yUnits">Name of y-units.</param>
+        </member>
+        <member name="M:Sciex.Data.XYData.GenericXYData.GetStepSizeAtIndex(System.Int32)">
+            <summary>
+            Returns the step size for the given point. This method is similar to 
+            GetStepSize(double) and is provided in case subclasses have a more efficient
+            means to calculate the step size given an index rather than the x-value.
+            </summary>
+            <param name="index">Data point index.</param>
+            <returns>Step size.</returns>
+        </member>
+        <member name="M:Sciex.Data.XYData.GenericXYData.GetStepSize(System.Double)">
+            <summary>
+            This method returns the "x" step size at the specified location. Note that if
+            ConstantStepSize returns true, then the actual x-value is not used.
+            </summary>
+            <param name="xValue">The x-value at which to get step size.</param>
+            <returns>The step size.</returns>
+        </member>
+        <member name="M:Sciex.Data.XYData.GenericXYData.GetOriginalStepSize(System.Double)">
+            <summary>
+            Returns the "x" step size at the specified location in our original, unprocessed,
+            data. Note that if ConstantStepSize is true, then the actual x-value is not used. 
+            This method is needed because GetStepSize will return 0.0 if the original data
+            has been processed and turned into non-continuum data.
+            </summary>
+            <param name="xValue">X-value at which to get step.</param>
+            <returns>The step size.</returns>
+        </member>
+        <member name="M:Sciex.Data.XYData.GenericXYData.GetBracketingXValuesUsingStep(System.Double,System.Double@,System.Double@,System.Double@)">
+            <summary>
+            This method returns the x-values lying just below (or equal to) "xValue" and just
+            above this value which lie on even step sizes. NOTE: This method itself always just
+            sets lowerX and higherX to xValue - this method must be overridden by subclasses.
+            </summary>
+            <param name="xValue">X-value for which to get bracketing even-step x-values.</param>
+            <param name="lowerX">Largest x-value less than or equal to xValue lying on an even step.</param>
+            <param name="higherX">Higher x-value lying on an even step.</param>
+            <param name="step">Step size.</param>
+        </member>
+        <member name="M:Sciex.Data.XYData.GenericXYData.GetStepSizeInternal(System.Double)">
+            <summary>
+            Subclasses must override this method to return the "x" step size at the
+            specified location.
+            </summary>
+            <param name="xValue">X-value at which to get step.</param>
+            <returns>The step size.</returns>
+        </member>
+        <member name="M:Sciex.Data.XYData.GenericXYData.GetCopyOfXValues">
+            <summary>
+            Returns a copy of all of our x-values. The length of this array will be equal to 
+            "NumDataPoints". This method should never return null.
+            </summary>
+            <returns>The array of x-values.</returns>
+        </member>
+        <member name="M:Sciex.Data.XYData.GenericXYData.GetCopyOfYValues">
+            <summary>
+            Returns a copy of all of our y-values. The length of this array will be equal to 
+            "NumDataPoints". This method should never return null.
+            </summary>
+            <returns>The array of y-values.</returns>
+        </member>
+        <member name="M:Sciex.Data.XYData.GenericXYData.SetLogicalXRange(System.Double,System.Double)">
+            <summary>
+            This method is used by subclasses to set the so-called "logical" range
+            of x-values, if appropriate. For example a spectrum subclass may call
+            this method to set the range of masses actually acquired by the
+            instrument (which may be greater than the range of actual masses in
+            the spectrum). If this method is not called we default to the minimum
+            and maximum x-value in the data object. NOTE: IF min >= max we do
+            not complain but treat this as a cancellation of any previous range; in
+            this case a logical range is not used.
+            </summary>
+            <param name="minLogicalX">Minimum value.</param>
+            <param name="maxLogicalX">Maximum value.</param>
+        </member>
+        <member name="M:Sciex.Data.XYData.GenericXYData.SetLogicalYRange(System.Double,System.Double)">
+            <summary>
+            This method is used by subclasses to set the so-called "logical" range
+            of y-values, if appropriate. This allows MinY to return a value smaller
+            than the minimum y-value for the actual data points and similarly for 
+            MaxY. NOTE: IF min >= max we do not complain but treat this as a cancellation 
+            of any previous range.
+            </summary>
+            <param name="minLogicalY">Minimum value.</param>
+            <param name="maxLogicalY">Maximum value.</param>
+        </member>
+        <member name="M:Sciex.Data.XYData.GenericXYData.FireDataChanged">
+            <summary>
+            This method is called (mostly) by sub-classes whenever the data changes in any
+            way. We inform any subscribers to our "DataChanged" event that the data has changed
+            in some way.
+            </summary>
+        </member>
+        <member name="M:Sciex.Data.XYData.GenericXYData.CalculateMinMaxEtc">
+            <summary>
+            This method calculates our various data limits such as the minimum and maximum
+            x-values, etc. The actual calculation will only take place if it's never been performed
+            since the last time our data was changed.
+            </summary>
+        </member>
+        <member name="E:Sciex.Data.XYData.GenericXYData.DataChanged">
+            <summary>
+            The event which is fired whenever our underlying data changes.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.XYData.GenericXYData.ID">
+            <summary>
+            Gets or sets a generic ID field (this field is not used in any way by this class,
+            but is provided for callers to use as they see fit). The return value is never
+            null but may be empty.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.XYData.GenericXYData.NumDataPoints">
+            <summary>
+            Subclasses will override this property to return the total number of (x,y)
+            data points.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.XYData.GenericXYData.XName">
+            <summary>
+            Returns the name of our x-values.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.XYData.GenericXYData.XUnits">
+            <summary>
+            Returns the units for the x-values.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.XYData.GenericXYData.YName">
+            <summary>
+            Return the name of our y-values.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.XYData.GenericXYData.YUnits">
+            <summary>
+            Return the units for the y-values.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.XYData.GenericXYData.DisplayFormat">
+            <summary>
+            This method implements IGetDisplayFormat to return the display format desired
+            for our x-values. A return value of null indicates N/A.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.XYData.GenericXYData.XShiftForStepSize">
+            <summary>
+            This value is added to x-values for the GetStepSize() and GetOriginalStepSize()
+            calls. This is needed in case our x-values are shifted by an offset so that the
+            original corresponding step size can be obtained.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.XYData.GenericXYData.ConstantStepSize">
+            <summary>
+            Returns "true" if the data has a constant "x" step size and "false" if 
+            it does not.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.XYData.GenericXYData.ConstantStepSizeInternal">
+            <summary>
+            Subclasses must override this method to return whether or not they
+            have data with a constant step size.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.XYData.GenericXYData.ContinuumData">
+            <summary>
+            Subclasses will override this method to return "true" if this data object represents
+            continuum data (i.e. where the points are generally connected when plotted) or 
+            discrete "zero width" data. This latter is the case, for example, for SIM or MRM data
+            or for data which has been centroided.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.XYData.GenericXYData.MinXValue">
+            <summary>
+            Returns the overall minimum x-value (or zero if we have no data points).
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.XYData.GenericXYData.MaxXValue">
+            <summary>
+            Returns the overall maximum x-value (or zero if we have no data points).
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.XYData.GenericXYData.MinYValue">
+            <summary>
+            Returns the overall minimum y-value (or zero if we have no data points).
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.XYData.GenericXYData.MaxYValue">
+            <summary>
+            Returns the overall maximum y-value (or zero if we have no data points).
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.XYData.GenericXYData.SortedXValues">
+            <summary>
+            Returns "true" if all of our x-values are in sorted order - this means EITHER increasing
+            OR decreasing order.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.XYData.GenericXYData.IncreasingXValues">
+            <summary>
+            Returns "true" if all of our x-values are in increasing order.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.XYData.GenericXYData.MoreDataChangesComing">
+            <summary>
+            This property should be set to "true" by callers before modifying the data if there
+            are certain that future changes will also be made. This allows those listening to
+            the "DataChanged" event to ignore such real-time changes if appropriate. Of course
+            the property must be reset to false before the last expected change.
+            </summary>
+        </member>
+        <member name="T:Sciex.Data.XYData.GenericXYData.DataChangedHandler">
+            <summary>
+            An event of this type is fired whenever our underlying data changes in any way.
+            </summary>
+        </member>
+        <member name="T:Sciex.Data.XYData.DataProcessingOperation">
+            <summary>
+            This class serves as a base for all processing operations which modify an
+            ArrayXYData object. Subclasses must implement a "Perform" method which
+            carries out the actual operation. Serialisable subclasses must set the
+            SubclassSerialisable property to true - see that property for details.
+            </summary>
+        </member>
+        <member name="M:Sciex.Data.XYData.DataProcessingOperation.#ctor(System.String,System.Boolean)">
+            <summary>
+            Constructor. In addition to our name, the caller specifies whether
+            we generate so-called continuum data (given continuum data as input).
+            For example a smoothing operation would specify "true" whereas a
+            centroiding operation would specify "false".
+            </summary>
+            <param name="name">Name of this operation.</param>
+            <param name="continuumData">Do we produce continuum data?</param>
+        </member>
+        <member name="M:Sciex.Data.XYData.DataProcessingOperation.#ctor(Sciex.Data.XYData.DataProcessingOperation)">
+            <summary>
+            Copy constructor.
+            </summary>
+            <param name="toCopy">The object to copy.</param>
+        </member>
+        <member name="M:Sciex.Data.XYData.DataProcessingOperation.#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <summary>
+            Constructor used when de-serialising.
+            </summary>
+            <param name="info">Object with data.</param>
+            <param name="context">Not used.</param>
+        </member>
+        <member name="M:Sciex.Data.XYData.DataProcessingOperation.GetObjectData(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <summary>
+            Serialises this object.
+            </summary>
+            <param name="info">Object which holds data to write.</param>
+            <param name="context">Not used.</param>
+        </member>
+        <member name="M:Sciex.Data.XYData.DataProcessingOperation.Clone">
+            <summary>
+            We must declare this method in order to implement the ICloneable interface.
+            Subclasses should override this method to create a new object which is a 
+            DEEP copy of the current instance.
+            </summary>
+            <returns>A new object which is a copy of this one.</returns>
+        </member>
+        <member name="M:Sciex.Data.XYData.DataProcessingOperation.GetDescription(System.Boolean)">
+            <summary>
+            Returns a description of this data modification operation. The caller specifies
+            whether a detailed description is desired or just a summary - in the latter case
+            subclasses should try to keep the description as short as reasonably possible.
+            </summary>
+            <param name="detailed">Is detailed description requested or summary?</param>
+            <returns>The description.</returns>
+        </member>
+        <member name="M:Sciex.Data.XYData.DataProcessingOperation.Perform(Sciex.Data.XYData.ArrayXYData)">
+            <summary>
+            Subclasses must override this method to perform the data processing operation.
+            Since this method has no parameters other than the data itself, this implies 
+            that subclasses should store any parameters away for later use from their 
+            constructors.
+            </summary>
+            <param name="data">The data to process.</param>
+        </member>
+        <member name="P:Sciex.Data.XYData.DataProcessingOperation.Name">
+            <summary>
+            Returns the name of this data modification operation.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.XYData.DataProcessingOperation.ContinuumData">
+            <summary>
+            Returns whether or not we generate continuum data.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.XYData.DataProcessingOperation.InvalidatesPreviousProcessing">
+            <summary>
+            Returns true iff this is an operation which causes any previous processing to be
+            not relevant. For example an operation which does not use the data to process
+            "as is" but which re-retrieves data should overrride this method to return 
+            true (here we always return false).
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.XYData.DataProcessingOperation.SubclassSerialisable">
+            <summary>
+            We expect that many subclasses of DataProcessingOperation will not be
+            serialisable. For those classes which *are* then this property should be
+            set to true. For those which are not the ArrayXYData class will use a 
+            "placeholder" when it is itself serialised. The placeholder keeps track of
+            the description, etc but does not allow the operation to be re-applied 
+            (i.e. its Perform method will thrown an exception).
+            </summary>
+        </member>
+        <member name="T:Sciex.Data.XYData.ArrayXYData">
+            <summary>
+            Concrete subclass of GenericXYData which manages "x" and "y" values by keeping
+            them in arrays of doubles. This class also keeps track of a series of data 
+            processing operations.
+            </summary>
+        </member>
+        <member name="F:Sciex.Data.XYData.ArrayXYData.fXValues">
+            <summary>
+            Our x-values
+            </summary>
+        </member>
+        <member name="F:Sciex.Data.XYData.ArrayXYData.fYValues">
+            <summary>
+            Our y-values
+            </summary>
+        </member>
+        <member name="M:Sciex.Data.XYData.ArrayXYData.#ctor">
+            <summary>
+            Constructor.
+            </summary>
+        </member>
+        <member name="M:Sciex.Data.XYData.ArrayXYData.#ctor(Sciex.Data.XYData.ArrayXYData)">
+            <summary>
+            Copy constructor. We set outself to a DEEP copy of the provided data object.
+            </summary>
+            <param name="toCopy">The object to copy.</param>
+        </member>
+        <member name="M:Sciex.Data.XYData.ArrayXYData.#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <summary>
+            Constructor used when de-serialising.
+            </summary>
+            <param name="info">Object with data.</param>
+            <param name="context">Not used.</param>
+        </member>
+        <member name="M:Sciex.Data.XYData.ArrayXYData.GetObjectData(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <summary>
+            Serialises this object.
+            </summary>
+            <param name="info">Object which holds data to write.</param>
+            <param name="context">Not used.</param>
+        </member>
+        <member name="M:Sciex.Data.XYData.ArrayXYData.GetXValue(System.Int32)">
+            <summary>
+            Returns the x-value at the specified index.
+            </summary>
+            <param name="index">The 0-based index.</param>
+            <returns>The x-value.</returns>
+        </member>
+        <member name="M:Sciex.Data.XYData.ArrayXYData.GetYValue(System.Int32)">
+            <summary>
+            Returns the y-value at the specified index.
+            </summary>
+            <param name="index">The 0-based index.</param>
+            <returns>The y-value.</returns>
+        </member>
+        <member name="M:Sciex.Data.XYData.ArrayXYData.GetDataPointName(System.Int32)">
+            <summary>
+            Returns the "name" of the data point with the specified index (if available).
+            This will not be available for all data types, but only (in general) for
+            non-continuum type data. Subclasses should override this method if they
+            override HaveDataPointNames to return true.
+            </summary>
+            <param name="index">The 0-based index.</param>
+            <returns>The name.</returns>
+        </member>
+        <member name="M:Sciex.Data.XYData.ArrayXYData.SetXYValues(System.Double[],System.Double[],System.Boolean,System.Boolean)">
+            <summary>
+            Sets our underlying data to new values. Note that both the "x" and "y" arrays must 
+            contain the same number of data points. If "copyData" is true we make a copy of the 
+            provided data, otherwise we take ownership of it - in this latter case the caller 
+            should NOT modify the arrays subsequently in any way. If a DataProcessingOperation
+            is available, the overloaded SetXYValues() method sould be called instead.
+            </summary>
+            <param name="xValues">Array of x-values (cannot be null).</param>
+            <param name="yValues">Array of y-values (cannot be null).</param>
+            <param name="copyData">Should we make a copy of data?</param>
+            <param name="continuum">True for continuum data, false for centroid data.</param>
+        </member>
+        <member name="M:Sciex.Data.XYData.ArrayXYData.SetXYValues(System.Double[],System.Double[],Sciex.Data.XYData.DataProcessingOperation,System.Boolean)">
+            <summary>
+            Sets our underlying data to new values. In addition to the actual "x" and "y" data
+            itself (BOTH of which must be specified), the caller must specify a data
+            processing operation (or null) which describes how this data was modified; if this
+            value is null we assume that we are dealing with new data and not modified data. Note
+            that both the "x" and "y" arrays must contain the same number of data points. If 
+            "copyData" is true we make a copy of the provided data, otherwise we take ownership 
+            of it - in this latter case the caller should NOT modify the arrays subsequently in 
+            any way.
+            </summary>
+            <param name="xValues">Array of x-values (cannot be null).</param>
+            <param name="yValues">Array of y-values (cannot be null).</param>
+            <param name="op">Data processing operation (or null for new data).</param>
+            <param name="copyData">Should we make a copy of data?</param>
+        </member>
+        <member name="M:Sciex.Data.XYData.ArrayXYData.SetXYValues(Clearcore2.Data.CommonInterfaces.IRawXYData,Sciex.Data.XYData.DataProcessingOperation)">
+            <summary>
+            Sets our underlying data to new values. In addition to the actual data itself, the caller
+            must specify a valid data processing operation (or null) which describes how this data 
+            was modified; if this value is null we assume that we are dealing with new data and not 
+            modified data.
+            </summary>
+            <param name="rawData">Specifies x and y values (cannot be null).</param>
+            <param name="op">Data processing operation (or null for new data).</param>
+        </member>
+        <member name="M:Sciex.Data.XYData.ArrayXYData.SetXValues(System.Double[],Sciex.Data.XYData.DataProcessingOperation,System.Boolean)">
+            <summary>
+            Sets our x-values to new values. IMPORTANT: This method should only be called if
+            SetXYValues has been called previously - in other words this method is used to 
+            CHANGE the x-values, not set them from scratch. Also note that the size of the new
+            x-values must match the current size of our data. If "copyData" is true we make a copy
+            of the provided data, otherwise we take ownership of it - in this latter case the caller 
+            should NOT modify the array subsequently in any way.
+            </summary>
+            <param name="xValues">The new x-values</param>
+            <param name="op">Data processing operation (or null for new data).</param>
+            <param name="copyData">Should we make a copy of data?</param>
+        </member>
+        <member name="M:Sciex.Data.XYData.ArrayXYData.SetXValues(Clearcore2.Data.CommonInterfaces.IRawXYData,Sciex.Data.XYData.DataProcessingOperation)">
+            <summary>
+            Sets our x-values to new values. IMPORTANT: This method should only be called if
+            SetXYValues has been called previously - in other words this method is used to 
+            CHANGE the x-values, not set them from scratch. Also note that the size of the new
+            x-values must match the current size of our data.
+            </summary>
+            <param name="rawData">Specifies new x-values.</param>
+            <param name="op">Data processing operation (or null for new data).</param>
+        </member>
+        <member name="M:Sciex.Data.XYData.ArrayXYData.SetYValues(System.Double[],Sciex.Data.XYData.DataProcessingOperation,System.Boolean)">
+            <summary>
+            Sets our y-values to new values. IMPORTANT: This method should only be called if
+            SetXYValues has been called previously - in other words this method is used to 
+            CHANGE the y-values, not set them from scratch. Also note that the size of the new
+            y-values must match the current size of our data. If "copyData" is true we make a copy
+            of the provided data, otherwise we take ownership of it - in this latter case the caller 
+            should NOT modify the array subsequently in any way.
+            </summary>
+            <param name="yValues">The new y-values</param>
+            <param name="op">Data processing operation (or null for new data).</param>
+            <param name="copyData">Should we make a copy of data?</param>
+        </member>
+        <member name="M:Sciex.Data.XYData.ArrayXYData.SetYValues(Clearcore2.Data.CommonInterfaces.IRawXYData,Sciex.Data.XYData.DataProcessingOperation)">
+            <summary>
+            Sets our y-values to new values. IMPORTANT: This method should only be called if
+            SetXYValues has been called previously - in other words this method is used to 
+            CHANGE the y-values, not set them from scratch. Also note that the size of the new
+            y-values must match the current size of our data.
+            </summary>
+            <param name="rawData">Specifies new y-values.</param>
+            <param name="op">Data processing operation (or null for new data).</param>
+        </member>
+        <member name="M:Sciex.Data.XYData.ArrayXYData.GetActualXValues">
+            <summary>
+            Returns our array of x-values. WARNING: Most callers should use either the
+            GetXValue() or GetCopyOfXValues() method and NOT this method. Callers should
+            not modify the returned array since it will cause this object to get out
+            of sync with its data (an exception would be if this is a "temporary" object
+            which will not be further used). We provide this use-at-your-own-risk method
+            since there are times when efficiency is important.
+            </summary>
+            <returns>Our array of x-values.</returns>
+        </member>
+        <member name="M:Sciex.Data.XYData.ArrayXYData.GetActualYValues">
+            <summary>
+            Returns our array of y-values. WARNING: Most callers should use either the
+            GetYValue() or GetCopyOfYValues() method and NOT this method. Callers should
+            not modify the returned array since it will cause this object to get out
+            of sync with its data (an exception would be if this is a "temporary" object
+            which will not be further used). We provide this use-at-your-own-risk method
+            since there are times when efficiency is important.
+            </summary>
+            <returns>Our array of y-values.</returns>
+        </member>
+        <member name="M:Sciex.Data.XYData.ArrayXYData.GetCopyOfXValues">
+            <summary>
+            Used to obtain a copy of our x-values. Since we return a copy, the caller is of course
+            free to modify the array.
+            </summary>
+            <returns>A copy of the x-values.</returns>
+            Note: We override this method since it's probably more efficient to copy the data by
+            calling the Clone() method of an array, as opposed to make a copy point-by-point as
+            is done by the subclass.
+        </member>
+        <member name="M:Sciex.Data.XYData.ArrayXYData.GetCopyOfYValues">
+            <summary>
+            Used to obtain a copy of our y-values. Since we return a copy, the caller is - of course -
+            free to modify the array.
+            </summary>
+            <returns>A copy of the y-values.</returns>
+            Note: We override this method since it's probably more efficient to copy the data by
+            calling the Clone() method of an array, as opposed to make a copy point-by-point as
+            is done by the subclass.
+        </member>
+        <member name="M:Sciex.Data.XYData.ArrayXYData.ClearDataProcessingHistory">
+            <summary>
+            Clears our history of data processing operations. Our current XY values are
+            treated as "original" so, for example, our description will not include any
+            processing details.
+            </summary>
+        </member>
+        <member name="M:Sciex.Data.XYData.ArrayXYData.GetTransitionXValues">
+            <summary>
+            Returns an array representing "transitions" in the data. These are x-values
+            at which (conceptually) one logical data set ends and another begins. This
+            method itself just returns null unless overridden by subclasses.
+            </summary>
+            <returns>The transition values, if any (otherwise null).</returns>
+        </member>
+        <member name="M:Sciex.Data.XYData.ArrayXYData.GetCategory(System.Int32)">
+            <summary>
+            Returns the "category" (an integral identifier) for the requested
+            data point. This method should only be called if HasDataCategories 
+            returns true. If subclasses override HasDataCategories to return true,
+            they should also override this method.
+            </summary>
+            <param name="index">Data point index.</param>
+            <returns>The category.</returns>
+        </member>
+        <member name="M:Sciex.Data.XYData.ArrayXYData.GetDescription(System.Boolean)">
+            <summary>
+            Returns the description of this data set - either just the "root" name 
+            (if "details" is false) or with a brief (not exhaustive) summary of 
+            details included.
+            </summary>
+            <param name="details">Include BRIEF details of processing?</param>
+            <returns>Short or long description of data.</returns>
+        </member>
+        <member name="M:Sciex.Data.XYData.ArrayXYData.GetFullDescription">
+            <summary>
+            Returns a full description of this data object; the description may
+            contain carriage returns.
+            </summary>
+            <returns>The description.</returns>
+        </member>
+        <member name="M:Sciex.Data.XYData.ArrayXYData.GetProcessingOperation(System.Int32)">
+            <summary>
+            Returns the data processing operation with the specified index.
+            </summary>
+            <param name="index">Index of operation.</param>
+            <returns>Requested operation.</returns>
+        </member>
+        <member name="M:Sciex.Data.XYData.ArrayXYData.GetProcessingOperation(System.String)">
+            <summary>
+            Returns the data processing operation, if any, with the given name. If we have no
+            such operation we return null. If we have more than one, we return the first one.
+            </summary>
+            <param name="name">Name of processing operation.</param>
+            <returns>The requested operation or null.</returns>
+        </member>
+        <member name="M:Sciex.Data.XYData.ArrayXYData.RemoveProcessingOperation(System.Int32)">
+            <summary>
+            This method removes the DataProcessingOperation with the specified index.
+            This is not generally a good idea, however a subsequent operation may want to
+            remove a previous operation if it undoes the previous processing. 
+            </summary>
+            <param name="index">Index of operation to remove.</param>
+        </member>
+        <member name="M:Sciex.Data.XYData.ArrayXYData.RemoveProcessingOperation(System.String)">
+            <summary>
+            This method removes the DataProcessingOperation with the specified name. If we
+            have no such operation this method does nothing and if we have more than one
+            such operation all are removed.
+            </summary>
+            <param name="name">Name of processing operation.</param>
+        </member>
+        <member name="M:Sciex.Data.XYData.ArrayXYData.HaveProcessingOperation(System.String)">
+            <summary>
+            Returns true iff we have a data processing operation matching the specified
+            name.
+            </summary>
+            <param name="name">Name of processing operation.</param>
+            <returns>Do we have such an operation?</returns>
+        </member>
+        <member name="M:Sciex.Data.XYData.ArrayXYData.FireDataChanged">
+            <summary>
+            Overridden to update our state when the data changes.
+            </summary>
+        </member>
+        <member name="M:Sciex.Data.XYData.ArrayXYData.SetXYValuesInternal(System.Double[],System.Double[],Sciex.Data.XYData.DataProcessingOperation,System.Boolean,System.Boolean,System.Boolean)">
+            <summary>
+            This method is used to set either our x-values or the y-values or both. If "requireBoth" is true,
+            we verify that both "xValues" and "yValues" are not null, otherwise either one (but NOT both)
+            may be null. In this latter case, both our x and y-values  must have been previously initialised -
+            in other words it's not allowed to specify false for "requireBoth" unless we already have valid
+            data.
+            </summary>
+            <param name="xValues">Array of x-values (may be null).</param>
+            <param name="yValues">Array of y-values (may be null).</param>
+            <param name="op">Data creation or modification operation.</param>
+            <param name="copyData">Do we make copies of data?</param>
+            <param name="requireBoth">Are both x and y arrays required?</param>
+            <param name="forceNotContinuum">Force centroid mode?</param>
+        </member>
+        <member name="M:Sciex.Data.XYData.ArrayXYData.AddDataProcessingOperation(Sciex.Data.XYData.DataProcessingOperation)">
+            <summary>
+            Adds the specified data processing operation. HOWEVER if "op" is null we clear
+            our list.
+            </summary>
+            <param name="op">The data processing operation.</param>
+        </member>
+        <member name="P:Sciex.Data.XYData.ArrayXYData.NumDataPoints">
+            <summary>
+            Returns the number of data points.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.XYData.ArrayXYData.HaveDataPointNames">
+            <summary>
+            Returns whether or not we have data point names. In general names will
+            only be available for non-continuum type data. This method itself just
+            returns false unless overridden by subclasses.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.XYData.ArrayXYData.ContinuumData">
+            <summary>
+            Returns whether or not this data object represents continuum data (i.e. where
+            the points are generally connected when plotted) or discrete "zero width" data.
+            The latter is the case, for example, for SIM or MRM data or for data which has 
+            been centroided.<P></P>
+            
+            NOTE: This method makes the (hopefully reasonable) assumption that if a
+            number of data processing operations have been applied to the data and one
+            of them produces non-continuum data, subsequent operations (if any) do not
+            then produce continuum data from the non-continuum data. In other words if 
+            we find a non-continuum operation we can stop looking further.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.XYData.ArrayXYData.HasDataCategories">
+            <summary>
+            Returns whether or not we have data "categories" - this is just an
+            integral "cookie" for each data point. This method itself always just
+            returns null unless overridden by subclasses.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.XYData.ArrayXYData.NumProcessingOperations">
+            <summary>
+            Returns the number of data processing operations.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.XYData.ArrayXYData.IsAcquiringInRealTime">
+            <summary>
+            Determines if the data is a running acquisition or not.
+            The base class always returns false;
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="P:Sciex.Data.XYData.ArrayXYData.AllowRealTimeUpdate">
+            <summary>
+            Expose realtime update property
+            </summary>
+        </member>
+        <member name="T:Sciex.Data.XYData.GetStepSizeDelegate">
+            <summary>
+            When creating a new DefaultXYData object, callers specify either a constant 
+            step size or a GetStepSizeDelegate delegate which will provide the step size.
+            Note that it is only necessary to implement a delegate if the step size of 
+            the data is not constant.
+            </summary>
+        </member>
+        <member name="T:Sciex.Data.XYData.DefaultXYData">
+            <summary>
+            This class implements a concrete subclass of ArrayXYData which allows a
+            data object to be created by specifying arrays of x and y values (along
+            with some names and a step size). This class is intended to be used in
+            "simple" situtations when the overhead of creating a new specific 
+            subclass of ArrayXYData is too large.
+            </summary>
+        </member>
+        <member name="M:Sciex.Data.XYData.DefaultXYData.#ctor">
+            <summary>
+            Constructor. Callers will need to call SetXYValues() to set the actual data
+            values and will probably want to call SetAxisNamesAndUnits and SetDescription. 
+            They will likely also need to call SetStepSize to set the step size of our 
+            data (if they don't we use a step size of zero).
+            </summary>
+        </member>
+        <member name="M:Sciex.Data.XYData.DefaultXYData.#ctor(System.Double)">
+            <summary>
+            Constructor. Callers provide the constant step size. They will also 
+            need to call SetXYValues() to set the actual data values and will 
+            probably want to call SetAxisNamesAndUnits and SetDescription.
+            </summary>
+            <param name="stepSize">The step size.</param>
+        </member>
+        <member name="M:Sciex.Data.XYData.DefaultXYData.#ctor(System.Double,System.Boolean)">
+            <summary>
+            Constructor. If "constantStep" is true then "stepSize" is a constant step
+            size; otherwise it is assumed that the step is proportional to the square
+            root of the x-value and that the proportionality constant is "stepSize".
+            If the step is neither of these two cases, then the overloaded constructor
+            with a step size delegate should be used. Callers will also need to call
+            SetXYValues() to set the actual data values and will probably want to call 
+            SetAxisNamesAndUnits and SetDescription.
+            </summary>
+            <param name="stepSize">Step size.</param>
+            <param name="constantStep">Is step constant or does it vary as Sqrt(x-value)?</param>
+        </member>
+        <member name="M:Sciex.Data.XYData.DefaultXYData.#ctor(Sciex.Data.XYData.GetStepSizeDelegate)">
+            <summary>
+            Constructor. Callers provide a delgate used to obtain the step size. They
+            will also need to call SetXYValues() to set the actual data values and will
+            probably want to call SetAxisNamesAndUnits and SetDescription.
+            </summary>
+            <param name="getStepSize">Used to get step size.</param>
+        </member>
+        <member name="M:Sciex.Data.XYData.DefaultXYData.#ctor(System.String,System.String,System.String,System.String,System.String,System.String,System.Double[],System.Double[])">
+            <summary>
+            Creates a new object. The step size of the data is estimated - see the 
+            EstimateStepSize method..
+            </summary>
+            <param name="xName">Name for x-axis.</param>
+            <param name="xUnits">X-units (or empty).</param>
+            <param name="yName">Name for y-axis.</param>
+            <param name="yUnits">Y-units (or empty).</param>
+            <param name="shortDescription">Short description of data.</param>
+            <param name="longDescription">Detailed description of data.</param>
+            <param name="xValues">Array of x-values.</param>
+            <param name="yValues">Array of y-values.</param>
+        </member>
+        <member name="M:Sciex.Data.XYData.DefaultXYData.#ctor(System.String,System.String,System.String,System.String,System.String,System.String,System.Double[],System.Double[],System.Double)">
+            <summary>
+            Creates a new object for the case for which the step size is EITHER constant OR 
+            for which there is no natural step size (non-continuum data). In this last case the 
+            value for "stepSize" should be set to zero.
+            </summary>
+            <param name="xName">Name for x-axis.</param>
+            <param name="xUnits">X-units (or empty).</param>
+            <param name="yName">Name for y-axis.</param>
+            <param name="yUnits">Y-units (or empty).</param>
+            <param name="shortDescription">Short description of data.</param>
+            <param name="longDescription">Detailed description of data.</param>
+            <param name="xValues">Array of x-values.</param>
+            <param name="yValues">Array of y-values.</param>
+            <param name="stepSize">Step size of data.</param>
+        </member>
+        <member name="M:Sciex.Data.XYData.DefaultXYData.#ctor(System.String,System.String,System.String,System.String,System.String,System.String,System.Double[],System.Double[],System.Double,System.Boolean)">
+            <summary>
+            If "constantStep" is true, creates a new object for the case for which the step size
+            is either constant or for which there is no natural step size (non-continuum data).
+            In this last case the value for "stepSize" should be set to zero. If "constantStep"
+            is false then the step size is assumed to vary as the square root of the x-value and
+            that the proportionality constant is "stepSize".
+            </summary>
+            <param name="xName">Name for x-axis.</param>
+            <param name="xUnits">X-units (or empty).</param>
+            <param name="yName">Name for y-axis.</param>
+            <param name="yUnits">Y-units (or empty).</param>
+            <param name="shortDescription">Short description of data.</param>
+            <param name="longDescription">Detailed description of data.</param>
+            <param name="xValues">Array of x-values.</param>
+            <param name="yValues">Array of y-values.</param>
+            <param name="stepSize">Step size of data.</param>
+            <param name="constantStep">Is step constant or varying as sqrt(x)?</param>
+        </member>
+        <member name="M:Sciex.Data.XYData.DefaultXYData.#ctor(System.String,System.String,System.String,System.String,System.String,System.String,System.Double[],System.Double[],Sciex.Data.XYData.GetStepSizeDelegate)">
+            <summary>
+            Creates a new object for the case in which the step size of the data is not constant 
+            (and there IS a step size at any given x-value). In this case the caller needs to 
+            implement a GetStepSizeDelegate delegate which we will call as needed to get the 
+            step size.
+            </summary>
+            <param name="xName">Name for x-axis.</param>
+            <param name="xUnits">X-units (or empty).</param>
+            <param name="yName">Name for y-axis.</param>
+            <param name="yUnits">Y-units (or empty).</param>
+            <param name="shortDescription">Short description of data.</param>
+            <param name="longDescription">Detailed description of data.</param>
+            <param name="xValues">Array of x-values.</param>
+            <param name="yValues">Array of y-values.</param>
+            <param name="getStepSize">Provides step size.</param>
+        </member>
+        <member name="M:Sciex.Data.XYData.DefaultXYData.CommonConstruct(System.String,System.String,System.String,System.String,System.String,System.String,System.Double[],System.Double[],System.Double,System.Boolean,Sciex.Data.XYData.GetStepSizeDelegate)">
+            <summary>
+            Called by our various constructors.
+            </summary>
+            <param name="xName">Name for x-axis.</param>
+            <param name="xUnits">X-units (or empty).</param>
+            <param name="yName">Name for y-axis.</param>
+            <param name="yUnits">Y-units (or empty).</param>
+            <param name="shortDescription">Short description of data.</param>
+            <param name="longDescription">Detailed description of data.</param>
+            <param name="xValues">Array of x-values.</param>
+            <param name="yValues">Array of y-values.</param>
+            <param name="stepSize">Step size of data (or zero).</param>
+            <param name="constantStep">If step is used, is it constant or sqrt?</param>
+            <param name="getStepSize">Provides step size (or null).</param>
+        </member>
+        <member name="M:Sciex.Data.XYData.DefaultXYData.#ctor(Sciex.Data.XYData.DefaultXYData)">
+            <summary>
+            Copy constructor.
+            </summary>
+            <param name="toCopy">The object to copy.</param>
+        </member>
+        <member name="M:Sciex.Data.XYData.DefaultXYData.#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <summary>
+            Constructor used when de-serialising.
+            </summary>
+            <param name="info">Object with data.</param>
+            <param name="context">Not used.</param>
+        </member>
+        <member name="M:Sciex.Data.XYData.DefaultXYData.GetObjectData(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <summary>
+            Serialises this object.
+            </summary>
+            <param name="info">Object which holds data to write.</param>
+            <param name="context">Not used.</param>
+        </member>
+        <member name="M:Sciex.Data.XYData.DefaultXYData.Clone">
+            <summary>
+            Constructs a new object.
+            </summary>
+            <returns>The copy.</returns>
+        </member>
+        <member name="M:Sciex.Data.XYData.DefaultXYData.EstimateStepSize">
+            <summary>
+            This method is used to *guess* the step size of our data. In order to use this
+            method the arrays of x and y values must have been previously set. This guessing
+            supports two cases: A constant step size and a step size which varies as the
+            square root of the x-value. If the step size is known to the caller, it is better
+            to set it explicitly using one of the overloaded SetStepSize methods or the
+            SetSqrtStep method instead since the estimation procedure is not foolproof -
+            especially for sparse data.
+            </summary>
+        </member>
+        <member name="M:Sciex.Data.XYData.DefaultXYData.SetStepSize(System.Double)">
+            <summary>
+            Sets the constant step size associated with this data.
+            </summary>
+            <param name="stepSize">The step size.</param>
+        </member>
+        <member name="M:Sciex.Data.XYData.DefaultXYData.SetSqrtStep(System.Double)">
+            <summary>
+            Sets a step size which varies as the square root of the x-value.
+            </summary>
+            <param name="stepFactor">Proportionality constant for sqrt(x) step.</param>
+        </member>
+        <member name="M:Sciex.Data.XYData.DefaultXYData.SetStepSize(Sciex.Data.XYData.GetStepSizeDelegate)">
+            <summary>
+            Sets a delegate which is used to obtain our step size.
+            </summary>
+            <param name="getStepSize">The delegate.</param>
+        </member>
+        <member name="M:Sciex.Data.XYData.DefaultXYData.SetAxisNamesAndUnits(System.String,System.String,System.String,System.String)">
+            <summary>
+            This method sets the names (and their units) of the x-values and the y-values.
+            </summary>
+            <param name="xName">Name of x-values.</param>
+            <param name="xUnits">Name of x-units.</param>
+            <param name="yName">Name of y-values.</param>
+            <param name="yUnits">Name of y-units.</param>
+        </member>
+        <member name="M:Sciex.Data.XYData.DefaultXYData.SetDescription(System.String,System.String)">
+            <summary>
+            This method sets our short and long descriptions.
+            </summary>
+            <param name="shortDescription">The short description.</param>
+            <param name="longDescription">The long description.</param>
+        </member>
+        <member name="M:Sciex.Data.XYData.DefaultXYData.SetDataPointNames(System.String[])">
+            <summary>
+            This method is used to optionally associate a name with each one of our
+            data points. This is useful, for example, when plotting the data set and
+            labelling the points using their names.
+            </summary>
+            <param name="pointNames">Names for points.</param>
+        </member>
+        <member name="M:Sciex.Data.XYData.DefaultXYData.GetDataPointName(System.Int32)">
+            <summary>
+            This method is overridden to return the name of the requested data point (if names
+            were set via SetDataPointNames).
+            </summary>
+            <param name="index">Index of data point.</param>
+            <returns>Name for specified data point.</returns>
+        </member>
+        <member name="M:Sciex.Data.XYData.DefaultXYData.GetStepSizeInternal(System.Double)">
+            <summary>
+            Returns the step size for our data at the specified x-value.
+            </summary>
+            <param name="xValue">X-value at which to get step size.</param>
+            <returns>The step size at the requested x-value.</returns>
+        </member>
+        <member name="P:Sciex.Data.XYData.DefaultXYData.HaveDataPointNames">
+            <summary>
+            Returns whether or not we have valid data point names. We will have valid
+            names if SetDataPointNames has been previously called.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.XYData.DefaultXYData.ConstantStepSizeInternal">
+            <summary>
+            Overridden to return whether or not our data has a constant step size.
+            </summary>
+        </member>
+        <member name="T:Sciex.Data.XYData.DataProcessingOpForSerialisation">
+            <summary>
+            This class serves as a placeholder for DataProcessingOperations which are not
+            serialisable. When a non-serialisable instance is encountered an instance of this
+            DataProcessingOpForSerialisation is created instead. This class implements the
+            correct description, etc. however it does not allow the Perform() method to be
+            called to process new data. Also see the DataProcessingOperation.SubclassSerialisable
+            property.
+            </summary>
+        </member>
+        <member name="M:Sciex.Data.XYData.DataProcessingOpForSerialisation.#ctor(Sciex.Data.XYData.DataProcessingOperation)">
+            <summary>
+            Constructor.
+            </summary>
+            <param name="toCopy">Object to copy.</param>
+        </member>
+        <member name="M:Sciex.Data.XYData.DataProcessingOpForSerialisation.#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <summary>
+            Constructor used when de-serialising.
+            </summary>
+            <param name="info">Object with data.</param>
+            <param name="context">Not used.</param>
+        </member>
+        <member name="M:Sciex.Data.XYData.DataProcessingOpForSerialisation.GetObjectData(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <summary>
+            Serialises this object.
+            </summary>
+            <param name="info">Object which holds data to write.</param>
+            <param name="context">Not used.</param>
+        </member>
+        <member name="M:Sciex.Data.XYData.DataProcessingOpForSerialisation.Clone">
+            <summary>
+            Returns a copy of this object.
+            </summary>
+            <returns>The object to copy.</returns>
+        </member>
+        <member name="M:Sciex.Data.XYData.DataProcessingOpForSerialisation.GetDescription(System.Boolean)">
+            <summary>
+            Returns a description of the original (non-serialisable) processing operation.
+            </summary>
+            <param name="detailed">Are full details wanted?</param>
+            <returns>Processing description.</returns>
+        </member>
+        <member name="M:Sciex.Data.XYData.DataProcessingOpForSerialisation.Perform(Sciex.Data.XYData.ArrayXYData)">
+            <summary>
+            This method always throws an exception because this class does not know how to
+            carry out the processing for the original (non-serialisable) operation.
+            </summary>
+            <param name="data">Data to process.</param>
+        </member>
+        <member name="P:Sciex.Data.XYData.DataProcessingOpForSerialisation.InvalidatesPreviousProcessing">
+            <summary>
+            Returns whether the original (non-serialisable) processing operation invalidates
+            any previous data processing.
+            </summary>
+        </member>
+        <member name="T:Sciex.Data.XYData.Resources">
+            <summary>
+              A strongly-typed resource class, for looking up localized strings, etc.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.XYData.Resources.ResourceManager">
+            <summary>
+              Returns the cached ResourceManager instance used by this class.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.XYData.Resources.Culture">
+            <summary>
+              Overrides the current thread's CurrentUICulture property for all
+              resource lookups using this strongly typed resource class.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.XYData.Resources.GE_ArrayXYData_BothXYValuesMustHaveSameLength">
+            <summary>
+              Looks up a localized string similar to Both the x and y values must be the same length..
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.XYData.Resources.GE_ArrayXYData_CantModifyDataThatHasNeverBeenInitialised">
+            <summary>
+              Looks up a localized string similar to Can&apos;t modify data object: the data has never been initialised..
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.XYData.Resources.GE_ArrayXYData_XValuesAreWrongLength">
+            <summary>
+              Looks up a localized string similar to The x-values are the wrong length..
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.XYData.Resources.GE_ArrayXYData_YValuesAreWrongLength">
+            <summary>
+              Looks up a localized string similar to The y-values are the wrong length..
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.XYData.Resources.GE_DataProcessingOpForSerialisation_CannotBeSerialised_1">
+            <summary>
+              Looks up a localized string similar to The data cannot be processed because the {0} processing operation is not serialisable..
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.XYData.Resources.GE_DefaultXYData_ArrayOfNamesMustHaveTheSameNumberOfValuesAsTheDataItself">
+            <summary>
+              Looks up a localized string similar to The array of names must have the same number of values as the data itself..
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.XYData.Resources.GE_DefaultXYData_DataObjectCannotBeWrittenBecauseTheStepSizeIsNotSerialisable">
+            <summary>
+              Looks up a localized string similar to Data object cannot be written because the step size is not serialisable..
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.XYData.Resources.GE_DefaultXYData_XAndYArraysMustBeTheSameLength">
+            <summary>
+              Looks up a localized string similar to The x and y arrays must be the same length..
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.XYData.Resources.GE_DefaultXYData_YouMustSpecifyBothTheXAndYArrays">
+            <summary>
+              Looks up a localized string similar to You must specify both the x and y arrays..
+            </summary>
+        </member>
+    </members>
+</doc>

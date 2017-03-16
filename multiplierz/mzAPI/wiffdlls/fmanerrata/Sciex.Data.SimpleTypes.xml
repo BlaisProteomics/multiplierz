@@ -1,0 +1,238 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Sciex.Data.SimpleTypes</name>
+    </assembly>
+    <members>
+        <member name="T:Sciex.Data.SimpleTypes.QuantSampleType">
+            <summary>
+            This enumeration defines the various sample types used for quantitation. We
+            will make the following "contract": the first item will always start at "0" and the
+            items will increase sequentally from there. Note that it's possible that new items
+            might get added to the end. This allows callers to use one of these values as
+            an index into a zero-based array; in particular, see SampleTypeNames.GetNames.
+            </summary>
+        </member>
+        <member name="F:Sciex.Data.SimpleTypes.QuantSampleType.Unknown">
+            <summary>A sample of unknown concentration.</summary>
+        </member>
+        <member name="F:Sciex.Data.SimpleTypes.QuantSampleType.Standard">
+            <summary>Standard of known concentration.</summary>
+        </member>
+        <member name="F:Sciex.Data.SimpleTypes.QuantSampleType.QualityControl">
+            <summary>QC of known concentration.</summary>
+        </member>
+        <member name="F:Sciex.Data.SimpleTypes.QuantSampleType.Blank">
+            <summary>Blank of (presumed) zero concentration.</summary>
+        </member>
+        <member name="F:Sciex.Data.SimpleTypes.QuantSampleType.DoubleBlank">
+            <summary>Blank with no internal standard.</summary>
+        </member>
+        <member name="F:Sciex.Data.SimpleTypes.QuantSampleType.Solvent">
+            <summary>Solvent blank (i.e. not a plasma blank).</summary>
+        </member>
+        <member name="T:Sciex.Data.SimpleTypes.MassFragmentReferenceTable">
+            <summary>
+            This subclass of ReferenceTableBase implements an MS/MS table which is
+            associated with a particular parent mass/charge.
+            </summary>
+        </member>
+        <member name="T:Sciex.Data.SimpleTypes.MassReferenceTable">
+            <summary>
+            This class implements a so-called mass Reference Table which is a list of mass/charge
+            values. In addition we have an associated name and a list of sub fragment tables.
+            We can keep the list of masses as EITHER actual doubles or as strings depending on how
+            they are added to our list.
+            </summary>
+        </member>
+        <member name="M:Sciex.Data.SimpleTypes.MassReferenceTable.#ctor">
+            <summary>
+            Constructor.
+            </summary>
+        </member>
+        <member name="M:Sciex.Data.SimpleTypes.MassReferenceTable.#ctor(System.String)">
+            <summary>
+            Constructor.
+            </summary>
+            <param name="name">Name of table.</param>
+        </member>
+        <member name="M:Sciex.Data.SimpleTypes.MassReferenceTable.Init">
+            <summary>
+            Initialises our instance variables.
+            </summary>
+        </member>
+        <member name="M:Sciex.Data.SimpleTypes.MassReferenceTable.AddMass(System.Double,System.Boolean)">
+            <summary>
+            Adds a new mass/charge to the table. We always add the m/z to our list and
+            keep track separately of whether the mass is considered to be used or not.
+            Note that if the GetMassString() method is subsequently called we will return
+            a formatted string using the DefaultMassFormat.
+            </summary>
+            <param name="mz">Mass/charge value.</param>
+            <param name="use">Is this mass used?</param>
+        </member>
+        <member name="M:Sciex.Data.SimpleTypes.MassReferenceTable.AddMass(System.String,System.Boolean)">
+            <summary>
+            Adds a new mass/charge to the table. We always add the m/z to our list and
+            keep track separately of whether the mass is considered to be used or not.
+            We keep the item as a string so that if GetMassString() is subsequently called
+            we will return the string as-is. Note that the string must represent a valid double.
+            </summary>
+            <param name="mz">Mass/charge value as a string.</param>
+            <param name="use">Is this mass used?</param>
+        </member>
+        <member name="M:Sciex.Data.SimpleTypes.MassReferenceTable.GetMass(System.Int32)">
+            <summary>
+            Returns the mass/charge with the specified index.
+            </summary>
+            <param name="index">Index of m/z value from 0 to NumMasses - 1.</param>
+            <returns>The m/z value.</returns>
+        </member>
+        <member name="M:Sciex.Data.SimpleTypes.MassReferenceTable.GetMassString(System.Int32)">
+            <summary>
+            Returns the mass/charge with the specified index as a string. If the mass was
+            originally added as a string we return that string directly; otherwise the
+            mass was added as a double and we convert it to a string using the 
+            DefaultMassFormat property.
+            </summary>
+            <param name="index">Index of m/z value from 0 to NumMasses - 1.</param>
+            <returns>The m/z string.</returns>
+        </member>
+        <member name="M:Sciex.Data.SimpleTypes.MassReferenceTable.GetUseMass(System.Int32)">
+            <summary>
+            Returns whether the m/z value with the specified index is used or not.
+            </summary>
+            <param name="index">Index of m/z value from 0 to NumMasses - 1.</param>
+            <returns>True iff m/z with specified index is used.</returns>
+        </member>
+        <member name="M:Sciex.Data.SimpleTypes.MassReferenceTable.AddFragmentTable(Sciex.Data.SimpleTypes.MassFragmentReferenceTable)">
+            <summary>
+            Adds a new fragment reference table.
+            </summary>
+            <param name="table">The table to add.</param>
+        </member>
+        <member name="M:Sciex.Data.SimpleTypes.MassReferenceTable.GetFragmentTable(System.Int32)">
+            <summary>
+            Returns the Fragment reference table with the specified index.
+            </summary>
+            <param name="index">Index of fragment table from 0 to NumFragmentTables - 1.</param>
+            <returns>The requested fragment table.</returns>
+        </member>
+        <member name="P:Sciex.Data.SimpleTypes.MassReferenceTable.Name">
+            <summary>
+            Returns the name of this table.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.SimpleTypes.MassReferenceTable.DefaultMassFormat">
+            <summary>
+            Masses can be added to our list as actual doubles or as strings. When added
+            as doubles, the GetMassString() method uses this format to convert to a 
+            string. The default value is an empty string for full precision.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.SimpleTypes.MassReferenceTable.NumMasses">
+            <summary>
+            Returns the number of mass/charge values (this includes any marked as not
+            be be used).
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.SimpleTypes.MassReferenceTable.NumFragmentTables">
+            <summary>
+            Returns the number of associated fragment reference tables.
+            </summary>
+        </member>
+        <member name="M:Sciex.Data.SimpleTypes.MassFragmentReferenceTable.#ctor(System.String,System.Double)">
+            <summary>
+            Constructor.
+            </summary>
+            <param name="baseName">Name of parent MS reference table.</param>
+            <param name="parentMZ">MZ value of our parent.</param>
+        </member>
+        <member name="P:Sciex.Data.SimpleTypes.MassFragmentReferenceTable.Name">
+            <summary>
+            We override this method to add our parent m/z to our name.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.SimpleTypes.MassFragmentReferenceTable.ParentMZ">
+            <summary>
+            Parent m/z value.
+            </summary>
+        </member>
+        <member name="T:Sciex.Data.SimpleTypes.QuantSampleTypeNames">
+            <summary>
+            This class is used to obtain the display name for one or all of the items in the
+            QuantSampleType enumeration. There's also a routine to convert a display
+            name to an enumerated value.
+            </summary>
+        </member>
+        <member name="M:Sciex.Data.SimpleTypes.QuantSampleTypeNames.#cctor">
+            <summary>
+            Static constructor to initialise "fNames".
+            </summary>
+        </member>
+        <member name="M:Sciex.Data.SimpleTypes.QuantSampleTypeNames.#ctor">
+            <summary>
+            Private constructor to prevent callers mistakenly creating an instance.
+            </summary>
+        </member>
+        <member name="M:Sciex.Data.SimpleTypes.QuantSampleTypeNames.GetName(Sciex.Data.SimpleTypes.QuantSampleType)">
+            <summary>
+            Returns the display name of the provided quantitation sample type.
+            </summary>
+            <param name="theValue">Desired enumeration value.</param>
+            <returns>The name.</returns>
+        </member>
+        <member name="M:Sciex.Data.SimpleTypes.QuantSampleTypeNames.GetNames">
+            <summary>
+            Returns a list of display names for all of the items in the QuantSampleType
+            enumeration; the items are in the same order as the items in the enumeration.
+            Since the enumeration starts at zero and increases sequentially from there, its
+            values can be used directly as an index into the returned array.
+            </summary>
+            <returns>The list of names.</returns>
+        </member>
+        <member name="M:Sciex.Data.SimpleTypes.QuantSampleTypeNames.GetValue(System.String)">
+            <summary>
+            Returns the QuantSampleType enumeration value whose display name
+            matches the provided string. If the display name doesn't match any of the
+            items, an exception is thrown.
+            </summary>
+            <param name="name">Display name for a QuantSampleType.</param>
+            <returns>The enumeration value.</returns>
+        </member>
+        <member name="T:Sciex.Data.SimpleTypes.MassUnits">
+            <summary>
+            This simple class exposes the default units for a mass spectrum (currently
+            "Da" and not "amu").
+            </summary>
+        </member>
+        <member name="M:Sciex.Data.SimpleTypes.MassUnits.IsMassUnits(System.String)">
+            <summary>
+            This utility method returns true if the provided units represents a mass 
+            spectrum. Note that a return value of true does NOT imply that the units 
+            are equal to "Units" since we return true for both "amu" and "Da". Also
+            note that the return value for MRM "spectrum" units is false.
+            </summary>
+            <param name="units">Units to check.</param>
+            <returns>True iff units are for mass spectrum.</returns>
+        </member>
+        <member name="P:Sciex.Data.SimpleTypes.MassUnits.Units">
+            <summary>
+            Returns the default units for a mass spectrum. Currently this is "Da" but
+            callers should not rely on this since it's not impossible that it will
+            change to "amu" or "Th".
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.SimpleTypes.MassUnits.NeutralMassAxisName">
+            <summary>
+            Returns the constant string "Mass". Note that for a mass/charge axis the
+            MassToChargeAxisName property is used.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.SimpleTypes.MassUnits.MassToChargeAxisName">
+            <summary>
+            Returns the constant string "Mass/Charge".
+            </summary>
+        </member>
+    </members>
+</doc>

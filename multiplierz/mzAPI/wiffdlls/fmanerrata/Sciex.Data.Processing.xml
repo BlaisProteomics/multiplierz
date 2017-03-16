@@ -1,0 +1,2575 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Sciex.Data.Processing</name>
+    </assembly>
+    <members>
+        <member name="T:Sciex.Data.Processing.PeakListImpl">
+            <summary>
+            This simple class implements the IPeakList interface by wrapping an array
+            of PeakClass objects. It also supports the addition of "extra" string fields.
+            </summary>
+        </member>
+        <member name="F:Sciex.Data.Processing.PeakListImpl.kSignalToNoiseName">
+            <summary>Name of extra field created by CreateSignalToNoiseField (if used).</summary>
+        </member>
+        <member name="M:Sciex.Data.Processing.PeakListImpl.#ctor(Clearcore2.RawXYProcessing.PeakClass[])">
+            <summary>
+            Constructor. The caller must specify a non-null (but possibily empty) peak list.
+            </summary>
+            <param name="thePeaks">Existing list of peaks.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.PeakListImpl.#ctor(Clearcore2.Data.CommonInterfaces.IPeakList)">
+            <summary>
+            Constructor. The caller must specify a non-null (but possibly empty) peak list.
+            </summary>
+            <param name="thePeaks">Existing list of peaks.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.PeakListImpl.SetPeaks(Clearcore2.RawXYProcessing.PeakClass[])">
+            <summary>
+            Takes ownership of the provided peaks.
+            </summary>
+            <param name="thePeaks">List of peak objects.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.PeakListImpl.CheckSortOrder">
+            <summary>
+            Throws an exception iff our peak list is not in order of increasing x-value.
+            </summary>
+        </member>
+        <member name="M:Sciex.Data.Processing.PeakListImpl.PopulateExtraFieldNames">
+            <summary>
+            Populates "fExtraFieldNames" with the union of the extra field names from
+            all of our peaks.
+            </summary>
+        </member>
+        <member name="M:Sciex.Data.Processing.PeakListImpl.GetXValue(System.Int32)">
+            <summary>
+            Returns the x-value of the given peak.
+            </summary>
+            <param name="peakNumber">Peak index.</param>
+            <returns>The peak's x-value.</returns>
+        </member>
+        <member name="M:Sciex.Data.Processing.PeakListImpl.GetYValue(System.Int32)">
+            <summary>
+            Returns the peak area for the requested peak.
+            </summary>
+            <param name="peakNumber">Peak index.</param>
+            <returns>The peak's area.</returns>
+        </member>
+        <member name="M:Sciex.Data.Processing.PeakListImpl.GetArea(System.Int32)">
+            <summary>
+            Returns the area of the given peak.
+            </summary>
+            <param name="peakNumber">Peak index.</param>
+            <returns>The peak's area.</returns>
+        </member>
+        <member name="M:Sciex.Data.Processing.PeakListImpl.GetHeight(System.Int32)">
+            <summary>
+            Returns the height of the given peak.
+            </summary>
+            <param name="peakNumber">Peak index.</param>
+            <returns>The peak's height.</returns>
+        </member>
+        <member name="M:Sciex.Data.Processing.PeakListImpl.GetApexX(System.Int32)">
+            <summary>
+            Returns the x-value of the highest data point for the peak.
+            </summary>
+            <param name="peakNumber">Peak index.</param>
+            <returns>The x-value of the apex.</returns>
+        </member>
+        <member name="M:Sciex.Data.Processing.PeakListImpl.GetApexY(System.Int32)">
+            <summary>
+            Returns the y-value of the highest data point for the peak.
+            </summary>
+            <param name="peakNumber">Peak index.</param>
+            <returns>The y-value of the apex.</returns>
+        </member>
+        <member name="M:Sciex.Data.Processing.PeakListImpl.GetStartX(System.Int32)">
+            <summary>
+            Returns the x-value of the start of the peak.
+            </summary>
+            <param name="peakNumber">Peak index.</param>
+            <returns>X-value of peak start.</returns>
+        </member>
+        <member name="M:Sciex.Data.Processing.PeakListImpl.GetStartY(System.Int32)">
+            <summary>
+            Returns the x-value of the start of the peak.
+            </summary>
+            <param name="peakNumber">Peak index.</param>
+            <returns>Y-value of peak start.</returns>
+        </member>
+        <member name="M:Sciex.Data.Processing.PeakListImpl.GetEndX(System.Int32)">
+            <summary>
+            Returns the x-value of the end of the peak.
+            </summary>
+            <param name="peakNumber">Peak index.</param>
+            <returns>X-value of peak end.</returns>
+        </member>
+        <member name="M:Sciex.Data.Processing.PeakListImpl.GetEndY(System.Int32)">
+            <summary>
+            Returns the y-value of the end of the peak.
+            </summary>
+            <param name="peakNumber">Peak index.</param>
+            <returns>Y-value of peak end.</returns>
+        </member>
+        <member name="M:Sciex.Data.Processing.PeakListImpl.GetStartXHalfHeight(System.Int32)">
+            <summary>
+            Returns the left x-value with y-value of 50% of height.
+            </summary>
+            <param name="peakNumber">Peak index.</param>
+            <returns>Left x-value at 50%.</returns>
+        </member>
+        <member name="M:Sciex.Data.Processing.PeakListImpl.GetEndXHalfHeight(System.Int32)">
+            <summary>
+            Returns the right x-value with y-value of 50% of height.
+            </summary>
+            <param name="peakNumber">Peak index.</param>
+            <returns>Right x-value at 50%.</returns>
+        </member>
+        <member name="M:Sciex.Data.Processing.PeakListImpl.GetPeakType(System.Int32)">
+            <summary>
+            Returns the peak integration type.
+            </summary>
+            <param name="peakNumber">Peak index.</param>
+            <returns>The peak type.</returns>
+        </member>
+        <member name="M:Sciex.Data.Processing.PeakListImpl.GetNoise(System.Int32)">
+            <summary>
+            Returns an estimate of the noise. A negative return value indicates that the
+            noise was never estimated.
+            </summary>
+            <param name="peakNumber">Peak index.</param>
+            <returns>Noise estimate.</returns>
+        </member>
+        <member name="M:Sciex.Data.Processing.PeakListImpl.GetPeakPolygon(Clearcore2.Data.CommonInterfaces.IRawXYData,System.Int32,System.Double[]@,System.Double[]@)">
+            <summary>
+            Used to obtain an array of (x,y) points which describes the polygonal region
+            comprising the peak. The x-values will be in increasing order, so in
+            order to get a closed shape the last point must be connected to the first.
+            </summary>
+            <param name="data">Raw data used for original peak-finding.</param>
+            <param name="peakNumber">Peak index.</param>
+            <param name="xValues">Set to x-values.</param>
+            <param name="yValues">Set to y-values.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.PeakListImpl.GetBaselinePolygon(Clearcore2.Data.CommonInterfaces.IRawXYData,System.Int32,System.Double[]@,System.Double[]@)">
+            <summary>
+            Used to obtain an array of (x,y) points which describes the baseline region
+            comprising the peak.
+            </summary>
+            <param name="data">Raw data used for original peak-finding.</param>
+            <param name="peakNumber">Peak index.</param>
+            <param name="xValues">Set to x-values.</param>
+            <param name="yValues">Set to y-values.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.PeakListImpl.CreateSignalToNoiseField">
+            <summary>
+            This method adds a custom field called "S/N" using the peak heights and noise
+            values associated with our peaks. For any peak for which the noise is zero or
+            negative, the S/N is set to double.NaN.
+            </summary>
+        </member>
+        <member name="M:Sciex.Data.Processing.PeakListImpl.AddExtraField(System.String,System.Object[])">
+            <summary>
+            Adds an extra field. 
+            </summary>
+            <param name="fieldName">Name of field.</param>
+            <param name="fieldArray">Value of field for all peaks.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.PeakListImpl.SetExtraField(System.String,System.Object[])">
+            <summary>
+            This method adds an "extra" field with the provided name to each one of the
+            PeakClass objects in our list of peaks.
+            </summary>
+            <param name="fieldName">Name of field.</param>
+            <param name="fieldArray">List of values.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.PeakListImpl.AddExtraField(System.String,System.Double[],System.String)">
+            <summary>
+            Adds an extra "double" field. Specifying the format allows our GetExtraFieldAsString()
+            method to return a nicely formatted string (if the overloaded AddExtraField() is
+            used this is not the case)..
+            </summary>
+            <param name="fieldName">Name of field.</param>
+            <param name="fieldArray">Value of field for all peaks.</param>
+            <param name="format">String used for formatting the numbers.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.PeakListImpl.GetExtraFieldName(System.Int32)">
+            <summary>
+            Returns the name of one of the "extra" fields. 
+            </summary>
+            <param name="fieldIndex">Index of field whose name to get.</param>
+            <returns>Name of requested field.</returns>
+        </member>
+        <member name="M:Sciex.Data.Processing.PeakListImpl.HasExtraField(System.String)">
+            <summary>
+            Returns true iff we have an extra field with the specified name.
+            </summary>
+            <param name="fieldName">Name of field.</param>
+            <returns>True iff we have a field with the specified name.</returns>
+        </member>
+        <member name="M:Sciex.Data.Processing.PeakListImpl.GetExtraField(System.Int32,System.String)">
+            <summary>
+            Returns one of the "extra" fields for the specified peak. Note that this may
+            return null if a field with the specified name does not exist for the specified
+            peak.
+            </summary>
+            <param name="peakNumber">Peak index.</param>
+            <param name="fieldName">Index of the "extra" field.</param>
+            <returns>The requested "extra" field.</returns>
+        </member>
+        <member name="M:Sciex.Data.Processing.PeakListImpl.GetExtraFieldAsString(System.Int32,System.String,System.Boolean)">
+            <summary>
+            Returns one of the "extra" fields for the specified peak as a string. Unlike
+            "GetExtraField" this method should not return null - we return an empty
+            string if we have no such item.
+            </summary>
+            <param name="peakNumber">Peak index.</param>
+            <param name="fieldName">Index of the "extra" field.</param>
+            <param name="useCurrentCulture">Use current culture for UI or Invariant for export/import</param>
+            <returns>The requested "extra" field.</returns>
+        </member>
+        <member name="P:Sciex.Data.Processing.PeakListImpl.Peaks">
+            <summary>
+            Returns our peak list.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.PeakListImpl.SortedXValues">
+            <summary>
+            Returns true since our peaks are in order of increasing x-value.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.PeakListImpl.IncreasingXValues">
+            <summary>
+            Returns true since our peaks are in order of increasing x-value.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.PeakListImpl.NumberOfPeaks">
+            <summary>
+            Returns the number of peaks in our list.
+            </summary>
+            <returns>Number of peaks.</returns>
+        </member>
+        <member name="P:Sciex.Data.Processing.PeakListImpl.NumDataPoints">
+            <summary>
+            Returns the number of peaks in our list. We provide this method as well as
+            NumberOfPeaks since this method is needed to implement the IRawXYData interface
+            and the other for IPeakList.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.PeakListImpl.NumberOfExtraFields">
+            <summary>
+            Returns the number of "extra" fields.
+            </summary>
+            <returns>Number of extra fields.</returns>
+        </member>
+        <member name="T:Sciex.Data.Processing.SubsetOperation">
+            <summary>
+            This class replaces the data in a provided data object with a subset
+            of the entire range. 
+            </summary>
+        </member>
+        <member name="F:Sciex.Data.Processing.SubsetOperation.kSubsetName">
+            <summary>The name of this operation.</summary>
+        </member>
+        <member name="M:Sciex.Data.Processing.SubsetOperation.Perform(System.Double,System.Double,Sciex.Data.XYData.ArrayXYData)">
+            <summary>
+            Runs the subset operation (by creating a new instance of this class
+            and calling the Perform method).
+            </summary>
+            <param name="startX">Minimum x-value to keep.</param>
+            <param name="endX">Maximum x-value to keep.</param>
+            <param name="data">The data for which to extract subset.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.SubsetOperation.Perform(System.Double[],System.Double[],Sciex.Data.XYData.ArrayXYData)">
+            <summary>
+            Runs the subset operation (by creating a new instance of this class
+            and calling the Perform method). Any current x-values within any of 
+            the provided ranges are kept.
+            </summary>
+            <param name="xStarts">Minimum x-values to keep.</param>
+            <param name="xEnds">Maximum x-values to keep.</param>
+            <param name="data">The data for which to extract subset.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.SubsetOperation.#ctor(System.Double,System.Double)">
+            <summary>
+            Constructor.
+            </summary>
+            <param name="startX">Minimum x-value to keep.</param>
+            <param name="endX">Maximum x-value to keep.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.SubsetOperation.#ctor(System.Double[],System.Double[])">
+            <summary>
+            Constructor. Any current x-values within any of the provided ranges are kept.
+            </summary>
+            <param name="xStarts">Minimum x-values to keep.</param>
+            <param name="xEnds">Maximum x-values to keep.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.SubsetOperation.#ctor(Sciex.Data.Processing.SubsetOperation)">
+            <summary>
+            Copy constructor.
+            </summary>
+            <param name="toCopy">The object to copy.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.SubsetOperation.Clone">
+            <summary>
+            This method is overridden to return a new SubsetOperation object which 
+            is a DEEP copy of the current instance.
+            </summary>
+            <returns>A new SubsetOperation object.</returns>
+        </member>
+        <member name="M:Sciex.Data.Processing.SubsetOperation.Perform(Sciex.Data.XYData.ArrayXYData)">
+            <summary>
+            This method is overridden to perform the subset operation.
+            </summary>
+            <param name="data">The data from which to extract subset.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.SubsetOperation.WithinRange(System.Double)">
+            <summary>
+            Returns true if the provided x-value is within any of our ranges.
+            </summary>
+            <param name="x">X-value to check.</param>
+            <returns>True iff x-value is within any range.</returns>
+        </member>
+        <member name="M:Sciex.Data.Processing.SubsetOperation.GetDescription(System.Boolean)">
+            <summary>
+            Returns a description of this operation. If "detailed" is true then the
+            actual subset is also included, otherwise not.
+            </summary>
+            <param name="detailed">Include details?</param>
+            <returns>The description.</returns>
+        </member>
+        <member name="T:Sciex.Data.Processing.MultiThreadProcessing">
+            <summary>
+            This class is used to perform a parallel "for" operation. Compared to the default dotnet
+            "parallel for" this class is useful since it allows callers to limit the number of threads
+            (which is important, for example, if each thread allocates significant memory); it handles
+            exceptions on the threads and sends back a single exception to the caller (after giving any
+            currently running threads a chance to exit); there is a mechanism to send progress. After 
+            creating an instance and setting any desired properties, the Run() method is called - this 
+            method does not return until processing is finished.
+            </summary>
+        </member>
+        <member name="M:Sciex.Data.Processing.MultiThreadProcessing.#ctor(System.Int32,Sciex.Data.Processing.MultiThreadProcessing.CallBack)">
+            <summary>
+            Constructor.
+            </summary>
+            <param name="numItems">Number of items in loop.</param>
+            <param name="callback">Callback function which performs main work.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.MultiThreadProcessing.Run(Sciex.Data.Processing.MultiThreadProcessing.ProgressDelegate)">
+            <summary>
+            This method is called to perform the main processing. The callback provided to our
+            constructor is called once for each index from 0 to NumItems-1. This method does
+            not return until all processing is finished (or if there is an exception which is
+            re-thrown). If "progress" is not null it is updated with progress information.
+            </summary>
+            <param name="progress">Delegate to receive progress or null.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.MultiThreadProcessing.ThrowIfAnyExceptions">
+            <summary>
+            This method throws an exception if there have previously been any exceptions. It is
+            useful for the callback function to call this method periodically so that it can
+            abort if a previous thread has failed.
+            </summary>
+        </member>
+        <member name="M:Sciex.Data.Processing.MultiThreadProcessing.SetMainThreadCallback(Sciex.Data.Processing.MultiThreadProcessing.MainThreadCallback,System.Object)">
+            <summary>
+            This method is used to set a function which will be called from the main thread
+            (usually the UI thread) from which the Run() method was called. If this method
+            is called in close succession it is not guaranteed that the provided method is
+            called the specified number of times. One use for this method is to allow a
+            progress method to be called on the main UI thread. This can also be done by
+            the delegate provided to the Run() method, however that delegate only receives
+            updates for each iteration; setting a callback here can allow more fine-grained
+            progress.
+            </summary>
+            <param name="callback">Method to call from main thread; cannot be null.</param>
+            <param name="context">Object provided to callback when called (can be null).</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.MultiThreadProcessing.BeforeRun">
+            <summary>
+            This method is called before threaded processing begins. This method itself does
+            nothing but subclasses may wish to override.
+            </summary>
+        </member>
+        <member name="M:Sciex.Data.Processing.MultiThreadProcessing.AfterRun">
+            <summary>
+            This method is called after threaded processing ends. This method itself does
+            nothing but subclasses may wish to override.
+            </summary>
+        </member>
+        <member name="M:Sciex.Data.Processing.MultiThreadProcessing.ThreadCallBack(System.Int32,System.Int32)">
+            <summary>
+            This method is called by our threads so that we can call our delegate to perform
+            the required work.
+            </summary>
+            <param name="threadIndex">Index of thread (0 to NumThreads-1).</param>
+            <param name="index">Current "for" index (0 to NumItems-1).</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.MultiThreadProcessing.OnThreadCallBack(System.Int32,System.Int32)">
+            <summary>
+            This method calls our main callback function to perform the work. Subclasses may
+            wish to override this method is they will (for example) call a more specific version
+            of the callback (i.e. with different parameters). Note that at the time this method
+            is called we are running on one of the worker threads.
+            </summary>
+            <param name="threadIndex">Index of thread (0 to NumThreads-1).</param>
+            <param name="index">Current "for" index (0 to NumItems-1).</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.MultiThreadProcessing.CreateThreadItems">
+            <summary>
+            Creates our objects which are wrappers for a thread.
+            </summary>
+        </member>
+        <member name="M:Sciex.Data.Processing.MultiThreadProcessing.QueueAndWait(Sciex.Data.Processing.MultiThreadProcessing.ProgressDelegate)">
+            <summary>
+            Runs each iteration of the "for" loop and waits for all processing to finish.
+            </summary>
+            <param name="progress">Progress delegate or null.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.MultiThreadProcessing.QueueThreadItems(Sciex.Data.Processing.MultiThreadProcessing.ProgressDelegate)">
+            <summary>
+            Runs each iteration of the "for" loop waiting for previous threads to finish before
+            starting a new one. This method returns when the last thread has been started (but
+            before it has finished).
+            </summary>
+            <param name="progress">Progress delegate or null.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.MultiThreadProcessing.WaitForRemainingThreadItems(Sciex.Data.Processing.MultiThreadProcessing.ProgressDelegate,System.Boolean)">
+            <summary>
+            This method waits for any threads which are still running to finish.
+            </summary>
+            <param name="progress">Progress delegate or null.</param>
+            <param name="useCallback">Use main callback?</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.MultiThreadProcessing.WaitAnyNotDisposed(System.Boolean)">
+            <summary>
+            This method waits for any item in "fThreadData" (which has not been previously
+            disposed) to finish. If there are no items left still running we return null.
+            </summary>
+            <param name="useCallback">Use main callback?</param>
+            <returns>Finished thread item or null if none still running.</returns>
+        </member>
+        <member name="M:Sciex.Data.Processing.MultiThreadProcessing.MainCallback(System.Object)">
+            <summary>
+            This method is called by ThreadData.WaitAnyNotDisposed if our "fResetEvent" is 
+            signaled. We forward the call to the caller-set object.
+            </summary>
+            <param name="notUsed">Not used.</param>
+        </member>
+        <member name="P:Sciex.Data.Processing.MultiThreadProcessing.NumItems">
+            <summary>
+            Returns the number of items needing to be processed.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.MultiThreadProcessing.MaxNumThreads">
+            <summary>
+            Gets or sets the maximum number of threads which can ever be used (the default value
+            is the number of processors), however the ACTUAL value is the minimum of this value and
+            the number of processors.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.MultiThreadProcessing.NumThreads">
+            <summary>
+            Returns the number of threads which will be used; this is the minimum of MaxNumThreads
+            and the number of processors.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.MultiThreadProcessing.TimeoutMillisec">
+            <summary>
+            Gets or sets the default timeout (the default value is 2 minutes). If a single thread 
+            (i.e. one call to the callback function provided to our constructor) has not finished
+            within this time AND if it has not checked the the ThrowIfAnyExceptions() method in that 
+            time, the thread is killed and an exception is ultimately thrown by the Run() method.
+            So, threads can take an arbitrary duration, but should call ThrowIfAnyExceptions()
+            periodically.
+            </summary>
+        </member>
+        <member name="T:Sciex.Data.Processing.MultiThreadProcessing.ThreadParam">
+            <summary>
+            This class is used as the event argument passed to the callback function (which
+            performs the work for the specified loop index).
+            </summary>
+        </member>
+        <member name="F:Sciex.Data.Processing.MultiThreadProcessing.ThreadParam.Processor">
+            <summary>
+            MultiThreadProcessing object which is running. 
+            </summary>
+        </member>
+        <member name="F:Sciex.Data.Processing.MultiThreadProcessing.ThreadParam.Index">
+            <summary>
+            Index of current operation. This runs from zero to the number of items - 1.
+            </summary>
+        </member>
+        <member name="T:Sciex.Data.Processing.MultiThreadProcessing.CallBack">
+            <summary>
+            Delegates of this type are provided to the constructor. The delegate is called for
+            each iteration of the for loop.
+            </summary>
+            <param name="processor">Specifies current index of for loop.</param>
+        </member>
+        <member name="T:Sciex.Data.Processing.MultiThreadProcessing.ProgressDelegate">
+            <summary>
+            Delegate passed to Run() method to recieve progress.
+            </summary>
+            <param name="fractionComplete">Fraction of work completed.</param>
+        </member>
+        <member name="T:Sciex.Data.Processing.MultiThreadProcessing.MainThreadCallback">
+            <summary>
+            This delegate type is used in conjunction with SetMainThreadCallback - see
+            that method for details.
+            </summary>
+            <param name="context">Arbitrary caller-specified parameter.</param>
+        </member>
+        <member name="T:Sciex.Data.Processing.MultiThreadProcessing.ThreadData">
+            <summary>
+            This class provides a wrapper for a single thread.
+            </summary>
+        </member>
+        <member name="M:Sciex.Data.Processing.MultiThreadProcessing.ThreadData.WaitAnyNotDisposed(Sciex.Data.Processing.MultiThreadProcessing.ThreadData[],System.Threading.ManualResetEvent,Sciex.Data.Processing.MultiThreadProcessing.MainThreadCallback,System.Int32,System.Boolean@)">
+            <summary>
+            This method waits for any one item in "tdList" to finish and returns that item,
+            HOWEVER we ignore any items which have been disposed (i.e. which are finsihed
+            and won't be needed again). If we have no threads still running we return null. 
+            If we receive a timeout we set 'timeout' true and return null.
+            </summary>
+            <param name="tdList">List of thread-wrappers.</param>
+            <param name="callbackEvent">Used to signal callback to "callBack" or null.</param>
+            <param name="callback">Method to call if "callbackEvent" is signaled.</param>
+            <param name="timeoutMillisec">Timeout.</param>
+            <param name="timeout">Set true if we have a timeout.</param>
+            <returns>Finished item or null if all are finished.</returns>
+        </member>
+        <member name="M:Sciex.Data.Processing.MultiThreadProcessing.ThreadData.AbortAnyNotDisposed(Sciex.Data.Processing.MultiThreadProcessing.ThreadData[])">
+            <summary>
+            Forces any currently running items in "tdList" to abort.
+            </summary>
+            <param name="tdList">List of items.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.MultiThreadProcessing.ThreadData.ThrowIfException(Sciex.Data.Processing.MultiThreadProcessing.ThreadData[])">
+            <summary>
+            This method throws an exception if any of the items in "tdList" have an exception.
+            </summary>
+            <param name="tdList">List of items.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.MultiThreadProcessing.ThreadData.#ctor(Sciex.Data.Processing.MultiThreadProcessing,System.Int32)">
+            <summary>
+            Constructor.
+            </summary>
+            <param name="processor">Owning object.</param>
+            <param name="threadIndex">Index of thread (NOT index of "for" loop index).</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.MultiThreadProcessing.ThreadData.Dispose">
+            <summary>
+            Diposes of this object.
+            </summary>
+        </member>
+        <member name="M:Sciex.Data.Processing.MultiThreadProcessing.ThreadData.Queue(System.Int32)">
+            <summary>
+            Queues this item in the thread pool.
+            </summary>
+            <param name="index">Index of "for" loop counter.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.MultiThreadProcessing.ThreadData.ThreadCallBack(System.Object)">
+            <summary>
+            This method is called directly by the thread-pool thread. We call back to our
+            owning MultiThreadProcessing object so that it can call back to the original 
+            caller.
+            </summary>
+            <param name="notUsed">Not needed.</param>
+        </member>
+        <member name="P:Sciex.Data.Processing.MultiThreadProcessing.ThreadData.Exception">
+            <summary>
+            Returns any exception generated during processing (null if none).
+            </summary>
+        </member>
+        <member name="T:Sciex.Data.Processing.CentroidOperation">
+            <summary>
+            This data processing operation is used to centroid a given data set.
+            The data points are replaced with only the peaks found using either
+            a supplied peak list or a peak-finding algorithm.
+            </summary>
+        </member>
+        <member name="F:Sciex.Data.Processing.CentroidOperation.kCentroidName">
+            <summary>The name of this operation.</summary>
+        </member>
+        <member name="M:Sciex.Data.Processing.CentroidOperation.Perform(Clearcore2.Data.CommonInterfaces.IPeakList,Sciex.Data.Processing.CentroidOperation.CentroidMetric,Sciex.Data.XYData.ArrayXYData)">
+            <summary>
+            Centroids the provided data set using the specified peak list.
+            </summary>
+            <param name="peakList">List of centroid values.</param>
+            <param name="metric">Metric to use.</param>
+            <param name="data">Data to centroid.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.CentroidOperation.Perform(Clearcore2.Data.CommonInterfaces.ICreatePeakList,Sciex.Data.Processing.CentroidOperation.CentroidMetric,Sciex.Data.XYData.ArrayXYData)">
+            <summary>
+            Centroids the provided data set using the specified peak finder.
+            </summary>
+            <param name="createPeaks">Used to find centroid values.</param>
+            <param name="metric">Metric to use.</param>
+            <param name="data">Data to centroid.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.CentroidOperation.#ctor(Clearcore2.Data.CommonInterfaces.IPeakList,Sciex.Data.Processing.CentroidOperation.CentroidMetric)">
+            <summary>
+            Constructor when centroiding a data set using the specified peak list.
+            </summary>
+            <param name="peakList">List of centroid values.</param>
+            <param name="metric">Metric to use.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.CentroidOperation.#ctor(Clearcore2.Data.CommonInterfaces.ICreatePeakList,Sciex.Data.Processing.CentroidOperation.CentroidMetric)">
+            <summary>
+            Constructor when centroiding a data set using the specified peak finder.
+            </summary>
+            <param name="createPeaks">Used to find centroid values.</param>
+            <param name="metric">Metric to use.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.CentroidOperation.#ctor(Sciex.Data.Processing.CentroidOperation)">
+            <summary>
+            Copy constructor.
+            </summary>
+            <param name="toCopy">The object to copy.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.CentroidOperation.Clone">
+            <summary>
+            Creates a "deep" copy of this object.
+            </summary>
+            <returns>The copy (really a CentroidOperation).</returns>
+        </member>
+        <member name="M:Sciex.Data.Processing.CentroidOperation.Perform(Sciex.Data.XYData.ArrayXYData)">
+            <summary>
+            Centroids the provided data set. If we were given a peak list in our
+            constructor we use it to define the centroid values; otherwise we
+            use our peak finder to find the centroid values.
+            </summary>
+            <param name="data">Data to centroid.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.CentroidOperation.GetYValue(Sciex.Data.XYData.ArrayXYData,Clearcore2.Data.CommonInterfaces.IPeakList,System.Int32)">
+            <summary>
+            Given a peak list and an index, returns the required y-value based on
+            our "fMetric".
+            </summary>
+            <param name="data">Data object for which peaks were found.</param>
+            <param name="peaks">Peak list.</param>
+            <param name="index">Peak index.</param>
+            <returns>Required y-value.</returns>
+        </member>
+        <member name="M:Sciex.Data.Processing.CentroidOperation.GetIntensitySumAbove50Percent(Sciex.Data.XYData.ArrayXYData,Clearcore2.Data.CommonInterfaces.IPeakList,System.Int32)">
+            <summary>
+            Returns the "Intensity Sum Above 50% of Peak Height" metric for the provided
+            data.
+            </summary>
+            <param name="data">Data object for which peaks were found.</param>
+            <param name="peaks">Peak list.</param>
+            <param name="index">Peak index.</param>
+            <returns>Required y-value.</returns>
+        </member>
+        <member name="M:Sciex.Data.Processing.CentroidOperation.GetTotalIntensitySum(Sciex.Data.XYData.ArrayXYData,Clearcore2.Data.CommonInterfaces.IPeakList,System.Int32)">
+            <summary>
+            Returns the sum of intensities
+            </summary>
+            <param name="data">Data object for which peaks were found.</param>
+            <param name="peaks">Peak list.</param>
+            <param name="index">Peak index.</param>
+            <returns>The total intensity.</returns>
+        </member>
+        <member name="M:Sciex.Data.Processing.CentroidOperation.GetDescription(System.Boolean)">
+            <summary>
+            Returns a description of this operation.
+            </summary>
+            <param name="detailed">Are details wanted?</param>
+            <returns>The description.</returns>
+        </member>
+        <member name="T:Sciex.Data.Processing.CentroidOperation.CentroidMetric">
+            <summary>
+            This metric specifies which peak metric should be returned as the y-values
+            when centroiding.
+            </summary>
+        </member>
+        <member name="F:Sciex.Data.Processing.CentroidOperation.CentroidMetric.Area">
+            <summary>Peak area.</summary>
+        </member>
+        <member name="F:Sciex.Data.Processing.CentroidOperation.CentroidMetric.Height">
+            <summary>Peak height above baseline.</summary>
+        </member>
+        <member name="F:Sciex.Data.Processing.CentroidOperation.CentroidMetric.Intensity">
+            <summary>Peak intensity (includes baseline offset).</summary>
+        </member>
+        <member name="F:Sciex.Data.Processing.CentroidOperation.CentroidMetric.IntensitySumAbove50Percent">
+            <summary>Sum of intensities for points above 50% of peak height.</summary>
+        </member>
+        <member name="F:Sciex.Data.Processing.CentroidOperation.CentroidMetric.TotalIntensitySum">
+            <summary>Sum of intensities for all points across peak.</summary>
+        </member>
+        <member name="T:Sciex.Data.Processing.AddOperation">
+            <summary>
+            This class performs an addition operation by adding two ArrayXYData
+            objects.
+            </summary>
+        </member>
+        <member name="T:Sciex.Data.Processing.SimpleBinaryMathOp">
+            <summary>
+            This class serves as the base for concrete operations involving binary 
+            operations on two data sets such as addition and subtraction.
+            </summary>
+        </member>
+        <member name="M:Sciex.Data.Processing.SimpleBinaryMathOp.#ctor(System.String,System.String,Clearcore2.Data.CommonInterfaces.IRawXYData,System.Double)">
+            <summary>
+            Constructor.
+            </summary>
+            <param name="name">Name of operation.</param>
+            <param name="operationVerb">Describes operation.</param>
+            <param name="otherData">Second data sete for operation.</param>
+            <param name="toleranceIfZeroStep">Tolerance, but ONLY if data has a step size of zero.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.SimpleBinaryMathOp.#ctor(Sciex.Data.Processing.SimpleBinaryMathOp)">
+            <summary>
+            Copy constructor.
+            </summary>
+            <param name="toCopy">Object to clone.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.SimpleBinaryMathOp.GetOtherXAndYValues">
+            <summary>
+            This method returns x and y arrays for "OtherData". If OtherData is really an 
+            ArrayXYData object its arrays are returned directly as-is (so they should not be
+            modified).
+            </summary>
+            <returns>Double[] array wrapper for other data.</returns>
+        </member>
+        <member name="M:Sciex.Data.Processing.SimpleBinaryMathOp.StartPerform(Sciex.Data.XYData.ArrayXYData)">
+            <summary>
+            Called by subclasses at the beginning of their Perform() method.
+            </summary>
+            <param name="data">Data to modify.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.SimpleBinaryMathOp.EndPerform(System.Double[],System.Double[])">
+            <summary>
+            Called by subclasses at the end of their Perform() method to (1) set the
+            new data values for the data object and (2) to allow us to finish processing.
+            </summary>
+            <param name="newXValues">New x-values for data.</param>
+            <param name="newYValues">New y-values for data.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.SimpleBinaryMathOp.GetTolerance(System.Double)">
+            <summary>
+            Returns the tolerance at the given x-value using the "GetStepSize" method.
+            </summary>
+            <param name="xValue">The x-value at which to get tolerance.</param>
+            <returns>The tolerance.</returns>
+        </member>
+        <member name="M:Sciex.Data.Processing.SimpleBinaryMathOp.GetToleranceUsingBracketing(System.Double)">
+            <summary>
+            Returns the tolerance at the given x-value using the "GetBracketingXValuesUsingStep" 
+            method.
+            </summary>
+            <param name="xValue">The x-value at which to get tolerance.</param>
+            <returns>The tolerance.</returns>
+        </member>
+        <member name="M:Sciex.Data.Processing.SimpleBinaryMathOp.GetDescription(System.Boolean)">
+            <summary>
+            Overridden to return the description of this operation.
+            </summary>
+            <param name="detailed">Detailed or brief?</param>
+            <returns>The description.</returns>
+        </member>
+        <member name="P:Sciex.Data.Processing.SimpleBinaryMathOp.OtherData">
+            <summary>
+            The second data set for the operation.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.SimpleBinaryMathOp.ConstantTolerance">
+            <summary>
+            Returns true iff we will use a constant tolerance.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.SimpleBinaryMathOp.Tolerance">
+            <summary>
+            Returns our tolerance *IF* we are using a constant one.
+            </summary>
+        </member>
+        <member name="F:Sciex.Data.Processing.AddOperation.kAddName">
+            <summary>The name of this operation.</summary>
+        </member>
+        <member name="M:Sciex.Data.Processing.AddOperation.Perform(Clearcore2.Data.CommonInterfaces.IRawXYData,Sciex.Data.XYData.ArrayXYData,System.Double)">
+            <summary>
+            Runs the addition operation: "toAdd" is added TO "data" - NOT the
+            other way around! This is done by creating a new instance of this class
+            and calling the Perform method. If the data does NOT have a step size
+            of zero, it is used to determine the tolerance - otherwise 
+            "toleranceIfZeroStep" determines this.
+            </summary>
+            <param name="toAdd">Object to add TO "data".</param>
+            <param name="data">Object to which "toAdd" is added.</param>
+            <param name="toleranceIfZeroStep">Tolerance IF data has a step size of zero.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.AddOperation.Perform(Clearcore2.Data.CommonInterfaces.IRawXYData,Sciex.Data.XYData.ArrayXYData)">
+            <summary>
+            Runs the addition operation: "toAdd" is added TO "data" - NOT the
+            other way around! This is done by creating a new instance of this class
+            and calling the Perform method.
+            </summary>
+            <param name="toAdd">Object to add TO "data".</param>
+            <param name="data">Object to which "toAdd" is added.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.AddOperation.#ctor(Clearcore2.Data.CommonInterfaces.IRawXYData,System.Double)">
+            <summary>
+            Constructor.
+            </summary>
+            <param name="toAdd">Object to add TO data in Perform.</param>
+            <param name="toleranceIfZeroStep">Tolerance IF data has a step size of zero.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.AddOperation.#ctor(Sciex.Data.Processing.AddOperation)">
+            <summary>
+            Copy constructor.
+            </summary>
+            <param name="toCopy">The object to copy.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.AddOperation.Clone">
+            <summary>
+            This method is overridden to return a new AddOperation object which 
+            is a DEEP copy of the current instance.
+            </summary>
+            <returns>A new AddOperation object.</returns>
+        </member>
+        <member name="M:Sciex.Data.Processing.AddOperation.Perform(Sciex.Data.XYData.ArrayXYData)">
+            <summary>
+            This method is overridden to perform the addition operation.
+            </summary>
+            <param name="data">The data to add to.</param>
+        </member>
+        <member name="T:Sciex.Data.Processing.SpectralPeakListImpl">
+            <summary>
+            This subclass of PeakListImpl adds support for spectral peaks (in addition
+            to the inherited support for generic peaks). In particular we implement
+            the ISpectralPeakList interface.
+            </summary>
+        </member>
+        <member name="F:Sciex.Data.Processing.SpectralPeakListImpl.kMZAndChargeExtraFieldName">
+            <summary>The name of the extra field which we (optionally) create.</summary>
+        </member>
+        <member name="M:Sciex.Data.Processing.SpectralPeakListImpl.#ctor(Clearcore2.RawXYProcessing.PeakClass[])">
+            <summary>
+            Constructor.
+            </summary>
+            <param name="thePeaks">Peak list.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.SpectralPeakListImpl.#ctor(Clearcore2.RawXYProcessing.PeakClass[],System.Int32[],System.Int32[])">
+            <summary>
+            Constructor.
+            </summary>
+            <param name="thePeaks">Peak list.</param>
+            <param name="chargeStates">Charge states for peaks.</param>
+            <param name="monoisotopicPeaks">Monoisotopic list (or null).</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.SpectralPeakListImpl.SetChargeStates(System.Int32[],System.Int32[])">
+            <summary>
+            Sets the charge states for our peaks. The "monoisotopicPeaks" parameter
+            specifies the peak number of the corresponding monoisotopic peak for each
+            of the peaks in the list.
+            </summary>
+            <param name="chargeStates">Charge states.</param>
+            <param name="monoisotopicPeaks">Monoisotopic list (or null).</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.SpectralPeakListImpl.CreateMassChargeExtraField(System.String)">
+            <summary>
+            Adds an "extra" field to the peak list which consists of the mass of each
+            peak with the charge state in brackets: "mass (charge).
+            </summary>
+            <param name="massFormat">Format for mass string.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.SpectralPeakListImpl.GetResolution(System.Int32)">
+            <summary>
+            Returns the resolution of the given peak. A value of zero indicates that
+            the resolution could not be calculated.
+            </summary>
+            <param name="peakNumber">Index of peak.</param>
+            <returns>The resolution.</returns>
+        </member>
+        <member name="M:Sciex.Data.Processing.SpectralPeakListImpl.GetChargeState(System.Int32)">
+            <summary>
+            Returns the charge state assigned to this peak (if any). A return value of 
+            zero means that a charge state determination algorithm did run, but that it
+            was unable to reliably assign a charge to this peak. A return value of -1
+            means that the charge state algorithm did not run (this should only happen
+            if ChargeAssigned returns false).
+            </summary>
+            <param name="peakNumber">Index of peak.</param>
+            <returns>Charge state (or 0 or -1).</returns>
+        </member>
+        <member name="M:Sciex.Data.Processing.SpectralPeakListImpl.GetMonoisotopicPeak(System.Int32)">
+            <summary>
+            Returns the peak index of the (presumed) monoisotopic peak for which the
+            given peak is a potential isotope. If the returned value is equal to
+            "peakNumber", this specified peak is itself monoisotopic.
+            </summary>
+            <param name="peakNumber">Index of peak.</param>
+            <returns>Peak number of associated monoisotopic peak.</returns>
+        </member>
+        <member name="P:Sciex.Data.Processing.SpectralPeakListImpl.ChargeAssigned">
+            <summary>
+            Returns whether or not charge states have been assigned to the peaks.
+            </summary>
+        </member>
+        <member name="T:Sciex.Data.Processing.SubrangeOperation">
+            <summary>
+            This class replaces the data in a provided data object with a subrange
+            of the entire range. In other words it removes some number of the initial
+            and final data points.
+            </summary>
+        </member>
+        <member name="F:Sciex.Data.Processing.SubrangeOperation.kSubrangeName">
+            <summary>The name of this operation.</summary>
+        </member>
+        <member name="M:Sciex.Data.Processing.SubrangeOperation.Perform(System.Int32,System.Int32,Sciex.Data.XYData.ArrayXYData)">
+            <summary>
+            Runs the subrange operation.
+            </summary>
+            <param name="startIndex">Index of first data point to keep.</param>
+            <param name="endIndex">Index of last data point to keep.</param>
+            <param name="data">The data for which to extract subrange.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.SubrangeOperation.Perform(Sciex.Data.XYData.ArrayXYData,System.Double,System.Double)">
+            <summary>
+            Runs the subrange operaton. Only data points lying strictly within the specified
+            range are kept.
+            </summary>
+            <param name="data">The data for which to extract subrange.</param>
+            <param name="startX">Starting x-value.</param>
+            <param name="endX">Ending x-value.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.SubrangeOperation.#ctor(System.Int32,System.Int32)">
+            <summary>
+            Constructor.
+            </summary>
+            <param name="startIndex">Index of first data point to keep.</param>
+            <param name="endIndex">Index of last data point to keep.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.SubrangeOperation.#ctor(Sciex.Data.Processing.SubrangeOperation)">
+            <summary>
+            Copy constructor.
+            </summary>
+            <param name="toCopy">The object to copy.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.SubrangeOperation.Clone">
+            <summary>
+            This method is overridden to return a new SubrangeOperation object which 
+            is a DEEP copy of the current instance.
+            </summary>
+            <returns>A new SubrangeOperation object.</returns>
+        </member>
+        <member name="M:Sciex.Data.Processing.SubrangeOperation.Perform(Sciex.Data.XYData.ArrayXYData)">
+            <summary>
+            This method is overridden to perform the subrange operation.
+            </summary>
+            <param name="data">The data from which to extract subrange.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.SubrangeOperation.GetDescription(System.Boolean)">
+            <summary>
+            Returns a description of this operation. If "detailed" is true then the
+            actual subrange is also included, otherwise not.
+            </summary>
+            <param name="detailed">Include details?</param>
+            <returns>The description.</returns>
+        </member>
+        <member name="T:Sciex.Data.Processing.SortOperation">
+            <summary>
+            This class sorts the provided data object so that the x-values are in increasing
+            order.
+            </summary>
+        </member>
+        <member name="F:Sciex.Data.Processing.SortOperation.kSortName">
+            <summary>The name of this operation.</summary>
+        </member>
+        <member name="M:Sciex.Data.Processing.SortOperation.PerformSort(Sciex.Data.XYData.ArrayXYData)">
+            <summary>
+            Sorts the provided data (by creating a new instance of this class
+            and calling the Perform method).
+            </summary>
+            <param name="data">The data to sort.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.SortOperation.#ctor">
+            <summary>
+            Constructor.
+            </summary>
+        </member>
+        <member name="M:Sciex.Data.Processing.SortOperation.#ctor(Sciex.Data.Processing.SortOperation)">
+            <summary>
+            Copy constructor.
+            </summary>
+            <param name="toCopy">The object to copy.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.SortOperation.Clone">
+            <summary>
+            This method is overidden to return a DEEP copy of this object.
+            </summary>
+            <returns>A new SortOperation object.</returns>
+        </member>
+        <member name="M:Sciex.Data.Processing.SortOperation.Perform(Sciex.Data.XYData.ArrayXYData)">
+            <summary>
+            This method is overridden to perform the sort operation. Note: This method will not
+            re-sort the data if it is already sorted.
+            </summary>
+            <param name="data">The data to sort.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.SortOperation.GetDescription(System.Boolean)">
+            <summary>
+            Returns a description of this sorting operation.
+            </summary>
+            <param name="detailed">Is detailed description wanted?</param>
+            <returns>The description.</returns>
+        </member>
+        <member name="T:Sciex.Data.Processing.BaselineSubtractOperation">
+            <summary>
+            This class performs a basline subtraction opreation on the y-values of the
+            provided data object.
+            </summary>
+        </member>
+        <member name="F:Sciex.Data.Processing.BaselineSubtractOperation.kBaselineSubtractName">
+            <summary>The name of this operation.</summary>
+        </member>
+        <member name="M:Sciex.Data.Processing.BaselineSubtractOperation.Perform(System.Double,Sciex.Data.XYData.ArrayXYData)">
+            <summary>
+            Runs the baseline subtraction operation (by creating a new instance of this class
+            and calling the Perform method).
+            </summary>
+            <param name="halfWindow">The baseline subtraction window (half) width.</param>
+            <param name="data">The data to baseline subtract.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.BaselineSubtractOperation.Perform(System.Double,System.Boolean,Sciex.Data.XYData.ArrayXYData)">
+            <summary>
+            Runs the baseline subtraction operation (by creating a new instance of this class
+            and calling the Perform method). If "relativeHalfWindow" is true the width is
+            calculated as the specified fraction of each x-value, otherwise it is an
+            absolute value.
+            </summary>
+            <param name="halfWindow">The baseline subtraction window (half) width.</param>
+            <param name="relativeHalfWindow">Is window relative or absolute?</param>
+            <param name="data">The data to baseline subtract.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.BaselineSubtractOperation.#ctor(System.Double,System.Boolean)">
+            <summary>
+            Constructor.
+            </summary>
+            <param name="halfWindow">The baseline subtraction window (half) width.</param>
+            <param name="relativeHalfWindow">Is window relative or absolute?</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.BaselineSubtractOperation.#ctor(Sciex.Data.Processing.BaselineSubtractOperation)">
+            <summary>
+            Copy constructor.
+            </summary>
+            <param name="toCopy">The object to copy.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.BaselineSubtractOperation.Clone">
+            <summary>
+            This method is overridden to return a DEEP copy of this object.
+            </summary>
+            <returns>A new BaselineSubtractOperation object.</returns>
+        </member>
+        <member name="M:Sciex.Data.Processing.BaselineSubtractOperation.Perform(Sciex.Data.XYData.ArrayXYData)">
+            <summary>
+            This method is overridden to perform the baseline subtraction operation.
+            </summary>
+            <param name="data">The data to process.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.BaselineSubtractOperation.GetDescription(System.Boolean)">
+            <summary>
+            Overridden to return a description of this baseline subtraction operation. If
+            "detailed" is true we include teh half-window in the description, otherwise not.
+            </summary>
+            <param name="detailed">Include full details?</param>
+            <returns>The description.</returns>
+        </member>
+        <member name="T:Sciex.Data.Processing.CreateLocalMaxPeakList">
+            <summary>
+            This class is a wrapper used to find peaks using a simple algorithm.
+            </summary>
+        </member>
+        <member name="T:Sciex.Data.Processing.CreatePeakListImpl">
+            <summary>
+            This is a common base class for peak-finding implementations. NOTE: If the 
+            AllowDataPeakListOverride property is true and if the data itself supports
+            ICreatePeakList that peak-finder overrides this one (see the AllowDataPeakListOverride
+            method for details).
+            </summary>
+        </member>
+        <member name="M:Sciex.Data.Processing.CreatePeakListImpl.#ctor(System.Double,System.Double,System.Int32,System.Boolean,System.Double,System.Double)">
+            <summary>
+            Constructor. If subclasses have peak-finding parameters, they should also
+            set the current default values from their constructor.<P></P>
+            
+            The caller specifies a number of peak filtering parameters - after running the
+            peak finding algorithm, we will filter the resulting peak list to remove peaks whose
+            area, height, etc. is too small. If subclasses don't want filtering (or perform it 
+            themselves in a different way), they can specify 0.0 for these parameters. If 
+            "useAbsoluteWidths" is true then both "minWidth" and "minHalfWidth" are in 
+            *absolute* units (i.e. the same units as the data itself), otherwise they are 
+            interpreted as a FRACTION - for example 1000 and 1001 are a fraction 0.001 apart.
+            </summary>
+            <param name="minArea">Minimum required area.</param>
+            <param name="minHeight">Minimum required height.</param>
+            <param name="minWidthInPoints">Minimum required width in data points.</param>
+            <param name="useAbsoluteWidths">Are widths expressed in absolute or fractional terms?</param>
+            <param name="minWidth">Minimum required width (either absolute or fraction).</param>
+            <param name="minHalfWidth">Minimum required width at half-intensity (either absolute or fraction).</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.CreatePeakListImpl.#ctor(Sciex.Data.Processing.CreatePeakListImpl)">
+            <summary>
+            Copy constructor.
+            </summary>
+            <param name="toCopy">The object to copy.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.CreatePeakListImpl.Clone">
+            <summary>
+            Subclasses must override this method to return a copy of the object.
+            </summary>
+            <returns>The copy.</returns>
+        </member>
+        <member name="M:Sciex.Data.Processing.CreatePeakListImpl.CreatePeakList(Clearcore2.Data.CommonInterfaces.IRawXYData)">
+            <summary>
+            This method returns the list of peaks which was found for the provided data.
+            </summary>
+            <param name="data">The data in which to find peaks.</param>
+            <returns>The list of peaks.</returns>
+        </member>
+        <member name="M:Sciex.Data.Processing.CreatePeakListImpl.CreateInitialisedRawPeakFinder(Clearcore2.Data.CommonInterfaces.IRawXYData)">
+            <summary>
+            Subclasses must override this method to return a new RawPeakFinder object
+            which will be used to find peaks (or, more correctly, subclasses will return a
+            subclass of RawPeakFinder). This RawPeakFinder object must be initialised
+            with any peak-finding parameters stored away in instance variables since we will
+            immediately call its FindPeaks() methods.
+            </summary>
+            <param name="data">Data in which to find peaks.</param>
+            <returns>The object used to find peaks.</returns>
+        </member>
+        <member name="M:Sciex.Data.Processing.CreatePeakListImpl.InitialisePreviousPeakFinder(Clearcore2.RawXYProcessing.RawPeakFinder,Clearcore2.Data.CommonInterfaces.IRawXYData)">
+            <summary>
+            This method is called to update a peak finder which was previously created by a
+            call to CreateInitialisedRawPeakFinder(). This method is only called if the 
+            ReusePeakFinder flag is true - see that method for details. If the return value
+            from this method is false a new peak finder will be created.
+            </summary>
+            <param name="finder">Peak finder to update.</param>
+            <param name="data">Data to process.</param>
+            <returns>True if method was overridden and peak finder initialised.</returns>
+        </member>
+        <member name="M:Sciex.Data.Processing.CreatePeakListImpl.AfterFindPeaks(Clearcore2.RawXYProcessing.RawPeakFinder,Clearcore2.Data.CommonInterfaces.IRawXYData)">
+            <summary>
+            This routine is called after we have called the FindPeaks method of "finder"
+            (using the specified raw data). The idea for this method is that subclasses
+            *may* choose to override this method to perform any additional filtering
+            on the peak list (i.e. filtering not done by the RawPeakFinder object itself
+            when it finds peaks). Any such filtering is in ADDITION to the filtering
+            for minimum area, height and width which is done directly by this class
+            (this is done after this AfterFindPeaks method is called).
+            </summary>
+            <param name="finder">Peak finder.</param>
+            <param name="data">The data.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.CreatePeakListImpl.AfterFilterPeaks(Clearcore2.RawXYProcessing.RawPeakFinder,Clearcore2.Data.CommonInterfaces.IRawXYData)">
+            <summary>
+            This routine is called after we have called the FindPeaks method of 
+            "finder" (using the specified raw data) and have also performed any
+            built-in filtering done by the finder. The idea is to allow subclasses
+            to add "custom" columns to a peak list implementation and also to
+            allow them to create subclasses of PeakListImpl if needed.
+            </summary>
+            <param name="finder">Found original peaks.</param>
+            <param name="data">Original data in which peaks were found.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.CreatePeakListImpl.OnChanged">
+            <summary>
+            Subclasses can call this method to fire our "Changed" event.
+            </summary>
+        </member>
+        <member name="M:Sciex.Data.Processing.CreatePeakListImpl.CreatePeakListUsingDataPeakFinder(Clearcore2.Data.CommonInterfaces.IRawXYData)">
+            <summary>
+            Returns the peak list obtained by using the peak-finder attached directly to
+            "data" (if that object supports ICreatePeakList). A return value of null
+            indicates that there is no such peak finder or that this behaviour is not
+            wanted.
+            </summary>
+            <param name="data">Data for which to find peaks.</param>
+            <returns>Peak list from data's peak-finder or null.</returns>
+        </member>
+        <member name="E:Sciex.Data.Processing.CreatePeakListImpl.Changed">
+            <summary>
+            This event is sent when the peak-finding parameters changed and new peaks thus need to be found.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.CreatePeakListImpl.MinArea">
+            <summary>
+            Gets or sets the minimum area required in order for a peak to be reported.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.CreatePeakListImpl.MinHeight">
+            <summary>
+            Gets or sets the minimum height in order for a peak to be reported.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.CreatePeakListImpl.MinWidthInPoints">
+            <summary>
+            Gets or sets the minimum peak width (in points) in order for a peak to be reported.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.CreatePeakListImpl.UseAbsoluteWidths">
+            <summary>
+            This property is used in conjunction with the MinWidth and MinHalfWidth properties.
+            If UseAbsoluteWidths is true these properties are interpreted as being in absolute
+            units, otherwise as fractional units - for example 1000 and 1001 are a fraction 0.001 
+            apart.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.CreatePeakListImpl.MinWidth">
+            <summary>
+            Gets or sets the minimum width in order for a peak to be reported. If UseAbsoluteWidths
+            is true this width is assumed to be an absolute value, otherwise a relative one.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.CreatePeakListImpl.MinHalfWidth">
+            <summary>
+            Gets or sets the minimum width at half of the peak height in order for a peak to be 
+            reported. If UseAbsoluteWidths is true this width is assumed to be an absolute value, 
+            otherwise a relative one.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.CreatePeakListImpl.ReusePeaks">
+            <summary>
+            If this parameter is true (the default is false) PeakClass objects are re-used
+            from one call of CretePeakList to the next. This is normally *NOT* wanted since two
+            different resulting peak lists will therefore contain the same instances and the 
+            fields which are set for the second peak-finding will overwrite the first. However 
+            if it is guaranteed that the first peak list will be discarded and none of its
+            peaks cached then this behaviour can considerably help performance. Most callers
+            should not need to set this property.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.CreatePeakListImpl.AllowDataPeakListOverride">
+            <summary>
+            If this value is true and if the data provided to CreatePeakList itself supports the
+            ICreatePeakList interface, we use the data's peak-finder to find peaks ignoring this
+            implementation completely. The default value is true.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.CreatePeakListImpl.DisableChangedEvent">
+            <summary>
+            Gets or sets whether we send Changed events. Callers can set this to "true" before 
+            changing a number of parameters and then back to "false" when finished.
+            </summary>
+        </member>
+        <member name="M:Sciex.Data.Processing.CreateLocalMaxPeakList.#ctor(System.Double,System.Boolean,System.Double)">
+            <summary>
+            Constructor. The caller specifies a minimum allowed area and width (which may
+            be zero for no filtering). If "useAbsoluteWidths" is true then "minWidth" is in 
+            *absolute* units (i.e. the same units as the data itself), otherwise it is
+            interpreted as a FRACTION - for example 1000 and 1001 are a fraction 0.001 apart.
+            </summary>
+            <param name="minArea">Minimum allowed area.</param>
+            <param name="useAbsoluteWidth">Is width expressed in absolute or fractional terms?</param>
+            <param name="minWidth">Minimum required width (either absolute or fraction).</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.CreateLocalMaxPeakList.#ctor(Sciex.Data.Processing.CreateLocalMaxPeakList)">
+            <summary>
+            Copy constructor.
+            </summary>
+            <param name="toCopy">The object to copy.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.CreateLocalMaxPeakList.Clone">
+            <summary>
+            We override this method to return a copy of the object.
+            </summary>
+            <returns>The copy.</returns>
+        </member>
+        <member name="M:Sciex.Data.Processing.CreateLocalMaxPeakList.CreateInitialisedRawPeakFinder(Clearcore2.Data.CommonInterfaces.IRawXYData)">
+            <summary>
+            This method is overridden to return a new LocalMaxPeakFinder object.
+            </summary>
+            <param name="data">Data in which to find peaks (not used by this method).</param>
+            <returns>The peak finder.</returns>
+        </member>
+        <member name="T:Sciex.Data.Processing.PeakPolygon">
+            <summary>
+            This class, which contains only static methods, is used to get a collection
+            of (x,y) points representing the outline of a peak in a data object.
+            </summary>
+        </member>
+        <member name="M:Sciex.Data.Processing.PeakPolygon.#ctor">
+            <summary>
+            Declare a private constructor to prevent callers creating an instance.
+            </summary>
+        </member>
+        <member name="M:Sciex.Data.Processing.PeakPolygon.GetBaselinePolygon(Clearcore2.Data.CommonInterfaces.IRawXYData,Clearcore2.RawXYProcessing.PeakClass,System.Double[]@,System.Double[]@)">
+            <summary>
+            Returns a collection of (x,y) points which represent the baseline of the 
+            specified peak in the provided data. Note that this includes any points
+            interpolated between two points lying on the peak if the baseline start
+            or end does not exactly coincide with a data point.
+            </summary>
+            <param name="data">The data for which the peak was found.</param>
+            <param name="peak">The peak whose polygon to get.</param>
+            <param name="xValues">Set to x-values.</param>
+            <param name="yValues">Set to y-values.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.PeakPolygon.GetPeakPolygon(Clearcore2.Data.CommonInterfaces.IRawXYData,Clearcore2.RawXYProcessing.PeakClass,System.Double[]@,System.Double[]@)">
+            <summary>
+            Returns a collection of (x,y) points which represent the outline of the 
+            specified peak in the provided data. This includes any baseline points 
+            as well as the actual points lying on the peak (it may also include points
+             interpolated between two points lying on the peak if the baseline start 
+             or end does not exactly coincide with a data point).
+            </summary>
+            <param name="data">The data for which the peak was found.</param>
+            <param name="peak">The peak whose polygon to get.</param>
+            <param name="xValues">Set to x-values.</param>
+            <param name="yValues">Set to y-values.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.PeakPolygon.GetPolygon(Clearcore2.Data.CommonInterfaces.IRawXYData,Clearcore2.RawXYProcessing.PeakClass,System.Double[]@,System.Double[]@,System.Boolean)">
+            <summary>
+            Returns a collection of (x,y) points which represent *either* the outline or
+            the baseline of the specified peak in the provided data.
+            </summary>
+            <param name="data">The data for which the peak was found.</param>
+            <param name="peak">The peak whose polygon to get.</param>
+            <param name="xValues">Set to x-values.</param>
+            <param name="yValues">Set to y-values.</param>
+            <param name="baselineOnly">Return only baseline points, or all points comprising peak?</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.PeakPolygon.AddPoint(System.Double[],System.Double[],System.Double,System.Double,System.Int32@)">
+            <summary>
+            Adds a new point to the provided arrays. The data point will only actually
+            be added if it's not identical (within rounding errors) to the last added point. 
+            If a new point is added, "numPoints" is incremented by one. Nnote that the arrays 
+            must have enough room to add another point.
+            </summary>
+            <param name="xValues">Array of x-values.</param>
+            <param name="yValues">Array of y-values.</param>
+            <param name="x">The x-value of new point.</param>
+            <param name="y">The y-value of new point.</param>
+            <param name="numPoints">Current number of used points.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.PeakPolygon.GetSizedArray(System.Double[]@,System.Double[]@,System.Int32)">
+            <summary>
+            Modifies the input arrays to contain just the data points from them which
+            are actually used. This is needed so that we can have an array of exactly
+            the correct size without extra unused entries at the end.
+            </summary>
+            <param name="xValues">Array of x-values.</param>
+            <param name="yValues">Array of y-values.</param>
+            <param name="numPoints">Number of items from "polygon" to copy.</param>
+            <returns>New array of correct size.</returns>
+        </member>
+        <member name="M:Sciex.Data.Processing.PeakPolygon.GetPeakProfilePolygon(Clearcore2.RawXYProcessing.PeakClass,System.Double[]@,System.Double[]@)">
+            <summary>
+            Given a peak with a non-null "profile", this method calculates the desired 
+            peak profile... This is really just "peak.profile" converted to double[]
+            arrays with a extra point to close the polygon.
+            </summary>
+            <param name="peak">Peak for whichh to get profile.</param>
+            <param name="xValues">Array of x-values.</param>
+            <param name="yValues">Array of y-values.</param>
+        </member>
+        <member name="T:Sciex.Data.Processing.SGOperation">
+            <summary>
+            This class performs a Savitzky-Golay operation on the y-values of the provided
+            data object. This may be a smoothing operation or a derivative. For the smoothing
+            case also see the SGSmoothOperation class.
+            </summary>
+        </member>
+        <member name="F:Sciex.Data.Processing.SGOperation.kSGOperationName">
+            <summary>The name of this operation.</summary>
+        </member>
+        <member name="M:Sciex.Data.Processing.SGOperation.Perform(System.Int32,System.Int32,Sciex.Data.XYData.ArrayXYData)">
+            <summary>
+            Runs the operation (by creating a new instance of this class and calling
+            the Perform method). "Order" is the order of the derivative, so zero for
+            smoothing, 1 for the first derivative, 2 for the second derivative, etc.
+            We use a default "M" (highest conserved moment) of 2 for smoothing and
+            4 for derivatives.
+            </summary>
+            <param name="halfWindow">The (half) window.</param>
+            <param name="order">Derivative order.</param>
+            <param name="data">The data to process.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.SGOperation.Perform(System.Int32,System.Int32,System.Int32,Sciex.Data.XYData.ArrayXYData)">
+            <summary>
+            Runs the operation (by creating a new instance of this class and calling
+            the Perform method). "Order" is the order of the derivate, so zero for
+            smoothing, 1 for the first derivative, 2 for the second derivative, etc.
+            The "moment" value is the highest preserved moment, usually 2 for smoothing
+            and 4 for derviatives.
+            </summary>
+            <param name="halfWindow">The (half) window.</param>
+            <param name="order">Derivate order (0=smoothing, 1=1st derivative, etc.)</param>
+            <param name="moment">Highest conserved moment (usually 2 or 4).</param>
+            <param name="data">The data to process.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.SGOperation.#ctor(System.Int32,System.Int32,System.Int32)">
+            <summary>
+            Constructor.
+            </summary>
+            <param name="halfWindow">The (half) window.</param>
+            <param name="order">Derivate order (0=smoothing, 1=1st derivative, etc.)</param>
+            <param name="moment">Highest conserved moment (usually 2 or 4).</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.SGOperation.#ctor(Sciex.Data.Processing.SGOperation)">
+            <summary>
+            Copy constructor.
+            </summary>
+            <param name="toCopy">The object to copy.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.SGOperation.Clone">
+            <summary>
+            This method is overidden to return a DEEP copy of this object.
+            </summary>
+            <returns>A new SGOperation object.</returns>
+        </member>
+        <member name="M:Sciex.Data.Processing.SGOperation.Perform(Sciex.Data.XYData.ArrayXYData)">
+            <summary>
+            This method is overridden to perform the operation.
+            </summary>
+            <param name="data">The data to process.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.SGOperation.GetDescription(System.Boolean)">
+            <summary>
+            Returns a description of this operation.
+            </summary>
+            <param name="detailed">Is detailed description wanted?</param>
+            <returns>The description.</returns>
+        </member>
+        <member name="P:Sciex.Data.Processing.SGOperation.HalfWindow">
+            <summary>
+            Returns the original half-window.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.SGOperation.Order">
+            <summary>
+            Returns the original order, namely zero for smoothing, one for the first
+            derivative, etc.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.SGOperation.Moment">
+            <summary>
+            Returns the originally specified moment (usually 2 or 4).
+            </summary>
+        </member>
+        <member name="T:Sciex.Data.Processing.TextXYData">
+            <summary>
+            This subclass of ArrayXYData reads (x,y) data from a text file.
+            </summary>
+        </member>
+        <member name="M:Sciex.Data.Processing.TextXYData.#ctor">
+            <summary>
+            Constructor.
+            </summary>
+        </member>
+        <member name="M:Sciex.Data.Processing.TextXYData.#ctor(System.String,System.String,System.String,System.String)">
+            <summary>
+            Constructor. The caller specifies the DEFAULT names and units for the 
+            x-values and the y-values. If the first line of the text file specifies 
+            a header with names and units they are used instead of the values provided 
+            here.
+            </summary>
+            <param name="defaultXName">Default name for x-values.</param>
+            <param name="defaultXUnits">Default units for x-values.</param>
+            <param name="defaultYName">Default name for y-values.</param>
+            <param name="defaultYUnits">Default units for y-values.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.TextXYData.#ctor(Sciex.Data.Processing.TextXYData)">
+            <summary>
+            Copy constructor.
+            </summary>
+            <param name="toCopy">The object to copy.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.TextXYData.Clone">
+            <summary>
+            This method is overridden to return a new TextXYData object which
+            is a DEEP copy of the current instance.
+            </summary>
+            <returns>A new TextXYData object.</returns>
+        </member>
+        <member name="M:Sciex.Data.Processing.TextXYData.ReadFromTextFile(System.String)">
+            <summary>
+            This method reads fom the text file whose full name is provided.
+            </summary>
+            <param name="filePath">Full name of text file.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.TextXYData.GetStepSizeInternal(System.Double)">
+            <summary>
+            Overridden to return the step size at the specified x-value. IF we have a constant
+            step size we return it directly, otherwise we have a scale factor which is inversely
+            proportional to sqrt(x).
+            </summary>
+            <param name="xValue">X-value at which to get step.</param>
+            <returns>Step size.</returns>
+        </member>
+        <member name="P:Sciex.Data.Processing.TextXYData.ConstantStepSizeInternal">
+            <summary>
+            Overridden to return whether or not we have a constant step size.
+            </summary>
+        </member>
+        <member name="T:Sciex.Data.Processing.ManualHypermass">
+            <summary>
+            This class is used to perform a manual hypermass calculation. After creating a new
+            instance the caller calls the Calculate() method to perform the calculation. The
+            various output properties can then be accessed. The ChargeTolerance can optionally
+            be set before calling Calculate().
+            </summary>
+        </member>
+        <member name="M:Sciex.Data.Processing.ManualHypermass.#ctor(System.Double)">
+            <summary>
+            Constructor. The specified agent mass should be positive if the agent is
+            gained and negative if it is lost.
+            </summary>
+            <param name="chargeAgentMass">Mass of charging agent.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.ManualHypermass.#ctor(System.Boolean)">
+            <summary>
+            This constructor assumes that the charging agent is H+. If "positivePolarity"
+            is true then H+ is gained, otherwise it is assumed to be lost.
+            </summary>
+            <param name="positivePolarity">True for positive polarity.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.ManualHypermass.Calculate(System.Double[])">
+            <summary>
+            Performs the calculation. NOTE: The "massToCharges" array is sorted in order of
+            increasing value. If this list is too short or otherwise invalid, we throw an
+            ArgumentException.
+            </summary>
+            <param name="massToCharges">List of m/z values.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.ManualHypermass.GetMassToCharge(System.Int32)">
+            <summary>
+            Returns one of the original m/z values provided to our Calculate() method.
+            The index should run from 0 to MZPairCount (not MZPairCount - 1).
+            </summary>
+            <param name="index">Index of m/z value.</param>
+            <returns>Requested m/z value.</returns>
+        </member>
+        <member name="M:Sciex.Data.Processing.ManualHypermass.ValidCharge(System.Int32)">
+            <summary>
+            Returns true if the calculated charge for the specified index (which runs from
+            0 to MZPairCount - 1) is within the allowed tolerance.
+            </summary>
+            <param name="index">Index of original m/z pair.</param>
+            <returns>True if the charge is within tolerance.</returns>
+        </member>
+        <member name="M:Sciex.Data.Processing.ManualHypermass.GetCharge(System.Int32)">
+            <summary>
+            Returns the calculated charge for the specified index (which runs from 0 to
+            MZPairCount - 1).
+            </summary>
+            <param name="index">Index of original m/z pair.</param>
+            <returns>Calculated charge.</returns>
+        </member>
+        <member name="M:Sciex.Data.Processing.ManualHypermass.GetMass(System.Int32)">
+            <summary>
+            Returns the calculated mass for the specified index (which runs from 0 to
+            MZPairCount - 1).
+            </summary>
+            <param name="index">Index of original m/z pair.</param>
+            <returns>Calculated mass.</returns>
+        </member>
+        <member name="M:Sciex.Data.Processing.ManualHypermass.InitCalculation">
+            <summary>
+            Initialises the various arrays which we use for holding the result of the
+            calculation and sanity checks the input (throwing an ArgumentException if it's
+            not valid).
+            </summary>
+        </member>
+        <member name="M:Sciex.Data.Processing.ManualHypermass.Calculate">
+            <summary>
+            Performs the calculations.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.ManualHypermass.ChargeTolerance">
+            <summary>
+            Specifies the charge tolerance. Calculated charge values must be closer to an
+            integer than the specified value to count as valid. The default value is 0.05.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.ManualHypermass.MZPairCount">
+            <summary>
+            Returns the number of adjacent pairs of mass/charge values provided to our
+            constructor. This value is one less than the number of mass/charge values.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.ManualHypermass.AverageMass">
+            <summary>
+            Returns the average of the calculated masses. If no charge states were within
+            range and we have no (valid) masses the property value is null.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.ManualHypermass.AverageMassStandardDeviation">
+            <summary>
+            Returns the standard deviation of the calculated masses. If not at least two
+            charge states were within range the property value is null.
+            </summary>
+        </member>
+        <member name="T:Sciex.Data.Processing.MaxOperation">
+            <summary>
+            This class performs an "max" operation by using the maximum y-value
+            between two ArrayXYData objects.
+            </summary>
+        </member>
+        <member name="F:Sciex.Data.Processing.MaxOperation.kMaxName">
+            <summary>The name of this operation.</summary>
+        </member>
+        <member name="M:Sciex.Data.Processing.MaxOperation.Perform(Clearcore2.Data.CommonInterfaces.IRawXYData,Sciex.Data.XYData.ArrayXYData,System.Double)">
+            <summary>
+            Runs the maximum operation; "Data" is the modified object. This is done by creating 
+            a new instance of this class and calling the Perform method. If the data does NOT 
+            have a step size of zero, it is used to determine the tolerance - otherwise 
+            "toleranceIfZeroStep" determines this.
+            </summary>
+            <param name="other">Second data object.</param>
+            <param name="data">Modified data object.</param>
+            <param name="toleranceIfZeroStep">Tolerance IF data has a step size of zero.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.MaxOperation.Perform(Clearcore2.Data.CommonInterfaces.IRawXYData,Sciex.Data.XYData.ArrayXYData)">
+            <summary>
+            Runs the maximum operation; "Data" is the modified object. This is done by creating 
+            a new instance of this class and calling the Perform method.
+            </summary>
+            <param name="other">Second data object.</param>
+            <param name="data">Modified data object.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.MaxOperation.#ctor(Clearcore2.Data.CommonInterfaces.IRawXYData,System.Double)">
+            <summary>
+            Constructor.
+            </summary>
+            <param name="other">Object used in Perform.</param>
+            <param name="toleranceIfZeroStep">Tolerance IF data has a step size of zero.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.MaxOperation.#ctor(Sciex.Data.Processing.MaxOperation)">
+            <summary>
+            Copy constructor.
+            </summary>
+            <param name="toCopy">The object to copy.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.MaxOperation.Clone">
+            <summary>
+            This method is overridden to return a new MaxOperation object which 
+            is a DEEP copy of the current instance.
+            </summary>
+            <returns>A new MaxOperation object.</returns>
+        </member>
+        <member name="M:Sciex.Data.Processing.MaxOperation.Perform(Sciex.Data.XYData.ArrayXYData)">
+            <summary>
+            This method is overridden to perform the maximum operation.
+            </summary>
+            <param name="data">The data to modify.</param>
+        </member>
+        <member name="T:Sciex.Data.Processing.ThresholdOperation">
+            <summary>
+            This class performs a threshold operation on the provided data.
+            </summary>
+        </member>
+        <member name="F:Sciex.Data.Processing.ThresholdOperation.kThresholdName">
+            <summary>The name of this operation.</summary>
+        </member>
+        <member name="M:Sciex.Data.Processing.ThresholdOperation.Perform(System.Double,Sciex.Data.XYData.ArrayXYData)">
+            <summary>
+            Runs the threshold operation (by creating a new instance of this class
+            and calling the Perform method).
+            </summary>
+            <param name="threshold">The threshold to apply to data.</param>
+            <param name="data">The data to threshold.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.ThresholdOperation.#ctor(System.Double)">
+            <summary>
+            Constructor.
+            </summary>
+            <param name="threshold">The threshold to apply to data.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.ThresholdOperation.#ctor(Sciex.Data.Processing.ThresholdOperation)">
+            <summary>
+            Copy constructor.
+            </summary>
+            <param name="toCopy">The object to copy.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.ThresholdOperation.Clone">
+            <summary>
+            This method is overridden to return a new ThresholdOperation object which 
+            is a DEEP copy of the current instance.
+            </summary>
+            <returns>A new ThresholdOperation object.</returns>
+        </member>
+        <member name="M:Sciex.Data.Processing.ThresholdOperation.Perform(Sciex.Data.XYData.ArrayXYData)">
+            <summary>
+            This method is overridden to perform the threshold operation.
+            </summary>
+            <param name="data">The data to threshold.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.ThresholdOperation.GetDescription(System.Boolean)">
+            <summary>
+            Returns a description of this threshold operation. If "detailed" is true then the
+            actual threshold is also included, otherwise not.
+            </summary>
+            <param name="detailed">Include details?</param>
+            <returns>The description.</returns>
+        </member>
+        <member name="T:Sciex.Data.Processing.SimpleMathOp">
+            <summary>
+            This class peforms "simple" mathematical operations on the x or y values of an
+            ArrayXYData object. Currently the only operations are addition and multiplication
+            by a constant.
+            </summary>
+        </member>
+        <member name="F:Sciex.Data.Processing.SimpleMathOp.kSimpleMathName">
+            <summary>The name of this operation.</summary>
+        </member>
+        <member name="M:Sciex.Data.Processing.SimpleMathOp.AddToY(System.Double,Sciex.Data.XYData.ArrayXYData)">
+            <summary>
+            Adds the provided constant to all of the y-values in the data object.
+            </summary>
+            <param name="toAdd">Value to add.</param>
+            <param name="data">Data to modify.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.SimpleMathOp.MultiplyY(System.Double,Sciex.Data.XYData.ArrayXYData)">
+            <summary>
+            Multiplies all of the y-values in the data object by the provided constant.
+            </summary>
+            <param name="toMultiply">Value by which to multiply.</param>
+            <param name="data">Data to modify.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.SimpleMathOp.AddToX(System.Double,Sciex.Data.XYData.ArrayXYData)">
+            <summary>
+            Adds the provided constant to all of the x-values in the data object.
+            </summary>
+            <param name="toAdd">Value to add.</param>
+            <param name="data">Data to modify.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.SimpleMathOp.MultiplyX(System.Double,Sciex.Data.XYData.ArrayXYData)">
+            <summary>
+            Multiplies all of the x-values in the data object by the provided constant.
+            </summary>
+            <param name="toMultiply">Value by which to multiply.</param>
+            <param name="data">Data to modify.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.SimpleMathOp.#ctor(Sciex.Data.Processing.SimpleMathOp.OperationsEnum,System.Double)">
+            <summary>
+            Constructor. Note that one of the static methods is normally used to perform
+            the operation - most callers should not need to use this constructor directly.
+            </summary>
+            <param name="operation">Operation to perform.</param>
+            <param name="parameter">Value for adding or multiplying by.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.SimpleMathOp.#ctor(Sciex.Data.Processing.SimpleMathOp)">
+            <summary>
+            Copy constructor.
+            </summary>
+            <param name="toCopy">Object to copy.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.SimpleMathOp.Clone">
+            <summary>
+            This method is overridden to return a DEEP copy of this object.
+            </summary>
+            <returns>A new SimpleMathOp object.</returns>
+        </member>
+        <member name="M:Sciex.Data.Processing.SimpleMathOp.Perform(Sciex.Data.XYData.ArrayXYData)">
+            <summary>
+            This method is overridden to perform the simple mathematical operation.
+            </summary>
+            <param name="data">The data to modify.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.SimpleMathOp.GetDescription(System.Boolean)">
+            <summary>
+            Returns a description of this operation.
+            </summary>
+            <param name="detailed">Is detailed description wanted?</param>
+            <returns>The description.</returns>
+        </member>
+        <member name="T:Sciex.Data.Processing.SimpleMathOp.OperationsEnum">
+            <summary>
+            The requested operation.
+            </summary>
+        </member>
+        <member name="F:Sciex.Data.Processing.SimpleMathOp.OperationsEnum.kAddY">
+            <summary>Add a constant to y-values.</summary>
+        </member>
+        <member name="F:Sciex.Data.Processing.SimpleMathOp.OperationsEnum.kMultiplyY">
+            <summary>Multiply y-values by a constant.</summary>
+        </member>
+        <member name="F:Sciex.Data.Processing.SimpleMathOp.OperationsEnum.kAddX">
+            <summary>Add a constant to the x-values.</summary>
+        </member>
+        <member name="F:Sciex.Data.Processing.SimpleMathOp.OperationsEnum.kMultiplyX">
+            <summary>Multiply the x-values by a constant.</summary>
+        </member>
+        <member name="T:Sciex.Data.Processing.CreateStaticPeakList">
+            <summary>
+            This class is a wrapper for an existing PeakClass object (or an array of them) which
+            implements the ICreatePeakList interface. Note that we do NOT actually create any
+            new peak lists, but simply return the one which is provided to our constructor; this
+            means that even if the data changes and the CreatePeakList() method is called, we
+            will continue to return the original list. This should be considered an "unusual"
+            situtation. This class is needed if callers have such a pre-calculated list because the 
+            Graph object requires an ICreatePeakList interface.
+            </summary>
+        </member>
+        <member name="M:Sciex.Data.Processing.CreateStaticPeakList.#ctor(Clearcore2.RawXYProcessing.PeakClass)">
+            <summary>
+            Constructor. We keep a reference to the provided peak and return it from our 
+            CreatePeakList() method.
+            </summary>
+            <param name="peak">The peak.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.CreateStaticPeakList.#ctor(Clearcore2.RawXYProcessing.PeakClass[])">
+            <summary>
+            Constructor. We keep a reference to the provided list of peaks which we return
+            directly from our CreatePeakList() method. Note that we do not make a copy of
+            the peak list.
+            </summary>
+            <param name="peaks">List of peaks.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.CreateStaticPeakList.CreatePeakList(Clearcore2.Data.CommonInterfaces.IRawXYData)">
+            <summary>
+            Implements the ICreatePeakList by returning our static list of peaks. Note that the
+            data object is completely ignored.
+            </summary>
+            <param name="data">Data to ignore.</param>
+            <returns>Our list of peaks.</returns>
+        </member>
+        <member name="T:Sciex.Data.Processing.AddZerosOperation">
+            <summary>
+            This operation is used to add "missing" zeros back to a data set. For full details
+            on the algorithm, see the Sciex.Data.RawProcessing.AddZeros class.
+            </summary>
+        </member>
+        <member name="F:Sciex.Data.Processing.AddZerosOperation.kAddZerosName">
+            <summary>The name of this operation.</summary>
+        </member>
+        <member name="M:Sciex.Data.Processing.AddZerosOperation.PerformAddZeros(System.Boolean,Sciex.Data.XYData.ArrayXYData)">
+            <summary>
+            Adds zeros to the provided data set. If "useLogicalRange" is false we process
+            just the actual range of x-values existing as data points, otherwise we use the
+            "logical" range which can be larger.
+            </summary>
+            <param name="useLogicalRange">Use actual or logical range?</param>
+            <param name="data">Data to process.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.AddZerosOperation.PerformAddZeros(Sciex.Data.XYData.ArrayXYData)">
+            <summary>
+            Adds zeros to the provided data set within the current x-range of that data.
+            </summary>
+            <param name="data">Data to process.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.AddZerosOperation.PerformAddZeros(System.Double,System.Double,Sciex.Data.XYData.ArrayXYData)">
+            <summary>
+            Adds zeros to the provided data set within the provided x-range.
+            </summary>
+            <param name="start">First x-value.</param>
+            <param name="end">Last x-value.</param>
+            <param name="data">Data to process.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.AddZerosOperation.PerformAddZeros(System.Int32,Sciex.Data.XYData.ArrayXYData)">
+            <summary>
+            Adds zeros to the provided data set, but a maximum of "halfInsert"
+            sequential "missing" zeros are added to each side of each current
+            data point.
+            </summary>
+            <param name="halfInsert">Max. number of sequential zeros to insert.</param>
+            <param name="data">Data to process.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.AddZerosOperation.#ctor">
+            <summary>
+            Constructor when adding zeros to a data set within its current x-range.
+            </summary>
+        </member>
+        <member name="M:Sciex.Data.Processing.AddZerosOperation.#ctor(System.Double,System.Double)">
+            <summary>
+            Constructor when adding zeros to a data set within a given x-range.
+            </summary>
+            <param name="start">First x-value.</param>
+            <param name="end">Last x-value.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.AddZerosOperation.#ctor(System.Int32)">
+            <summary>
+            Constructor used when adding zeros to a data set, but a maximum of "halfInsert"
+            sequential "missing" zeros are added to each side of each current
+            data point.
+            </summary>
+            <param name="halfInsert">Max. number of sequential zeros to insert.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.AddZerosOperation.#ctor(Sciex.Data.Processing.AddZerosOperation)">
+            <summary>
+            Copy constructor.
+            </summary>
+            <param name="toCopy">The object to copy.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.AddZerosOperation.Clone">
+            <summary>
+            Returns a copy of this object (which is really an AddZerosOperation).
+            </summary>
+            <returns>The copy.</returns>
+        </member>
+        <member name="M:Sciex.Data.Processing.AddZerosOperation.Perform(Sciex.Data.XYData.ArrayXYData)">
+            <summary>
+            Performs the add-zeros operation: Depending on which constructor was used to
+            create this object, this will either (1) add ALL "missing" zeros, but just 
+            within the current range of the data, (2) add ALL "missing" zeros within a
+            caller-provided range or (3) add a caller-specified maximum number of
+            "missing" zeros to the left and right of each current data point.
+            </summary>
+            <param name="data">The data to process.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.AddZerosOperation.GetDescription(System.Boolean)">
+            <summary>
+            Returns a description of this data processing operation.
+            </summary>
+            <param name="detailed">Are details wanted?</param>
+            <returns>The description.</returns>
+        </member>
+        <member name="T:Sciex.Data.Processing.SGSmoothOperation">
+            <summary>
+            This class performs a Savitzky-Golay smoothing operation on the y-values of
+            the provided data object. Also see the SGOperation class which performs more
+            general operations such as derivatives.
+            </summary>
+        </member>
+        <member name="F:Sciex.Data.Processing.SGSmoothOperation.kSmoothName">
+            <summary>The name of this operation.</summary>
+        </member>
+        <member name="M:Sciex.Data.Processing.SGSmoothOperation.Perform(System.Int32,Sciex.Data.XYData.ArrayXYData)">
+            <summary>
+            Runs the smoothing operation (by creating a new instance of this class
+            and calling the Perform method).
+            </summary>
+            <param name="halfWindow">The smoothing (half) window.</param>
+            <param name="data">The data to smooth.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.SGSmoothOperation.#ctor(System.Int32)">
+            <summary>
+            Constructor.
+            </summary>
+            <param name="halfWindow">The smoothing (half) window.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.SGSmoothOperation.#ctor(Sciex.Data.Processing.SGSmoothOperation)">
+            <summary>
+            Copy constructor.
+            </summary>
+            <param name="toCopy">The object to copy.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.SGSmoothOperation.Clone">
+            <summary>
+            This method is overidden to return a DEEP copy of this object.
+            </summary>
+            <returns>A new SmoothOperation object.</returns>
+        </member>
+        <member name="M:Sciex.Data.Processing.SGSmoothOperation.Perform(Sciex.Data.XYData.ArrayXYData)">
+            <summary>
+            This method is overridden to perform the smooth operation.
+            </summary>
+            <param name="data">The data to smooth.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.SGSmoothOperation.GetDescription(System.Boolean)">
+            <summary>
+            Returns a description of this smoothing operation.
+            </summary>
+            <param name="detailed">Is detailed description wanted?</param>
+            <returns>The description.</returns>
+        </member>
+        <member name="P:Sciex.Data.Processing.SGSmoothOperation.HalfWindow">
+            <summary>
+            Returns the smoothing half-window used to smooth.
+            </summary>
+        </member>
+        <member name="T:Sciex.Data.Processing.CreateSpectralPeakList">
+            <summary>
+            This class implements a peak finder for mass spectra. The spectra should
+            be (mass, intensity) pairs which are sorted in order of increasing mass.
+            In addition to the spectrum itself, we require that the IRawXYData object
+            in which we find peaks supports the IGetStepSize interface.<P></P>
+            
+            This peak finder is very closely modelled after Nic Bloomfields's "PeakFinder3"
+            used in Analyst. It should give *mostly* the same results, but there are
+            some (mostly small) differences in the exact start and end of peaks.<P></P>
+            
+            We also optionally try to determine the charge state of each peak and
+            to assign which peaks represent monoisotopic species and which isotopes.
+            </summary>
+        </member>
+        <member name="M:Sciex.Data.Processing.CreateSpectralPeakList.#ctor(System.Double,System.Int32,System.Boolean,System.Double,Clearcore2.RawXYProcessing.SpectralPeakFinderVersionEnum)">
+            <summary>
+            Constructor.
+            </summary>
+            <param name="minHeight">Minimum required height.</param>
+            <param name="minWidthInPoints">Minimum required width in data points.</param>
+            <param name="useAbsoluteWidths">Are widths expressed in absolute or fractional terms?</param>
+            <param name="minWidth">Minimum required width (either absolute or fraction).</param>
+            <param name="version">Version.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.CreateSpectralPeakList.#ctor(System.Double,Clearcore2.RawXYProcessing.SpectralPeakFinderVersionEnum)">
+            <summary>
+            Constructor.
+            </summary>
+            <param name="minHeight">Minimum required height.</param>
+            <param name="version">Version.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.CreateSpectralPeakList.#ctor(Clearcore2.RawXYProcessing.SpectralPeakFinderVersionEnum)">
+            <summary>
+            Constructor.
+            </summary>
+            <param name="version">Version.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.CreateSpectralPeakList.#ctor(System.Double)">
+            <summary>
+            Constructor. We use the latest available version of the algorithm.
+            </summary>
+            <param name="minHeight">Minimum required height.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.CreateSpectralPeakList.#ctor">
+            <summary>
+            Constructor. We use the latest available version of the algorithm. A charge state 
+            determiniation using the default maximum number of charges is applied.
+            </summary>
+        </member>
+        <member name="M:Sciex.Data.Processing.CreateSpectralPeakList.#ctor(Sciex.Data.Processing.CreateSpectralPeakList)">
+            <summary>
+            Copy constructor.
+            </summary>
+            <param name="toCopy">The object to copy.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.CreateSpectralPeakList.Clone">
+            <summary>
+            We override this method to return a copy of the object.
+            </summary>
+            <returns>The copy.</returns>
+        </member>
+        <member name="M:Sciex.Data.Processing.CreateSpectralPeakList.CreateInitialisedRawPeakFinder(Clearcore2.Data.CommonInterfaces.IRawXYData)">
+            <summary>
+            Overridden to create a new "raw" peak finder.
+            </summary>
+            <param name="data">Data in which to find peaks.</param>
+            <returns>The "raw" peak finder.</returns>
+        </member>
+        <member name="M:Sciex.Data.Processing.CreateSpectralPeakList.InitialisePreviousPeakFinder(Clearcore2.RawXYProcessing.RawPeakFinder,Clearcore2.Data.CommonInterfaces.IRawXYData)">
+            <summary>
+            This method is overridden to update our peak finder's parameters with the current
+            values in the case that the peak finder is being reused and not created from
+            scratch.
+            </summary>
+            <param name="finder">Peak finder to udpate.</param>
+            <param name="data">Data in which to find peaks.</param>
+            <returns>Always true to indicate we support this method.</returns>
+        </member>
+        <member name="M:Sciex.Data.Processing.CreateSpectralPeakList.AfterFilterPeaks(Clearcore2.RawXYProcessing.RawPeakFinder,Clearcore2.Data.CommonInterfaces.IRawXYData)">
+            <summary>
+            Overridden to create a SpectralPeakListImpl object which gets returned (this
+            is a subclass of the PeakListImpl object created by our own subclass). If
+            we are assigning charge states, we initialise this peak list with them.
+            </summary>
+            <param name="finder">Object used previously to find peaks.</param>
+            <param name="data">Data in which peaks were found.</param>
+            <returns>The peak list.</returns>
+        </member>
+        <member name="P:Sciex.Data.Processing.CreateSpectralPeakList.CentroidPercentage">
+            <summary>
+            Gets or sets the centroid height percentage which will be used when calculating
+            centroid masses during peak-finding.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.CreateSpectralPeakList.MaxCharge">
+            <summary>
+            Gets or sets the maximum charge state which will be considered when
+            attempting to assign charge states to peaks (assuming that we've beenn
+            asked to assign charge states at all).
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.CreateSpectralPeakList.AssignChargeStates">
+            <summary>
+            Gets or sets whether or not we attempt to assign charge states to the
+            peaks which we find.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.CreateSpectralPeakList.CreateMassChargeExtraField">
+            <summary>
+            Gets or sets whether or not we create an "extra" string field in the peak
+            list which contains both the mass and charge state (for example "123.4567 (2)");
+            monoisotopic peaks have an extra "*" prepended to the string. The idea is that
+            this string can then be used to label peaks in a graph with BOTH the m/z
+            and charge state simultaneously. Note that this property is only used if
+            AssignChargeStates is true.
+            </summary>
+        </member>
+        <member name="T:Sciex.Data.Processing.CreateCentroidPeakList">
+            <summary>
+            This class is a wrapper used to find peaks using a simple algorithm. (We take
+            every local maximum as a peak, merge such peaks together, and filter peaks
+            which are too small or narrow).
+            </summary>
+        </member>
+        <member name="M:Sciex.Data.Processing.CreateCentroidPeakList.#ctor(System.Double,System.Double,System.Boolean,System.Double,System.Double)">
+            <summary>
+            Constructor. The caller specifies a number of filtering parameters and a merge
+            distance: peaks which are closer together than the merge distance are combined
+            into a single peak. Note that both the "minWidth" and the "mergeDistance"
+            parameters are either expressed in absolute units (i.e. the same units as the
+            data itself) or they are interpreted as a *fraction* - for example 1000 and 1001
+            are a fraction of 0.001 apart.
+            </summary>
+            <param name="minArea">Minimum required area.</param>
+            <param name="minHeight">Minimum required height.</param>
+            <param name="useAbsoluteFiltering">Use absolute or relative filtering?</param>
+            <param name="minWidth">Minimum required width (absolute or relative).</param>
+            <param name="mergeDistance">Merge distance (absolute or relative).</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.CreateCentroidPeakList.#ctor(Sciex.Data.Processing.CreateCentroidPeakList)">
+            <summary>
+            Copy constructor.
+            </summary>
+            <param name="toCopy">The object to copy.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.CreateCentroidPeakList.Clone">
+            <summary>
+            We override this method to return a copy of the object.
+            </summary>
+            <returns>The copy.</returns>
+        </member>
+        <member name="M:Sciex.Data.Processing.CreateCentroidPeakList.CreateInitialisedRawPeakFinder(Clearcore2.Data.CommonInterfaces.IRawXYData)">
+            <summary>
+            This method is overridden to return a new LocalMaxPeakFinder object.
+            </summary>
+            <param name="data">Data in which to find peaks (not used by this method).</param>
+            <returns>The peak finder.</returns>
+        </member>
+        <member name="M:Sciex.Data.Processing.CreateCentroidPeakList.AfterFindPeaks(Clearcore2.RawXYProcessing.RawPeakFinder,Clearcore2.Data.CommonInterfaces.IRawXYData)">
+            <summary>
+            We override this method to perform merging. This happens (of course) after
+            peaks are found, but before the base class filters away peaks based on the
+            minimum area or height.
+            </summary>
+            <param name="finder">Used to find peaks.</param>
+            <param name="data">Original data (not used here).</param>
+        </member>
+        <member name="T:Sciex.Data.Processing.GaussianSmoothOperation">
+            <summary>
+            This class performs a Gaussian smoothing operation on the y-values of
+            the provided data object.
+            </summary>
+        </member>
+        <member name="F:Sciex.Data.Processing.GaussianSmoothOperation.kSmoothName">
+            <summary>The name of this operation.</summary>
+        </member>
+        <member name="M:Sciex.Data.Processing.GaussianSmoothOperation.Perform(System.Double,Sciex.Data.XYData.ArrayXYData)">
+            <summary>
+            Runs the smoothing operation (by creating a new instance of this class
+            and calling the Perform method).
+            </summary>
+            <param name="width">The smoothing width.</param>
+            <param name="data">The data to smooth.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.GaussianSmoothOperation.#ctor(System.Double)">
+            <summary>
+            Constructor.
+            </summary>
+            <param name="width">The smoothing width.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.GaussianSmoothOperation.#ctor(Sciex.Data.Processing.GaussianSmoothOperation)">
+            <summary>
+            Copy constructor.
+            </summary>
+            <param name="toCopy">The object to copy.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.GaussianSmoothOperation.Clone">
+            <summary>
+            This method is overidden to return a DEEP copy of this object.
+            </summary>
+            <returns>A new SmoothOperation object.</returns>
+        </member>
+        <member name="M:Sciex.Data.Processing.GaussianSmoothOperation.Perform(Sciex.Data.XYData.ArrayXYData)">
+            <summary>
+            This method is overridden to perform the smooth operation.
+            </summary>
+            <param name="data">The data to smooth.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.GaussianSmoothOperation.GetDescription(System.Boolean)">
+            <summary>
+            Returns a description of this smoothing operation.
+            </summary>
+            <param name="detailed">Is detailed description wanted?</param>
+            <returns>The description.</returns>
+        </member>
+        <member name="P:Sciex.Data.Processing.GaussianSmoothOperation.Width">
+            <summary>
+            Returns the smoothing width used to smooth.
+            </summary>
+        </member>
+        <member name="T:Sciex.Data.Processing.SubtractOperation">
+            <summary>
+            This class performs a subtraction operation by subtracting one ArrayXYData
+            object from another.
+            </summary>
+        </member>
+        <member name="F:Sciex.Data.Processing.SubtractOperation.kSubtractName">
+            <summary>The name of this operation.</summary>
+        </member>
+        <member name="M:Sciex.Data.Processing.SubtractOperation.Perform(Clearcore2.Data.CommonInterfaces.IRawXYData,System.Boolean,Sciex.Data.XYData.ArrayXYData,System.Double)">
+            <summary>
+            Runs the subtraction operation: "toSubtract" is subtracted from "data" - NOT the
+            other way around! This is done by creating a new instance of this class
+            and calling the Perform method. If the data does NOT have a step size of zero, it
+            is used to determine the tolerance - otherwise "toleranceIfZeroStep" determines this.
+            </summary>
+            <param name="toSubtract">Object to subtract from "data".</param>
+            <param name="data">Object from which "toSubtract" is subtracted.</param>
+            <param name="keepNegatives">Keep negative y-values?</param>
+            <param name="toleranceIfZeroStep">Tolerance IF data has a step size of zero.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.SubtractOperation.Perform(Clearcore2.Data.CommonInterfaces.IRawXYData,System.Boolean,Sciex.Data.XYData.ArrayXYData)">
+            <summary>
+            Runs the subtraction operation: "toSubtract" is subtracted from "data" - NOT the
+            other way around! This is done by creating a new instance of this class
+            and calling the Perform method.
+            </summary>
+            <param name="toSubtract">Object to subtract from "data".</param>
+            <param name="data">Object from which "toSubtract" is subtracted.</param>
+            <param name="keepNegatives">Keep negative y-values?</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.SubtractOperation.#ctor(Clearcore2.Data.CommonInterfaces.IRawXYData,System.Boolean,System.Double)">
+            <summary>
+            Constructor.
+            </summary>
+            <param name="toSubtract">Object to subtract from data in Perform.</param>
+            <param name="keepNegatives">Keep negative y-values?</param>
+            <param name="toleranceIfZeroStep">Tolerance IF data has a step size of zero.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.SubtractOperation.#ctor(Sciex.Data.Processing.SubtractOperation)">
+            <summary>
+            Copy constructor.
+            </summary>
+            <param name="toCopy">The object to copy.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.SubtractOperation.Clone">
+            <summary>
+            This method is overridden to return a new SubtractOperation object which 
+            is a DEEP copy of the current instance.
+            </summary>
+            <returns>A new SubtractOperation object.</returns>
+        </member>
+        <member name="M:Sciex.Data.Processing.SubtractOperation.Perform(Sciex.Data.XYData.ArrayXYData)">
+            <summary>
+            This method is overridden to perform the subtraction operation.
+            </summary>
+            <param name="data">The data from which to subtract.</param>
+        </member>
+        <member name="T:Sciex.Data.Processing.CreateMQLPeakList">
+            <summary>
+            This class is a wrapper used to find peaks using an "MQL" algorithm -
+            see the MQLPeakFinder class for details.
+            </summary>
+        </member>
+        <member name="M:Sciex.Data.Processing.CreateMQLPeakList.#ctor(System.Double,System.Double,System.Double,System.Double,System.Int16,System.Int32,Clearcore2.RawXYProcessing.MQLVersionEnum)">
+            <summary>
+            Constructor. 
+            </summary>
+            <param name="minArea">Minimum allowed area.</param>
+            <param name="minHeight">Minimum allowed height.</param>
+            <param name="baselineSubtractHalfWindow">For baseline subtraction.</param>
+            <param name="noiseFrequencyFraction">For determining noise level.</param>
+            <param name="pointsAboveMinimaForPeakSplit">For determining how multiplets are split.</param>
+            <param name="minWidthInPts">Min. allowed width in data points.</param>
+            <param name="version">Version of algorithm to use.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.CreateMQLPeakList.#ctor(Sciex.Data.Processing.CreateMQLPeakList)">
+            <summary>
+            Copy constructor.
+            </summary>
+            <param name="toCopy">The object to copy.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.CreateMQLPeakList.Clone">
+            <summary>
+            We override this method to return a copy of the object.
+            </summary>
+            <returns>The copy.</returns>
+        </member>
+        <member name="M:Sciex.Data.Processing.CreateMQLPeakList.SetPeakFindingParameters(System.Double,System.Double,System.Int16,System.Int32)">
+            <summary>
+            Sets the (MQL specific) peak-finding parameters to the specified values.
+            </summary>
+            <param name="baselineSubtractHalfWindow">For baseline subtraction.</param>
+            <param name="noiseFrequencyFraction">For determining noise level.</param>
+            <param name="pointsAboveMinimaForPeakSplit">For determining how multiplets are split.</param>
+            <param name="minWidthInPts">Min. allowed width in data points.</param>
+        </member>
+        <member name="M:Sciex.Data.Processing.CreateMQLPeakList.CreateInitialisedRawPeakFinder(Clearcore2.Data.CommonInterfaces.IRawXYData)">
+            <summary>
+            This method is overridden to return a new MQLPeakFinder object (initialised with
+            the peak finding parameters).
+            </summary>
+            <param name="data">Data in which to find peaks (not used by this method).</param>
+            <returns>The peak finder.</returns>
+        </member>
+        <member name="M:Sciex.Data.Processing.CreateMQLPeakList.InitialisePreviousPeakFinder(Clearcore2.RawXYProcessing.RawPeakFinder,Clearcore2.Data.CommonInterfaces.IRawXYData)">
+            <summary>
+            This method is overridden to update our peak finder's parameters with the current
+            values in the case that the peak finder is being reused and not created from
+            scratch.
+            </summary>
+            <param name="finder">Peak finder to udpate.</param>
+            <param name="data">Data in which to find peaks (not used by this method).</param>
+            <returns>Always true to indicate we support this method.</returns>
+        </member>
+        <member name="P:Sciex.Data.Processing.CreateMQLPeakList.BaselineSubtractionHalfWindow">
+            <summary>
+            Returns the baseline subtraction half width.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.CreateMQLPeakList.NoiseFrequencyFraction">
+            <summary>
+            Returns the noise frequency fraction parameter.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.CreateMQLPeakList.PointsAboveMinimaForPeakSplit">
+            <summary>
+            Returns the parameter which determines how multiplets are split.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.CreateMQLPeakList.MQLMinWidthInPoints">
+            <summary>
+            Returns the minimum allowed width in data points.
+            </summary>
+        </member>
+        <member name="T:Sciex.Data.Processing.Resources">
+            <summary>
+              A strongly-typed resource class, for looking up localized strings, etc.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.Resources.ResourceManager">
+            <summary>
+              Returns the cached ResourceManager instance used by this class.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.Resources.Culture">
+            <summary>
+              Overrides the current thread's CurrentUICulture property for all
+              resource lookups using this strongly typed resource class.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.Resources.GE_AddZerosOperation_CannotAddMissingDataPointsWithZeroIntensityToNonContinuumData">
+            <summary>
+              Looks up a localized string similar to Cannot add &apos;missing&apos; data points with zero intensity to non-continuum data..
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.Resources.GE_CentroidOperation_UnknownMetric">
+            <summary>
+              Looks up a localized string similar to Unknown metric..
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.Resources.GE_CreateSpectralPeakList_CentroidPercentage">
+            <summary>
+              Looks up a localized string similar to The centroid percentage must be between 0 and 100..
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.Resources.GE_CreateSpectralPeakList_MaxCharge">
+            <summary>
+              Looks up a localized string similar to The max. charge must be positive..
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.Resources.GE_GaussianSmoothOperation_CannotSmoothNonContinuumData">
+            <summary>
+              Looks up a localized string similar to Cannot smooth non-continuum data..
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.Resources.GE_ManualHypermass_DuplicateMass">
+            <summary>
+              Looks up a localized string similar to Duplicate mass.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.Resources.GE_ManualHypermass_MzValuesMustBePositive">
+            <summary>
+              Looks up a localized string similar to The m/z values must be positive.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.Resources.GE_ManualHypermass_ThereMustBeAtLeastTwoMzValues">
+            <summary>
+              Looks up a localized string similar to There must be at least two m/z values.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.Resources.GE_MultiThreadProcessing_AThreadTimeoutExceptionHasOccurred">
+            <summary>
+              Looks up a localized string similar to A thread timeout exception has occurred..
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.Resources.GE_MultiThreadProcessing_InvalidNumItems">
+            <summary>
+              Looks up a localized string similar to Invalid num items..
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.Resources.GE_MultiThreadProcessing_MustUseAtLeastOneThread">
+            <summary>
+              Looks up a localized string similar to Must use at least one thread..
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.Resources.GE_MultiThreadProcessing_NullCallback">
+            <summary>
+              Looks up a localized string similar to Null callback.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.Resources.GE_PeakListImpl_IncorrectArrayLengthToPeakListImplAddExtraField">
+            <summary>
+              Looks up a localized string similar to Incorrect array length to PeakListImpl.AddExtraField()..
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.Resources.GE_PeakListImpl_PeakListProvidedToPeakListImplMustBeInIncreasingOrder">
+            <summary>
+              Looks up a localized string similar to The peak list provided to PeakListImpl must be in increasing order..
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.Resources.GE_SGSmoothOperation_CannotSmoothNonContinuumData">
+            <summary>
+              Looks up a localized string similar to Cannot smooth non-continuum data..
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.Resources.GE_SimpleBinaryMathOp_CannotCallPerformTwice">
+            <summary>
+              Looks up a localized string similar to Cannot call Perform() twice..
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.Resources.GE_SimpleBinaryMathOp_MustHaveAConstantTolerance">
+            <summary>
+              Looks up a localized string similar to Must have a constant tolerance..
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.Resources.GE_SpectralPeakListImpl_ArrayOfMonoisotopicPeaksHasWrongNumberOfItems">
+            <summary>
+              Looks up a localized string similar to The array of monoisotopic peaks has the wrong number of items..
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.Resources.GE_SpectralPeakListImpl_ChargeStateArrayHasWrongNumberOfItems">
+            <summary>
+              Looks up a localized string similar to The charge state array has the wrong number of items..
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.Resources.GE_SubrangeOperation_EndIndexIsTooLarge">
+            <summary>
+              Looks up a localized string similar to The end index is too large..
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.Resources.GE_SubrangeOperation_NegativeStartIndex">
+            <summary>
+              Looks up a localized string similar to Negative start index..
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.Resources.GE_SubrangeOperation_StartIndexMustBeLessThanEqualEndIndex">
+            <summary>
+              Looks up a localized string similar to The start index must be &lt;= the end index..
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.Resources.GE_SubrangeOperation_StarXValueMustBeLessThanEqualEndXValue">
+            <summary>
+              Looks up a localized string similar to The start x-value must be &lt;= the end x-value..
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.Resources.GE_SubsetOperation_StartValueIsGreaterThanEndValue">
+            <summary>
+              Looks up a localized string similar to Start value is greater than end value..
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.Resources.GL_AddOperation_AddedTo">
+            <summary>
+              Looks up a localized string similar to added to.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.Resources.GL_AddZerosOperation_ZerosAdded">
+            <summary>
+              Looks up a localized string similar to zeros added.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.Resources.GL_BaselineSubtractOperation_BaselineSubtracted">
+            <summary>
+              Looks up a localized string similar to baseline subtracted.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.Resources.GL_BaselineSubtractOperation_BaselineSubtracted_1">
+            <summary>
+              Looks up a localized string similar to baseline subtracted ({0}).
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.Resources.GL_CentroidOperation_Centroided">
+            <summary>
+              Looks up a localized string similar to centroided.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.Resources.GL_GaussianSmoothOperation_GaussianSmoothed">
+            <summary>
+              Looks up a localized string similar to Gaussian smoothed.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.Resources.GL_GaussianSmoothOperation_GaussianSmoothedPoints_1">
+            <summary>
+              Looks up a localized string similar to Gaussian smoothed ({0} points).
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.Resources.GL_MaxOperation_MaximumOf">
+            <summary>
+              Looks up a localized string similar to maximum of.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.Resources.GL_SGSmoothOperation_SgSmoothed">
+            <summary>
+              Looks up a localized string similar to SG smoothed.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.Resources.GL_SGSmoothOperation_SgSmoothedPoints_1">
+            <summary>
+              Looks up a localized string similar to SG smoothed ({0} points).
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.Resources.GL_SimpleBinaryMathOp_FirstFormat_2">
+            <summary>
+              Looks up a localized string similar to {0}: [{1}].
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.Resources.GL_SimpleBinaryMathOp_SecondFormat_2">
+            <summary>
+              Looks up a localized string similar to {0} ({1}).
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.Resources.GL_SortOperation_Sorted">
+            <summary>
+              Looks up a localized string similar to sorted.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.Resources.GL_SubrangeOperation_Subrange">
+            <summary>
+              Looks up a localized string similar to subrange.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.Resources.GL_SubrangeOperation_SubrangeTo_2">
+            <summary>
+              Looks up a localized string similar to subrange ({0} to {1}).
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.Resources.GL_SubsetOperation_Subsetted">
+            <summary>
+              Looks up a localized string similar to subsetted.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.Resources.GL_SubsetOperation_SubsettedTo_2">
+            <summary>
+              Looks up a localized string similar to subsetted ({0} to {1}).
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.Resources.GL_SubtractOperation_SubtractedBy">
+            <summary>
+              Looks up a localized string similar to subtracted by.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.Resources.GL_TextXYData_TextDataFrom_1">
+            <summary>
+              Looks up a localized string similar to Text data from &quot;{0}&quot;.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.Resources.GL_ThresholdOperation_Thresholded">
+            <summary>
+              Looks up a localized string similar to thresholded.
+            </summary>
+        </member>
+        <member name="P:Sciex.Data.Processing.Resources.GL_ThresholdOperation_Thresholded_1">
+            <summary>
+              Looks up a localized string similar to thresholded ({0}).
+            </summary>
+        </member>
+    </members>
+</doc>

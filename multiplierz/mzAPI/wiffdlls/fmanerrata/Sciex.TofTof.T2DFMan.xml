@@ -1,0 +1,302 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Sciex.TofTof.T2DFMan</name>
+    </assembly>
+    <members>
+        <member name="T:Sciex.TofTof.T2DFMan.T2DHelper">
+            <summary>
+            This class is a wrapper for the SPEClassLib objects for reading *.t2d files.
+            This class does not itself perform much caching, so callers should use a
+            single instance for as much as possible.
+            </summary>
+        </member>
+        <member name="M:Sciex.TofTof.T2DFMan.T2DHelper.#ctor">
+            <summary>
+            Constructor.
+            </summary>
+        </member>
+        <member name="M:Sciex.TofTof.T2DFMan.T2DHelper.SetFile(System.String)">
+            <summary>
+            Sets the *.t2d file with which we are associated. This method needs to be
+            called before other methods such as CreateMethod(), CreateSpectrumInfo()
+            and GetMassesAndIntensities(). There is an optimisation that re-setting
+            the same file path as for the previous call is not in-efficient.
+            </summary>
+            <param name="filePath">Full path to *.t2d file.</param>
+        </member>
+        <member name="M:Sciex.TofTof.T2DFMan.T2DHelper.CreateMethod">
+            <summary>
+            Returns a new MSMethod object for our file (previously set via a call to
+            SetFile()).
+            </summary>
+            <returns>A new MSMethod.</returns>
+        </member>
+        <member name="M:Sciex.TofTof.T2DFMan.T2DHelper.GetPrecursorMZ">
+            <summary>
+            Returns our parent mass. If we can parse a double from within the last set 
+            of brackets in the filename we assume it is the mass of interest. In this case
+            we return that value, otherwise 0.0.
+            </summary>
+        </member>
+        <member name="M:Sciex.TofTof.T2DFMan.T2DHelper.CreateSpectrumInfo">
+            <summary>
+            Returns a new MassSpectrumInfo object which corresponds with our *.t2d file
+            (previously set via a call to SetFile()).
+            </summary>
+            <returns>A new MassSpectrumInfo object.</returns>
+        </member>
+        <member name="M:Sciex.TofTof.T2DFMan.T2DHelper.GetMassesAndIntensities(System.Double[]@,System.Double[]@)">
+            <summary>
+            Returns our masses and intensities. Note that unlike the raw *.t2d file itself,
+            we remove data points with an intensity of exactly 0.
+            </summary>
+            <param name="masses">Set to m/z values.</param>
+            <param name="intensities">Set to intensities.</param>
+        </member>
+        <member name="M:Sciex.TofTof.T2DFMan.T2DHelper.Clearcore2#Data#CommonInterfaces#IRawXYData#GetXValue(System.Int32)">
+            <summary>
+            Return the requested x-value.
+            </summary>
+            <param name="index">Index of data point.</param>
+            <returns>The x-value.</returns>
+        </member>
+        <member name="M:Sciex.TofTof.T2DFMan.T2DHelper.Clearcore2#Data#CommonInterfaces#IRawXYData#GetYValue(System.Int32)">
+            <summary>
+            Return the requested y-value.
+            </summary>
+            <param name="index">Index of data point.</param>
+            <returns>The y-value.</returns>
+        </member>
+        <member name="P:Sciex.TofTof.T2DFMan.T2DHelper.IsPositivePolarity">
+            <summary>
+            "Guesses" whether our sample is positive or negative polarity. If we find "neg"
+            in the filename we assume negative, otherwise positive polarity.
+            </summary>
+        </member>
+        <member name="P:Sciex.TofTof.T2DFMan.T2DHelper.Clearcore2#Data#CommonInterfaces#IRawXYData#NumDataPoints">
+            <summary>
+            Returns the number of raw data points.
+            </summary>
+        </member>
+        <member name="T:Sciex.TofTof.T2DFMan.Resources">
+            <summary>
+              A strongly-typed resource class, for looking up localized strings, etc.
+            </summary>
+        </member>
+        <member name="P:Sciex.TofTof.T2DFMan.Resources.ResourceManager">
+            <summary>
+              Returns the cached ResourceManager instance used by this class.
+            </summary>
+        </member>
+        <member name="P:Sciex.TofTof.T2DFMan.Resources.Culture">
+            <summary>
+              Overrides the current thread's CurrentUICulture property for all
+              resource lookups using this strongly typed resource class.
+            </summary>
+        </member>
+        <member name="P:Sciex.TofTof.T2DFMan.Resources.GE_FileHeader_InvalidFileHeaderSignature">
+            <summary>
+              Looks up a localized string similar to Invalid file header signature.
+            </summary>
+        </member>
+        <member name="P:Sciex.TofTof.T2DFMan.Resources.GE_FileHeader_InvalidFileHeaderSize">
+            <summary>
+              Looks up a localized string similar to invalid FileHeaderSize.
+            </summary>
+        </member>
+        <member name="P:Sciex.TofTof.T2DFMan.Resources.GE_FileHeader_InvalidHeaderChecksum">
+            <summary>
+              Looks up a localized string similar to Invalid header checksum.
+            </summary>
+        </member>
+        <member name="P:Sciex.TofTof.T2DFMan.Resources.GE_FileHeader_InvalidSpectrumHeaderSize">
+            <summary>
+              Looks up a localized string similar to Invalid spectrum header size.
+            </summary>
+        </member>
+        <member name="P:Sciex.TofTof.T2DFMan.Resources.GE_FileHeader_InvalidVersions">
+            <summary>
+              Looks up a localized string similar to Invalid versions.
+            </summary>
+        </member>
+        <member name="P:Sciex.TofTof.T2DFMan.Resources.GE_FileHeaderInvalidTrailerSize">
+            <summary>
+              Looks up a localized string similar to Invalid trailer size.
+            </summary>
+        </member>
+        <member name="P:Sciex.TofTof.T2DFMan.Resources.GE_FixedByteUnion_ValueCannotBeNull">
+            <summary>
+              Looks up a localized string similar to value cannot be null.
+            </summary>
+        </member>
+        <member name="P:Sciex.TofTof.T2DFMan.Resources.GE_FixedByteUnion_ValueMustBeLessThanBytes_1">
+            <summary>
+              Looks up a localized string similar to value must be less than {0} bytes.
+            </summary>
+        </member>
+        <member name="P:Sciex.TofTof.T2DFMan.Resources.GE_T2DFile_FilenameMustBeSpecified">
+            <summary>
+              Looks up a localized string similar to filename must be specified.
+            </summary>
+        </member>
+        <member name="P:Sciex.TofTof.T2DFMan.Resources.GE_T2DFile_FileNotCreated">
+             <summary>
+               Looks up a localized string similar to File not created.
+            Details:{0}.
+             </summary>
+        </member>
+        <member name="P:Sciex.TofTof.T2DFMan.Resources.GE_T2DFile_InvalidIndexBlockChecksum">
+            <summary>
+              Looks up a localized string similar to Invalid index block checksum.
+            </summary>
+        </member>
+        <member name="P:Sciex.TofTof.T2DFMan.Resources.GE_T2DFile_RawSpectrumMustBeSpecified">
+            <summary>
+              Looks up a localized string similar to rawSpectrum must be specified.
+            </summary>
+        </member>
+        <member name="T:Sciex.TofTof.T2DFMan.T2DFManObject">
+            <summary>
+            This class implements the IFMan interface to return sample and method
+            information for a *.t2d file as well as to create chromatograms 
+            and spectra.
+            </summary>
+        </member>
+        <member name="M:Sciex.TofTof.T2DFMan.T2DFManObject.#ctor">
+            <summary>
+            Constructor.
+            </summary>
+        </member>
+        <member name="M:Sciex.TofTof.T2DFMan.T2DFManObject.CreateSampleInfo(Sciex.FMan.FManSample)">
+            <summary>
+            Returns sample information for the specified sample.
+            </summary>
+            <param name="sample">Sample for which to get info.</param>
+            <returns>The sample info.</returns>
+        </member>
+        <member name="M:Sciex.TofTof.T2DFMan.T2DFManObject.CreateMethod(Sciex.FMan.FManSample)">
+            <summary>
+            Returns method information for the given sample.
+            </summary>
+            <param name="sample">Sample for which to get info.</param>
+            <returns>The information.</returns>
+        </member>
+        <member name="M:Sciex.TofTof.T2DFMan.T2DFManObject.GetSpectrumInfo(Sciex.FMan.FManSample,System.Int32,System.Int32,System.Int32)">
+            <summary>
+            Returns information about the specified mass spectrum. This information
+            is also returned when a spectrum itself is requested.
+            </summary>
+            <param name="sample">Sample for which to get info.</param>
+            <param name="period">Period index.</param>
+            <param name="experiment">Experiment index.</param>
+            <param name="cycle">Cycle number.</param>
+            <returns>The spectrum information.</returns>
+        </member>
+        <member name="M:Sciex.TofTof.T2DFMan.T2DFManObject.CreateMassSpectrum">
+            <summary>
+            Creates a new mass spectrum. Callers can subsequently call the
+            SetToSpectrum() method on the result.
+            </summary>
+            <returns>A new spectrum object.</returns>
+        </member>
+        <member name="M:Sciex.TofTof.T2DFMan.T2DFManObject.CreateFileSample(System.String)">
+            <summary>
+            Overridden to create a new FManSample given a file path.
+            </summary>
+            <param name="filePath">Full path to file.</param>
+            <returns>A new sample.</returns>
+        </member>
+        <member name="P:Sciex.TofTof.T2DFMan.T2DFManObject.T2DHelper">
+            <summary>
+            Returns our T2DHelper object. Internal clients should use this instance,
+            rather than create a new T2DHelper object, since this is more efficient.
+            </summary>
+        </member>
+        <member name="T:Sciex.TofTof.T2DFMan.T2DMassSpectrum">
+            <summary>
+            This subclass of FManMassSpectrum is used for reading a spectrum
+            from a *.t2d file.
+            </summary>
+        </member>
+        <member name="M:Sciex.TofTof.T2DFMan.T2DMassSpectrum.#ctor(Sciex.TofTof.T2DFMan.T2DFManObject)">
+            <summary>
+            Constructor.
+            </summary>
+            <param name="fMan">Used to get info, etc.</param>
+        </member>
+        <member name="M:Sciex.TofTof.T2DFMan.T2DMassSpectrum.#ctor(Sciex.TofTof.T2DFMan.T2DMassSpectrum)">
+            <summary>
+            Copy constructor.
+            </summary>
+            <param name="toCopy">The object to copy.</param>
+        </member>
+        <member name="M:Sciex.TofTof.T2DFMan.T2DMassSpectrum.#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <summary>
+            Constructor used when de-serialising.
+            </summary>
+            <param name="info">Object with data.</param>
+            <param name="context">Not used.</param>
+        </member>
+        <member name="M:Sciex.TofTof.T2DFMan.T2DMassSpectrum.GetObjectData(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <summary>
+            Serialises this object.
+            </summary>
+            <param name="info">Object which holds data to write.</param>
+            <param name="context">Not used.</param>
+        </member>
+        <member name="M:Sciex.TofTof.T2DFMan.T2DMassSpectrum.Clone">
+            <summary>
+            Returns a copy of this object.
+            </summary>
+            <returns>The copy.</returns>
+        </member>
+        <member name="M:Sciex.TofTof.T2DFMan.T2DMassSpectrum.SetToSpectrum(Sciex.FMan.FManSample,System.Int32,System.Int32,System.Int32)">
+            <summary>
+            Sets our XY data to a mass spectrum for the specified sample, 
+            experiment, etc.
+            </summary>
+            <param name="sample">Sample to use.</param>
+            <param name="period">Period index.</param>
+            <param name="experiment">Experiment index.</param>
+            <param name="cycle">Cycle.</param>
+        </member>
+        <member name="P:Sciex.TofTof.T2DFMan.T2DMassSpectrum.Sample">
+            <summary>
+            We hide the base class implementation of this method to return a
+            typed sample, namely a "T2DSample".
+            </summary>
+        </member>
+        <member name="T:Sciex.TofTof.T2DFMan.T2DSample">
+            <summary>
+            This subclass of FManSample implements a sample (a single spectum) associated
+            with a *.t2d file.
+            </summary>
+        </member>
+        <member name="M:Sciex.TofTof.T2DFMan.T2DSample.#ctor(System.String)">
+            <summary>
+            Constructor.
+            </summary>
+            <param name="filePath">Full path to *.t2d file.</param>
+        </member>
+        <member name="M:Sciex.TofTof.T2DFMan.T2DSample.#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <summary>
+            Constructor used when deserialising.
+            </summary>
+            <param name="info">Info.</param>
+            <param name="context">Not used.</param>
+        </member>
+        <member name="M:Sciex.TofTof.T2DFMan.T2DSample.#ctor(System.IO.Stream)">
+            <summary>
+            The constructor initialises the object with data read from the stream
+            (presumably previously written by the WriteToStream method).
+            </summary>
+            <param name="stream">Stream from which we read.</param>
+        </member>
+        <member name="P:Sciex.TofTof.T2DFMan.T2DSample.OpenFileDialogFilter">
+            <summary>
+            Overridden to return a Filter for t2d files.
+            </summary>
+        </member>
+    </members>
+</doc>

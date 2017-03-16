@@ -1,0 +1,2409 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Sciex.Clearcore.FMan</name>
+    </assembly>
+    <members>
+        <member name="T:Sciex.Clearcore.FMan.LoadMassReferenceTables">
+            <summary>
+            This class is used to read the calibration reference tables from an Analyst
+            "TuneData.tun" file.
+            </summary>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.LoadMassReferenceTables.Load(System.String)">
+            <summary>
+            Reads and returns the reference tables from the provided Analyst TuneData file.
+            </summary>
+            <param name="tuneDataPath">Path to TuneData file.</param>
+            <returns>List of reference tables.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.LoadMassReferenceTables.Load(Clearcore2.StructuredStorage.StgStorage)">
+            <summary>
+            Loads and returns all reference tables from the provided file.
+            </summary>
+            <param name="file">Root structured storage node for file.</param>
+            <returns>List of tables.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.LoadMassReferenceTables.LoadTable(Clearcore2.StructuredStorage.StgStorage,System.Int32)">
+            <summary>
+            Loads the reference table with the specified index. If a table with that
+            index does not exist all tables have been processed and we return null.
+            </summary>
+            <param name="file">Root structured storage node for file.</param>
+            <param name="index">Index of reference table to load.</param>
+            <returns>The reference table or null if none.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.LoadMassReferenceTables.CreateReferenceTable(Clearcore2.StructuredStorage.StgStorage)">
+            <summary>
+            Creates a new reference table using the data from the provided stuctured
+            storage node. Note that we do NOT load the m/z values.
+            </summary>
+            <param name="storage">Parent node for table.</param>
+            <returns>A new reference table.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.LoadMassReferenceTables.LoadReferenceEntries(Clearcore2.StructuredStorage.StgStorage,Sciex.Data.SimpleTypes.MassReferenceTable)">
+            <summary>
+            This method reads the reference entries (m/z values) from the provided 
+            structured storage node and populaets the specified table.
+            </summary>
+            <param name="storage">Parent storage for table.</param>
+            <param name="table">Table to populate.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.LoadMassReferenceTables.LoadReferenceEntry(Clearcore2.StructuredStorage.StgStorage,System.Int32,Sciex.Data.SimpleTypes.MassReferenceTable)">
+            <summary>
+            Loads the reference entry with the provided index under the specified parent
+            structured storage. If there is no entry with this index all entries have
+            been processed for the table and we return false, otherwise true (in which
+            case we add the m/z value from the reference entry to the table).
+            </summary>
+            <param name="storage">Parent storage for reference entry.</param>
+            <param name="index">Index of reference entry.</param>
+            <param name="table">Table to update.</param>
+            <returns>True if we loaded the entry, false if all entries are processed for table.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.LoadMassReferenceTables.LoadReferenceEntry(Clearcore2.StructuredStorage.StgStream,Sciex.Data.SimpleTypes.MassReferenceTable)">
+            <summary>
+            Loads the m/z value (and other fields) for the reference entry associated with
+            the provided stream. This data (including any sub MS/MS reference tables) is 
+            added to "table".
+            </summary>
+            <param name="stream">Stream with reference entry data.</param>
+            <param name="table">Table to update.</param>
+        </member>
+        <member name="T:Sciex.Clearcore.FMan.ClearcoreRecalibrateSample">
+            <summary>
+            This subclass of RecalibrateBase allows calibrations to be saved persistently to
+            the wiff file.
+            </summary>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreRecalibrateSample.#ctor(Sciex.Clearcore.FMan.ClearcoreFMan)">
+            <summary>
+            Constructor.
+            </summary>
+            <param name="fman">Owning FMan.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreRecalibrateSample.RecalibrateExperiment(Sciex.FMan.Calibration,Sciex.FMan.FManSample,System.Int32,System.Int32,System.Int32,System.Int32,Sciex.FMan.Calibration,System.Boolean)">
+            <summary>
+            We override this method to re-calibrate the specified experiment for the given
+            cycle range. For a description of the parameters see the interface definition.
+            </summary>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreRecalibrateSample.RecalibrateSample(Sciex.FMan.FManSample,System.Int32,System.Int32,System.Int32,Sciex.FMan.Calibration[])">
+            <summary>
+            We override this method to re-calibrate the specified experiment (or experiments if -1)
+            using caller-specified calibrations.
+            </summary>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreRecalibrateSample.MergeNewCalsIntoOld(Sciex.Wiff.WiffSample,System.Int32,System.Int32,System.Int32,Sciex.FMan.Calibration[])">
+            <summary>
+            This method returns the original calibrations but with the specified values replaced
+            by the values from "calibrations".
+            </summary>
+            <param name="sample">Sample.</param>
+            <param name="period">Period index (not -1).</param>
+            <param name="experiment">Experiment index (or -1 for all).</param>
+            <param name="startCycle">Starting cycle.</param>
+            <param name="calibrations">Calibrations to use.</param>
+            <returns>The original cals with "calibrations" merged in.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreRecalibrateSample.GetUpdatedCalibrations(Sciex.FMan.DefaultTofCalibration,Sciex.Wiff.WiffSample,System.Int32,System.Int32,System.Int32,System.Int32,Sciex.FMan.DefaultTofCalibration,System.Boolean)">
+            <summary>
+            Returns a list of all calibrations for the current sample, after adjusting the
+            calibrations for the specified range.
+            </summary>
+            <param name="newCalibration">New calibration.</param>
+            <param name="sample">Sample.</param>
+            <param name="period">Period index.</param>
+            <param name="experiment">Experiment index.</param>
+            <param name="startCycle">First cycle to recalibrate.</param>
+            <param name="endCycle">Last cycle to recalibrate.</param>
+            <param name="oldCalibration">Old calibration.</param>
+            <param name="useRelativeCalibration">True to use relative calibration.</param>
+            <returns>List of updated calibrations.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreRecalibrateSample.GetUpdatedCalibration(Sciex.FMan.DefaultTofCalibration,Sciex.FMan.DefaultTofCalibration,System.Boolean,Clearcore2.Data.WiffReader.WiffTOFCalibration)">
+            <summary>
+            This method updates "currentCalibration" and returns the new value. If we're
+            not using relative calibration we return "newCalibration" as-is, othewise we
+            use the old and new calibrations to update the current calibration in a 
+            relative way.
+            </summary>
+            <param name="newCalibration">New calibration for recalibrated data.</param>
+            <param name="oldCalibration">Old calibration for recalibrated data.</param>
+            <param name="useRelativeCalibration">True to use relative calibration.</param>
+            <param name="currentCalibration">Current calibration for cycle.</param>
+            <returns>The updated calibration for the current cycle.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreRecalibrateSample.GetCurrentCalibrations(Sciex.Wiff.WiffSample)">
+            <summary>
+            This method returns a list of all calibrations for the current sample.
+            </summary>
+            <param name="sample">Sample.</param>
+            <returns>List of calibrations.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreRecalibrateSample.GetStartScanForPeriod(Sciex.Wiff.WiffSample,System.Int32)">
+            <summary>
+            Returns the first scan number for the specified period.
+            </summary>
+            <param name="sample">Sample.</param>
+            <param name="period">Period index.</param>
+            <returns>Scan number.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreRecalibrateSample.WriteCalibrations(Sciex.Wiff.WiffSample,Clearcore2.Data.WiffReader.WiffTOFCalibration[])">
+            <summary>
+            Writes the specified calibrations to the wiff file. NOTE: We assume that the calibration stream
+            already exists and that it just needs to be updated (not created).
+            </summary>
+            <param name="sample">Sample.</param>
+            <param name="cals">Calibrations to write.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreRecalibrateSample.WriteCalibrations(Clearcore2.StructuredStorage.StgStream,Clearcore2.Data.WiffReader.WiffTOFCalibration[])">
+            <summary>
+            Writes the provided calibrations to the specified stream. NOTE: We assume that the stream already
+            exists so that we don't need to write the default calibration.
+            </summary>
+            <param name="stream">Stream to write to.</param>
+            <param name="cals">Calibrations to write.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreRecalibrateSample.RecalibrateIda(Sciex.Wiff.WiffSample,System.Int32,System.Int32,System.Int32,Clearcore2.Data.WiffReader.WiffTOFCalibration[],Clearcore2.Data.WiffReader.WiffTOFCalibration[])">
+            <summary>
+            Recalibrates the IDA stream (if present).
+            </summary>
+            <param name="sample">Sample.</param>
+            <param name="period">Period index.</param>
+            <param name="startCycle">First cycle to recalibrate.</param>
+            <param name="endCycle">Last cycle to recalibrate.</param>
+            <param name="originalCals">Original calibrations.</param>
+            <param name="newCals">New calibrations.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreRecalibrateSample.RecalibrateIda(Sciex.Wiff.WiffSample,System.Int32,System.Int32,System.Int32,Clearcore2.Data.WiffReader.WiffTOFCalibration[],Clearcore2.Data.WiffReader.WiffTOFCalibration[],System.Int32,System.Int32,System.Collections.Generic.List{System.Double[]},System.Collections.Generic.List{System.Int32})">
+            <summary>
+            Recalibrates the IDA stream (if present).
+            </summary>
+            <param name="sample">Sample.</param>
+            <param name="period">Period index.</param>
+            <param name="startCycle">First cycle to recalibrate.</param>
+            <param name="endCycle">Last cycle to recalibrate.</param>
+            <param name="originalCals">Original calibrations.</param>
+            <param name="newCals">New calibrations.</param>
+            <param name="experimentCount">Number of experiments for period.</param>
+            <param name="startScanForPeriod">Start scan for period.</param>
+            <param name="idaMasses">List of IDA masses for cycles in range.</param>
+            <param name="idaIndexes">List of indexes in IDA stream for cycles in range.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreRecalibrateSample.RecalibrateIda(System.IO.BinaryWriter,System.Double[],System.Int32,Clearcore2.Data.WiffReader.WiffTOFCalibration,Clearcore2.Data.WiffReader.WiffTOFCalibration,System.Int32)">
+            <summary>
+            Recalibrates the provided mass (in idaMasses[0]) using the old and new calibrations.
+            This new mass is then written to the IDA stream for the item with the specified
+            index. Note that "index" is the index into the IDA stream - this is only valid
+            for dependents (for other scan types it's set to -1 and we do nothing).
+            </summary>
+            <param name="writer">Used to write new mass.</param>
+            <param name="idaMasses">List of IDA masses.</param>
+            <param name="idaIndex">Index in IDA stream.</param>
+            <param name="oldCal">Original calibration.</param>
+            <param name="newCal">New calibration.</param>
+            <param name="headerLength">Length of stream header.</param>
+        </member>
+        <member name="P:Sciex.Clearcore.FMan.ClearcoreRecalibrateSample.FMan">
+            <summary>
+            We "override" this method to return our strongly-typed object.
+            </summary>
+        </member>
+        <member name="T:Sciex.Clearcore.FMan.GetIntensitySumImpl">
+            <summary>
+            This method implements IGetIntensitySum since we have an optimised way of calculating
+            XICs. See the description of that interface for details.
+            </summary>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.GetIntensitySumImpl.#ctor(Sciex.Clearcore.FMan.ClearcoreFMan)">
+            <summary>
+            Constructor.
+            </summary>
+            <param name="fman">IFMan object.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.GetIntensitySumImpl.Init(Sciex.FMan.FManSample,System.Int32,System.Int32)">
+            <summary>
+            This method gets called before TIC calculation. See IGetIntensitySum for a 
+            description of the parameters.
+            </summary>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.GetIntensitySumImpl.Init(Sciex.FMan.FManSample,System.Int32,System.Int32,System.Double[],System.Double[])">
+            <summary>
+            This method gets called before full-scan XIC calculation. We create and cache a helper 
+            object associated with this experiment. See IGetIntensitySum for a description of 
+            the parameters.
+            </summary>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.GetIntensitySumImpl.Init(Sciex.FMan.FManSample,System.Int32,System.Int32,System.Int32[])">
+            <summary>
+            This method is called before indexed XIC calculation begins. Note that the same 
+            values for the sample, period and experiment will be passed to GetSum.
+            </summary>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.GetIntensitySumImpl.Finish(Sciex.FMan.FManSample,System.Int32,System.Int32)">
+            <summary>
+            This method gets called after an XIC calculation.
+            </summary>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.GetIntensitySumImpl.InitForCycle(Sciex.FMan.FManSample,System.Int32,System.Int32,System.Int32)">
+            <summary>
+            For a description of this method and the parameters see IGetIntensitySum.
+            </summary>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.GetIntensitySumImpl.InitForCycle(Sciex.FMan.FManSample,System.Int32,System.Int32,System.Int32,System.Double[],System.Double[])">
+            <summary>
+            For a description of this method and the parameters see IGetIntensitySum.
+            </summary>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.GetIntensitySumImpl.GetSum(Sciex.FMan.FManSample,System.Int32,System.Int32,System.Int32)">
+            <summary>
+            For a description of this method and the parameters see IGetIntensitySum.
+            </summary>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.GetIntensitySumImpl.GetSum(Sciex.FMan.FManSample,System.Int32,System.Int32,System.Int32,System.Double,System.Double)">
+            <summary>
+            For a description of this method and the parameters see IGetIntensitySum.
+            </summary>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.GetIntensitySumImpl.LoadScanXicPoints(System.Int32,System.Double,System.Double)">
+            <summary>
+            This method loads our WiffXYPoints for the specified cycle for a scan XIC. This is optimised so 
+            that (where possible) we do not load ALL of the data for a given spectrum but only the range
+            needed by the XIC (the mass ranges for which were provided to InitGetIntensitySumForCycle and
+            stored). If we have already loaded the points for this cycle we do nothing.
+            </summary>
+            <param name="cycle">Cycle number.</param>
+            <param name="startMass">Lowest mass required.</param>
+            <param name="endMass">Highest mass required.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.GetIntensitySumImpl.InitForCycle(Sciex.FMan.FManSample,System.Int32,System.Int32,System.Int32,System.Int32[])">
+            <summary>
+            For a description of this method and the parameters see IGetIntensitySum.
+            </summary>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.GetIntensitySumImpl.GetSum(Sciex.FMan.FManSample,System.Int32,System.Int32,System.Int32,System.Int32)">
+            <summary>
+            For a description of this method and the parameters see IGetIntensitySum.
+            </summary>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.GetIntensitySumImpl.Clearcore2#Data#CommonInterfaces#IRawXYData#GetXValue(System.Int32)">
+            <summary>
+            Returns x-value for specified index in fWiffXYPoints.
+            </summary>
+            <param name="index">Index for value.</param>
+            <returns>Requested x-value.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.GetIntensitySumImpl.Clearcore2#Data#CommonInterfaces#IRawXYData#GetYValue(System.Int32)">
+            <summary>
+            Returns y-value for specified index in fWiffXYPoints.
+            </summary>
+            <param name="index">Index for value.</param>
+            <returns>Requested y-value.</returns>
+        </member>
+        <member name="P:Sciex.Clearcore.FMan.GetIntensitySumImpl.Clearcore2#Data#CommonInterfaces#IRawXYData#NumDataPoints">
+            <summary>
+            Returns number of data points in fWiffXYPoints.
+            </summary>
+        </member>
+        <member name="T:Sciex.Clearcore.FMan.ClearcoreMassSpectrum">
+            <summary>
+            This subclass of FManMassSpectrum is used for reading a spectrum
+            from a wiff file.
+            </summary>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreMassSpectrum.#ctor(Sciex.Clearcore.FMan.ClearcoreFMan)">
+            <summary>
+            Constructor.
+            </summary>
+            <param name="fMan">Used to get info, etc.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreMassSpectrum.#ctor(Sciex.Clearcore.FMan.ClearcoreMassSpectrum)">
+            <summary>
+            Copy constructor.
+            </summary>
+            <param name="toCopy">The object to copy.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreMassSpectrum.#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <summary>
+            Constructor used when de-serialising.
+            </summary>
+            <param name="info">Object with data.</param>
+            <param name="context">Not used.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreMassSpectrum.GetObjectData(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <summary>
+            Serialises this object.
+            </summary>
+            <param name="info">Object which holds data to write.</param>
+            <param name="context">Not used.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreMassSpectrum.Clone">
+            <summary>
+            Returns a copy of this object.
+            </summary>
+            <returns>The copy.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreMassSpectrum.SetToSpectrum(Sciex.FMan.FManSample,System.Int32,System.Int32,System.Int32)">
+            <summary>
+            Sets our XY data to a mass spectrum for the specified sample, experiment, etc.
+            </summary>
+            <param name="sample">Sample to use.</param>
+            <param name="period">Period index.</param>
+            <param name="experiment">Experiment index.</param>
+            <param name="cycle">Cycle index.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreMassSpectrum.SetToSpectrum(Sciex.FMan.FManSample,System.Int32,System.Int32,System.Int32,System.Int32)">
+            <summary>
+            Sets our XY data to a mass spectrum for the specified sample, experiment, etc.
+            </summary>
+            <param name="sample">Sample to use.</param>
+            <param name="period">Period index.</param>
+            <param name="experiment">Experiment index.</param>
+            <param name="startCycle">First cycle to average.</param>
+            <param name="endCycle">Last cycle to average.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreMassSpectrum.SetToSpectrum(Sciex.FMan.FManSample,System.Int32,System.Int32,System.Int32,System.Int32,System.Double,System.Double,System.Boolean)">
+            <summary>
+            Sets our XY data to a mass spectrum for the specified sample, experiment, etc. If
+            "startMass" is less than or equal to "endMass" the mass range is restricted to that range.
+            This can sometimes result in an optimisation since only a portion of the data needs to
+            be read. If "allowLargerRange" is true and there is no optimisation we set the spectrum
+            to the full (or a larger) range, otherwise we do extra work to remove points outside 
+            the specified range.
+            </summary>
+            <param name="sample">Sample to use.</param>
+            <param name="period">Period index.</param>
+            <param name="experiment">Experiment index.</param>
+            <param name="startCycle">First cycle to average.</param>
+            <param name="endCycle">Last cycle to average.</param>
+            <param name="startMass">Start mass (if less than or equal to end mass).</param>
+            <param name="endMass">End mass (if greater than or equal to end mass).</param>
+            <param name="allowLargerRange">Allow larger than requested range to be returned?</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreMassSpectrum.SetToOrthogonalSpectrum(Sciex.FMan.FManSample,System.Int32,System.Int32,System.Int32,System.Int32,System.Int32,System.Int32)">
+            <summary>
+            Sets our XY data to a mass spectrum for the specified sample, experiment, etc. for 
+            the special case of so-called "orthogonal" data. This is a spectrum which is associated
+            with not just a particular time or cycle range, but also with a particular mass or
+            mass range from a parent or precursor spectrum. For details see the description of the
+            OrthogonalMSExperiment class.
+            </summary>
+            <param name="sample">Sample to use.</param>
+            <param name="period">Period index.</param>
+            <param name="experiment">Experiment index.</param>
+            <param name="startCycle">First cycle to average.</param>
+            <param name="endCycle">Last cycle to average.</param>
+            <param name="startParentMassIndex">Start index of mass in parent data.</param>
+            <param name="endParentMassIndex">End index of mass in parent data.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreMassSpectrum.SetToSpectrum(Sciex.FMan.FManSample,System.Int32,System.Int32,System.Int32,System.Int32,System.Int32,System.Int32,System.Double,System.Double,System.Boolean)">
+            <summary>
+            Sets this object to a "normal" spectrum (if "startParentMassIndex" is -1) or to 
+            an "orthogonal" spectrum otherwise. For a description of the parameters see the
+            SetToSpectrum and SetToOrthogonalSpectrum methods.
+            </summary>
+        </member>
+        <member name="P:Sciex.Clearcore.FMan.ClearcoreMassSpectrum.FMan">
+            <summary>
+            We hide the base class implementation to return a typed FMan, namely a
+            ClearcoreFMan.
+            </summary>
+        </member>
+        <member name="P:Sciex.Clearcore.FMan.ClearcoreMassSpectrum.Sample">
+            <summary>
+            We hide the base class implementation of this method to return a
+            typed sample, namely an "WiffSample".
+            </summary>
+        </member>
+        <member name="T:Sciex.Clearcore.FMan.ClearcoreChromatogram">
+            <summary>
+            This subclass of FManChromatogram is used for reading a chromatogram from a wiff file.
+            </summary>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreChromatogram.#ctor(Sciex.FMan.IFMan)">
+            <summary>
+            Constructor.
+            </summary>
+            <param name="fMan">Used to get info, etc.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreChromatogram.#ctor(Sciex.Clearcore.FMan.ClearcoreChromatogram)">
+            <summary>
+            Copy constructor.
+            </summary>
+            <param name="toCopy">Object to copy.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreChromatogram.#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <summary>
+            Constructor used when de-serialising.
+            </summary>
+            <param name="info">Object with data.</param>
+            <param name="context">Not used.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreChromatogram.GetObjectData(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <summary>
+            Serialises this object.
+            </summary>
+            <param name="info">Object which holds data to write.</param>
+            <param name="context">Not used.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreChromatogram.Clone">
+            <summary>
+            Returns a copy of this object.
+            </summary>
+            <returns>The copy.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreChromatogram.SetToTIC(Sciex.FMan.FManSample,System.Int32,System.Int32)">
+            <summary>
+            Sets our XY data to a TIC for the specified sample and experiment.
+            </summary>
+            <param name="sample">Sample for TIC.</param>
+            <param name="period">Period index.</param>
+            <param name="experiment">Experiment index.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreChromatogram.SetToBPC(Sciex.FMan.FManSample,System.Int32,System.Int32,System.Double)">
+            <summary>
+            Sets our XY data to a base peak chromatogram for the specified sample and
+            experiment using the provided mass tolerance.
+            </summary>
+            <param name="sample">Sample for BPC.</param>
+            <param name="period">Period index.</param>
+            <param name="experiment">Experiment index.</param>
+            <param name="massTolerance">Mass tolerance.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreChromatogram.SetToBPCPrivate(Sciex.Wiff.WiffSample,System.Int32,System.Int32,System.Double)">
+            <summary>
+            Sets our XY data to a base peak chromatogram IF it's possible to calculate an
+            optimised BPC. Otherwise we return false and do nothing.
+            </summary>
+            <param name="sample">Sample for BPC.</param>
+            <param name="period">Period index.</param>
+            <param name="experiment">Experiment index.</param>
+            <param name="massTolerance">Mass tolerance.</param>
+            <returns>True iff we calculated BPC.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreChromatogram.SetToClearcoreBPC(Sciex.Wiff.WiffSample,System.Int32,System.Int32,System.Double)">
+            <summary>
+            Sets our XY data to a base peak chromatogram IF it's possible to calculate an
+            optimised BPC. Otherwise we return false and do nothing.
+            </summary>
+            <param name="sample">Sample for BPC.</param>
+            <param name="period">Period index.</param>
+            <param name="experiment">Experiment index.</param>
+            <param name="massTolerance">Mass tolerance.</param>
+            <returns>True iff we calculated BPC.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreChromatogram.SetToADC(Sciex.FMan.FManSample,System.Int32)">
+            <summary>
+            Sets our XY data to an ADC chromatogram for the specified sample and
+            channnel index.
+            </summary>
+            <param name="sample">Sample for ADC.</param>
+            <param name="channelIndex">ADC channel index.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreChromatogram.SetToTWC(Sciex.FMan.FManSample)">
+            <summary>
+            Sets our XY data to a diode array total wavelength chromatogram for the 
+            specified sample.
+            </summary>
+            <param name="sample">Sample for TWC.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreChromatogram.SetToXWC(Sciex.FMan.FManSample,System.Double,System.Double)">
+            <summary>
+            Sets our XY data to a diode array extracted wavelength chromatogram for the 
+            specified sample and wavelength range.
+            </summary>
+            <param name="sample">Sample for XWC.</param>
+            <param name="startWavelength">Starting wavelength.</param>
+            <param name="endWavelength">Ending wavelength.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreChromatogram.Initialise(Sciex.FMan.FManSample,Sciex.FMan.MSMethod,Sciex.FMan.ChromatogramInfo,System.String,System.String,System.String,System.Double[],System.Double[])">
+            <summary>
+            We override this method to update our times for two reasons. For a description
+            of the parameters, see the base class.
+            </summary>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreChromatogram.GetStepSize(System.Double[],Sciex.FMan.ChromatogramInfo,System.Boolean@)">
+            <summary>
+            We override this method to return 0.0 to force non-continuum mode for the
+            special case of so-called "stepped IDA" (see the AddSteppedIdaParameterHack 
+            method of the ClearcoreMethodHelper class for details).
+            </summary>
+            <param name="times">Array of retention times.</param>
+            <param name="info">Chromatogram info.</param>
+            <param name="constantStep">Is step size constant?</param>
+            <returns>The step size.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreChromatogram.AdjustBuggyTimes(System.Double[])">
+            <summary>
+            This method is used to work around an Analyst bug. Sometimes the very first point 
+            has an incorrect time. If the first time is greater than the second (and the next 
+            point is correct), we update the first time. If we don't do this the x-values will 
+            not be in increasing order and some algorithms will not work.
+            </summary>
+            <param name="times">Times to potentially fix.</param>
+        </member>
+        <member name="P:Sciex.Clearcore.FMan.ClearcoreChromatogram.FMan">
+            <summary>
+            We hide the base class implementation to return a typed FMan, namely a
+            ClearcoreFMan.
+            </summary>
+        </member>
+        <member name="P:Sciex.Clearcore.FMan.ClearcoreChromatogram.Sample">
+            <summary>
+            We hide the base class implementation of this method to return a
+            typed sample, namely an "WiffSample".
+            </summary>
+        </member>
+        <member name="T:Sciex.Clearcore.FMan.ClearcoreChromatogramHelper">
+            <summary>
+            This class uses WiffReader objects to calculate chromatograms (BPC, TIC, etc).
+            </summary>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreChromatogramHelper.#ctor(Sciex.Clearcore.FMan.ClearcoreFMan,Sciex.Wiff.WiffSample)">
+            <summary>
+            Constructor.
+            </summary>
+            <param name="fman">Associated FMan.</param>
+            <param name="sample">Sample to use.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreChromatogramHelper.GetTic(System.Int32,System.Int32)">
+            <summary>
+            Returns the TIC.
+            </summary>
+            <param name="period">Period number.</param>
+            <param name="experiment">Experiment number.</param>
+            <returns>Raw data for TIC.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreChromatogramHelper.GetCombinedTic">
+            <summary>
+            Returns the so-called combined TIC, containing data from all periods and all
+            experiments.
+            </summary>
+            <returns>Raw data for combined TIC.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreChromatogramHelper.GetPeriodTic(System.Int32)">
+            <summary>
+            Returns a TIC for the specified period.
+            </summary>
+            <param name="period">Period index.</param>
+            <returns>Raw data for period.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreChromatogramHelper.GetExperimentTic(System.Int32,System.Int32)">
+            <summary>
+            Returns a TIC for the specified period and experiment.
+            </summary>
+            <param name="period">Period index.</param>
+            <param name="experiment">Experiment index.</param>
+            <returns>Raw data for experiment.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreChromatogramHelper.GetBpc(System.Int32,System.Int32,System.Double[]@)">
+            <summary>
+            Returns the requested BPC IF we able to obtain it. In some cases BPC information
+            is not properly stored in the wiff file; in this case we return null.
+            </summary>
+            <param name="period">Period index.</param>
+            <param name="experiment">Experiment index.</param>
+            <param name="basePeakMasses">Set to base peak masses.</param>
+            <returns>Raw data for BPC.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreChromatogramHelper.IsBuggyBpc(Clearcore2.Compression.WiffXYPoints,System.Double[],System.Int32,System.Int32)">
+            <summary>
+            Returns true if the BPC represented by "wiffXYPoints" is not valid. This is to
+            work around problems involving the "max intensity" values stored in the wiff file.
+            If the BPC appears to be valid we want to use it because this is more efficient
+            than recalculating it, but of course we don't want to use it if the values are
+            not correct.
+            </summary>
+            <param name="wiffXYPoints">BPC points to check.</param>
+            <param name="basePeakMasses">List of base peak masses.</param>
+            <param name="period">Period index.</param>
+            <param name="experiment">Experiment index.</param>
+            <returns>True iff BPC is bad.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreChromatogramHelper.IsBuggyBPC(System.Double,Clearcore2.Compression.WiffXYPoints)">
+            <summary>
+            Given a BPC value and the corresponding spectrum, this method returns true
+            if the two are not consistent.
+            </summary>
+            <param name="bpcValue">BPC value (supposedly) calculated from "spectrum".</param>
+            <param name="spectrum">Spectrum for which BPC was calculated.</param>
+            <returns>True iff BPC value is bad.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreChromatogramHelper.ConvertBpcBinsToMassesIfTof(System.Double[],System.Int32,System.Int32)">
+            <summary>
+            This method converts the "basePeakMasses" values from times-of-flight to actual
+            masses. This is only necessary for TOF data; for non-TOF data we leave the
+            array unchanged.
+            </summary>
+            <param name="basePeakMasses">Based peak masses (or times of flight).</param>
+            <param name="period">Period index.</param>
+            <param name="experiment">Experiment index.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreChromatogramHelper.GetADC(System.Int32)">
+            <summary>
+            Returns the ADC channel with the requested channel index.
+            </summary>
+            <param name="channelIndex">Index of channel.</param>
+            <returns>Raw data for ADC.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreChromatogramHelper.GetIndexedDADPoints(System.Int32)">
+            <summary>
+            Returns the DAD data with the requested index. The index should be the flat
+            ADC channel index from the caller minus the number of official ADC channels. The
+            ClearcoreMethodHelper.AddADCChannels method adds extra "channels" to the end
+            of the ADC list for any extra UV chromatograms for which specific wavelengths 
+            were specified in the method.
+            </summary>
+            <param name="dadIndex">DAD index.</param>
+            <returns>Data points for requested DAD data.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreChromatogramHelper.GetTWC">
+            <summary>
+            Calculates a total wavelength chromatogram for DAD data.
+            </summary>
+            <returns>Data points for requested TWC.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreChromatogramHelper.GetXWC(System.Double,System.Double)">
+            <summary>
+            Calculates an extracted wavelength chromatogram for DAD data.
+            </summary>
+            <param name="startWavelength">Start wavelength.</param>
+            <param name="endWavelength">End wavelength.</param>
+            <returns>Data points for requested XWC.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreChromatogramHelper.ConvertWiffXYToRawXY(Clearcore2.Compression.WiffXYPoints,System.Int32,System.Int32)">
+            <summary>
+            Converts an array of points in the WiffReader format to our own format
+            (which is just a container for two double[] arrays).
+            </summary>
+            <param name="wiffXYPoints">Object to convert.</param>
+            <param name="period">MS period index (-1 for ADC and DAD).</param>
+            <param name="experiment">Experiment index or -1 if all.</param>
+            <returns>Converted object.</returns>
+        </member>
+        <member name="T:Sciex.Clearcore.FMan.WiffReaderSpectrumHelper">
+            <summary>
+            This classes uses WiffReader objects to calculate spectra.
+            </summary>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.WiffReaderSpectrumHelper.#ctor(Clearcore2.Data.WiffReader.WiffSampleRun,System.Int32,System.Int32)">
+            <summary>
+            Constructor.
+            </summary>
+            <param name="sampleRun">Sample run object.</param>
+            <param name="period">Period number.</param>
+            <param name="experiment">Experiment number.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.WiffReaderSpectrumHelper.GetCalibration(System.Int32,System.Int32,System.Boolean)">
+            <summary>
+            Returns a time-of-flight calibration averaged over the specified cycle range. If
+            our experiment is not TOF we return null.
+            </summary>
+            <param name="startCycle">First cycle for average.</param>
+            <param name="endCycle">Last cycle for average.</param>
+            <param name="orthagonal">Is this for an "orthogonal" TOF spectrum?</param>
+            <returns>Averaged calibration.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.WiffReaderSpectrumHelper.GetCalibrationForConvertMassToBinIfTof(System.Int32,System.Boolean)">
+            <summary>
+            Given a cycle number, returns the calibration which should be used to convert
+            masses to the corresponding bins for time-of-flight data. For non-TOF data
+            the return value is null.
+            </summary>
+            <param name="cycle">Cycle index.</param>
+            <param name="orthagonal">Is this for an "orthogonal" TOF spectrum?</param>
+            <returns>Calibration or null.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.WiffReaderSpectrumHelper.ConvertMassToBinIfTof(System.Double,System.Int32,System.Boolean)">
+            <summary>
+            Given a mass (and cycle number), converts "mass" to the corresponding "bin" for
+            time-of-flight data. For non-TOF data mass is returned directly.
+            </summary>
+            <param name="mass">Mass to convert.</param>
+            <param name="cycle">Cycle index.</param>
+            <param name="orthagonal">Is this for an "orthogonal" TOF spectrum?</param>
+            <returns>Bin number for mass if TOF, else mass as-is.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.WiffReaderSpectrumHelper.GetScan(System.Int32,System.Double,System.Double,System.Boolean@)">
+            <summary>
+            Returns the raw data points for the requested spectrum. NOTE: This method
+            returns (mass, intensity) data for quadrupole spectra, but (time-of-flight "bin", 
+            intensity) data for TOF spectra. This "raw" method is used in conjunction with 
+            an XIC calculation. If "minX" is less than or equal to "maxX" we MAY return
+            an optimised array which only contains points in that range (or in some cases we
+            may still return the whole range); otherwise the entire available range is used.
+            If used, this range is mass for quadrupole data and bin number for TOF data.
+            </summary>
+            <param name="cycle">Cycle index.</param>
+            <param name="minX">Min x-value (mass or TOF bin).</param>
+            <param name="maxX">Max x-value (mass or TOF bin).</param>
+            <param name="minMaxUsed">Were minX and maxX honoured?</param>
+            <returns>Raw (x, intensity) points.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.WiffReaderSpectrumHelper.GetSpectrum(System.Int32,System.Int32,System.Int32,System.Int32,System.Double,System.Double)">
+            <summary>
+            Returns an object holding mass and intensity arrays averaged over the specified
+            cycle range. In most cases "startOrthogonalMassIndex" and "endOrthogonalMassIndex"
+            will both be equal to -1, otherwise they are the quadrupole mass index range
+            over which a "store all" TOF precursor spectrum is to be summed. If the starting mass 
+            is less than or equal to the end mass then the retrieval MAY be optimised so that 
+            only this sub-range is returned. However for some data optimisation is not implemented 
+            and the full range is returned. If the start mass is greater than the end mass the full 
+            range is always used. Also note that these masses are actual masses even for TOF (not bins).
+            </summary>
+            <param name="startCycle">First cycle for average.</param>
+            <param name="endCycle">End cycle for average.</param>
+            <param name="startOrthogonalMassIndex">See comment above.</param>
+            <param name="endOrthogonalMassIndex">See comment above.</param>
+            <param name="startMass">Start mass (if less than end mass).</param>
+            <param name="endMass">End mass (if greater than start mass).</param>
+            <returns>Data points for requested spectrum.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.WiffReaderSpectrumHelper.SumSpectrumUsingTofAdding(System.Int32,System.Int32,System.Int32,System.Int32,System.Double,System.Double,Sciex.FMan.DefaultTofCalibration)">
+            <summary>
+            Returns an object holding (mass, intensity) arrays averaged over the specified
+            cycle range. This method is used when processing non-centroid TOF data.
+            </summary>
+            <param name="startCycle">First cycle for average.</param>
+            <param name="endCycle">End cycle for average.</param>
+            <param name="startOrthogonalMassIndex">See GetSpectrum comment above.</param>
+            <param name="endOrthogonalMassIndex">See GetSpectrum comment above.</param>
+            <param name="startMass">Start mass (if less than end mass).</param>
+            <param name="endMass">End mass (if greater than start mass).</param>
+            <param name="calibration">TOF calibration.</param>
+            <returns>Data points for requested spectrum.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.WiffReaderSpectrumHelper.SumSpectrumUsingStandardAdding(System.Int32,System.Int32,System.Int32,System.Int32,System.Double,System.Double)">
+            <summary>
+            Returns an object holding (mass, intensity) arrays averaged over the specified
+            cycle range. This method is used when processing quadrupole and centroid-mode
+            TOF data.
+            </summary>
+            <param name="startCycle">First cycle for average.</param>
+            <param name="endCycle">End cycle for average.</param>
+            <param name="startOrthogonalMassIndex">See GetSpectrum comment above.</param>
+            <param name="endOrthogonalMassIndex">See GetSpectrum comment above.</param>
+            <param name="startMass">Start mass (if less than end mass).</param>
+            <param name="endMass">End mass (if greater than start mass).</param>
+            <returns>Data points for requested spectrum.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.WiffReaderSpectrumHelper.ConvertBinsToMassesIfTof(System.Double[],Sciex.FMan.DefaultTofCalibration)">
+            <summary>
+            If the current raw data is stored as (bin, intensity) values this method converts
+            the provided bins in-place to masses; otherwise it does nothing.
+            </summary>
+            <param name="binsOrMasses">Bins to convert to masses or masses to leave as-is.</param>
+            <param name="calibration">Calibration.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.WiffReaderSpectrumHelper.GetScan(System.Int32,System.Int32,System.Double,System.Double,System.Boolean,System.Boolean@,System.Double[]@)">
+            <summary>
+            Returns the raw data points for the requested spectrum. If "orthogonalMassIndex" is 
+            -1 we return a normal mass spectrum, otherwise the time-of-flight spectrum associated 
+            with the specified quadruopole mass index (for QqTOF TOF-Precursor data using the 
+            "store all" feature). If "minX" is less than or equal to "maxX" we MAY return an 
+            optimised array which only contains points in that range (or in some cases we may still 
+            return the whole range); otherwise the entire available range is used. If used, this
+            range is mass for quadrupole data and also mass for TOF data if "convertMinMaxToBinIfTof"
+            is false, otherwise bin number for TOF data.
+            </summary>
+            <param name="cycle">Cycle index.</param>
+            <param name="orthogonalMassIndex">Index in orthogonal quad spectrum or -1.</param>
+            <param name="minX">Min x-value (mass or TOF bin).</param>
+            <param name="maxX">Max x-value (mass or TOF bin).</param>
+            <param name="convertMinMaxToBinIfTof">Convert minX and maxX (if used) from mass to TOF bin?</param>
+            <param name="minMaxUsed">Were minX and maxX honoured?</param>
+            <param name="centroidWidths">Set to centroid widths or null if not centroid mode.</param>
+            <returns>Raw (x, intensity) points.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.WiffReaderSpectrumHelper.AverageIntensities(Clearcore2.RawXYProcessing.RawXYDataArray,System.Int32)">
+            <summary>
+            Given an (x, intensity) spectrum where the intensities have been summed,
+            calculates average intensities.
+            </summary>
+            <param name="xyData">Spectrum points.</param>
+            <param name="numCycles">Number of cycles summed.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.WiffReaderSpectrumHelper.GetPeakInfo(System.Int32)">
+            <summary>
+            If run-time peak information is available, this method returns the peak info for 
+            the requested cycle. Otherwise if this information is not available we return null.
+            </summary>
+            <param name="cycle">Cycle number.</param>
+            <returns>Peak info or null.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.WiffReaderSpectrumHelper.GetScanIndex(System.Int32)">
+            <summary>
+            Given a cycle number, returns the "flat" scan index. For single period/experiment
+            data the two values will be the same.
+            </summary>
+            <param name="cycle">Cycle index.</param>
+            <returns>Scan index.</returns>
+        </member>
+        <member name="P:Sciex.Clearcore.FMan.WiffReaderSpectrumHelper.IsTof">
+            <summary>
+            Returns true iff we have TOF data.
+            </summary>
+        </member>
+        <member name="P:Sciex.Clearcore.FMan.WiffReaderSpectrumHelper.BinOffset">
+            <summary>
+            Returns the so-called bin-offset for TOF. If four bins are being summed we may 
+            have bin numbers such as 100, 104, 108 etc (actually the magnitude would be larger);
+            however for older data we may have bins such as 101, 105, 109, etc. In the former 
+            example the offset is zero and in the latter case its one. We cache this value
+            since it may take some time to calculate.
+            </summary>
+        </member>
+        <member name="P:Sciex.Clearcore.FMan.WiffReaderSpectrumHelper.StepSize">
+            <summary>
+            Returns the step size of our data. For TOF data this the "bin" step size.
+            </summary>
+        </member>
+        <member name="T:Sciex.Clearcore.FMan.IExternalStorageProvider">
+            <summary>
+            This interface is used to allow an external implementation to be used for
+            opening wiff files and for opening the various storages and streams (see
+            the ClearcoreFMan.ExternalStorageProvider). When provided, the implementation
+            is used if the "UseImplementationForFile" method returns true.
+            </summary>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.IExternalStorageProvider.UseImplementationForFile(System.String)">
+            <summary>
+            Should this provided external implementation be used for opening the 
+            specified file (true) or should the built-in default implementation
+            be used (false).
+            </summary>
+            <param name="path">Path to file.</param>
+            <returns>True if this implementation should be used.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.IExternalStorageProvider.OpenFile(System.String)">
+            <summary>
+            Opens and returns a storage for the file with the specified path. Calls to
+            this method will be balanced by a call to Close() file on the return value.
+            </summary>
+            <param name="path">Path to file.</param>
+            <returns>A new interface for the file itself.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.IExternalStorageProvider.HasScanStream(System.String,System.Int32)">
+            <summary>
+            This method returns true if there is a separate source (other than the compound
+            document) for the main scan data for the specified sample. If the return value
+            is true the OpenScanStream() method will be called, otherwise a default
+            implementation to open any scan file directly is used.
+            </summary>
+            <param name="path">Path to file.</param>
+            <param name="sampleIndex">Index of sample in file.</param>
+            <returns>True if provider has a source for scan data.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.IExternalStorageProvider.OpenScanStream(System.String,System.Int32)">
+            <summary>
+            Assuming that HasScanStream() returns true, this method opens and returns a stream
+            for the raw scan data for the provided sample. The Close() or Dispose() method 
+            will be called on the result.
+            </summary>
+            <param name="path">Path to file.</param>
+            <param name="sampleIndex">Index of sample in file.</param>
+            <returns>Requested data stream.</returns>
+        </member>
+        <member name="T:Sciex.Clearcore.FMan.ConvertGlpTablesToInfoXml">
+            <summary>
+            Given a series of Analyst GlpTable objects, this class is used to populate an XML
+            document with information parsed from the tables.
+            </summary>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ConvertGlpTablesToInfoXml.#ctor(Clearcore2.Utility.IO.InfoXml.CreateInfoXml)">
+            <summary>
+            Constructor. We use "createXml" to populate the XML document.
+            </summary>
+            <param name="createXml">Used to populate XML.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ConvertGlpTablesToInfoXml.AddToInfoXml(Clearcore2.Data.WiffReader.GlpTable[])">
+            <summary>
+            Adds information to the XML document (the helper for which was provided to our
+            constructor) for the GLP tables (if any).
+            </summary>
+            <param name="tables">Tables for which to add info.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ConvertGlpTablesToInfoXml.AddResolutionTables">
+            <summary>
+            Adds any resolution tables.
+            </summary>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ConvertGlpTablesToInfoXml.AddCalibrationTables">
+            <summary>
+            Adds any calibration tables.
+            </summary>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ConvertGlpTablesToInfoXml.AddStateParameters">
+            <summary>
+            Adds any state-parameter tables.
+            </summary>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ConvertGlpTablesToInfoXml.AddKeyValues">
+            <summary>
+            Adds any keyed-text tables.
+            </summary>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ConvertGlpTablesToInfoXml.AddKeyValues(System.String,System.Xml.XmlNode)">
+            <summary>
+            Adds a keyed-text entry under "keyValuesNode" for every line in "keyValues". It is
+            assumed that a carriage return separates each of the key-value pairs.
+            </summary>
+            <param name="keyValues">Key-value pairs separated by carriage returns.</param>
+            <param name="keyValuesNode">Node under which key-values are added.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ConvertGlpTablesToInfoXml.AddStateParameters(System.String)">
+            <summary>
+            Adds the specified state-parameter string.
+            </summary>
+            <param name="parameters">State-parameters string.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ConvertGlpTablesToInfoXml.AddTable(System.String)">
+            <summary>
+            Adds the contents of the following table to our XML. Note that the table may contain
+            a multiple-line preamble (essentially a group of keyed-text fields).
+            </summary>
+            <param name="table">Table contents.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ConvertGlpTablesToInfoXml.AddTableInfo(System.Int32@,System.String[],System.Xml.XmlNode)">
+            <summary>
+            Adds any initial header information (not the column headers) for a table. Starting
+            at lines[lineIndex] we will continue processing lines until we detect the start of
+            the main table.
+            </summary>
+            <param name="lineIndex">Current index in "lines".</param>
+            <param name="lines">Data to process.</param>
+            <param name="section">Section for key-values.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ConvertGlpTablesToInfoXml.AddMainTable(System.Int32@,System.String[],System.Xml.XmlNode)">
+            <summary>
+            Adds the main portion of a table (its column headers and contents, but not the
+            initial header of key-values). Starting at lines[lineIndex] we process the header
+            and rows of the table until we reach the end of the table (there may be another
+            table following which we do not process).
+            </summary>
+            <param name="lineIndex">Current index in "lines".</param>
+            <param name="lines">Data to process.</param>
+            <param name="section">Section for table.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ConvertGlpTablesToInfoXml.GetTableRow(System.String,System.Int32)">
+            <summary>
+            Parses a series of tab-separated table fields from the provided string. For a
+            header row "expectedNumColumns" should be -1, otherwise the length of the
+            header row (we use it as a hint in parsing).
+            </summary>
+            <param name="row">String to parse.</param>
+            <param name="expectedNumColumns">Number of columns or -1.</param>
+            <returns>List of fields for table row.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ConvertGlpTablesToInfoXml.AddKeyValue(System.String,System.Xml.XmlNode)">
+            <summary>
+            Adds a key-value pair (parsed from "keyValue") to the provided node.
+            </summary>
+            <param name="keyValue">String with key and value.</param>
+            <param name="keyValuesNode">Node for key-values.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ConvertGlpTablesToInfoXml.GetKeyValue(System.String,System.String@,System.String@)">
+            <summary>
+            Given a string containing both a key and a value, we parse and return the
+            key and value separately. We assume that the key/value is separated by
+            either a ':' or a tab.
+            </summary>
+            <param name="keyValue">String with key and value.</param>
+            <param name="key">Set to key.</param>
+            <param name="value">Set to value.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ConvertGlpTablesToInfoXml.CreateSection(System.String)">
+            <summary>
+            This utility method creates a new section in the output XML with the specified
+            name.
+            </summary>
+            <param name="name">Name of new section.</param>
+            <returns>The new section node.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ConvertGlpTablesToInfoXml.SplitLines(System.String)">
+            <summary>
+            Splits the provided string on either a '\r' or a '\n'.
+            </summary>
+            <param name="s">String to split.</param>
+            <returns>List of carriage-return-separated items.</returns>
+        </member>
+        <member name="T:Sciex.Clearcore.FMan.ClearcoreGetSampleInfo">
+            <summary>
+            This helper class is used to get sample information.
+            </summary>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreGetSampleInfo.CreateSampleInfo(Clearcore2.Data.WiffReader.WiffSampleRun)">
+            <summary>
+            Given a WiffSampleRun, returns a corresponding SampleInfo object.
+            </summary>
+            <param name="wiffSampleRun">Sample run.</param>
+            <returns>Sample information.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreGetSampleInfo.GetSampleType(System.Int32)">
+            <summary>
+            Given a "raw" sample type from a wiff file, returns our corresponding
+            enumerated value.
+            </summary>
+            <param name="wiffType">Raw sample type.</param>
+            <returns>Enumerated sample type.</returns>
+        </member>
+        <member name="T:Sciex.Clearcore.FMan.ClearcoreCreateMethodXml">
+            <summary>
+            This subclass of CreateMethodXml is used to add LC pump information, etc. to the XML 
+            document. Note that pump information is only available for some models of pump.
+            </summary>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreCreateMethodXml.#ctor(Sciex.FMan.MSMethod,Clearcore2.Data.WiffReader.WiffSampleRun)">
+            <summary>
+            Constructor.
+            </summary>
+            <param name="method">Method.</param>
+            <param name="wiffSampleRun">WiffSampleRun for sample.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreCreateMethodXml.PopulateDocument">
+            <summary>
+            We override this method to add our pump and other info.
+            </summary>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreCreateMethodXml.AddIdaInfo">
+            <summary>
+            This method is used to add information about the IDA criteria. If the method
+            is not IDA this method does nothing.
+            </summary>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreCreateMethodXml.BeforeAddExperimentParametersInfo(System.Int32,System.Int32,Sciex.FMan.MSExperiment,System.Xml.XmlNode,System.Xml.XmlNode)">
+            <summary>
+            We override this method to add the TOF pulser frequency to the output (if applicable).
+            For a description of the parameters see the base class.
+            </summary>>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreCreateMethodXml.AfterAddExperimentInfo(System.Int32,System.Int32,Sciex.FMan.MSExperiment,System.Xml.XmlNode)">
+            <summary>
+            We override this method to add information for TOF RF transmission to the output
+            (if applicable). For a description of the parameters see the base class.
+            </summary>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreCreateMethodXml.GetTofRFParameters(Clearcore2.Data.WiffReader.WiffExperiment,Sciex.FMan.MSExperiment)">
+            <summary>
+            This method returns a list with the names of all instrument parameters which
+            belong to any of the transmission mass ranges AND which do not exist in the
+            MSExperiment's one (TOF) mass range object. When the MSExperiment's mass range is 
+            created any parameters which are the same for all transmission mass ranges are 
+            added to it, so the net result is that we return a list of parameters which differ 
+            between the mass ranges.
+            </summary>
+            <param name="wiffExpt">Wiff experiment.</param>
+            <param name="experiment">Owning experiment.</param>
+            <returns>List of parameter names.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreCreateMethodXml.AddTofRFTable(System.Xml.XmlNode,Clearcore2.Data.WiffReader.WiffExperiment,System.Collections.Generic.IList{System.String})">
+            <summary>
+            This method populates the XML "table" with TOF RF transmission information. This
+            includes the Q1/Q2 mass, the percent of time spent on each range and any
+            parameters which vary between the ranges.
+            </summary>
+            <param name="table">Table to populate.</param>
+            <param name="wiffExpt">Wiff experiment.</param>
+            <param name="parameters">Names of parameters to add.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreCreateMethodXml.AddPumpInfo">
+            <summary>
+            Adds any pump information to the XML.
+            </summary>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreCreateMethodXml.CreateGradientTable(System.Xml.XmlNode,Clearcore2.Data.WiffReader.WiffPumpMethod)">
+            <summary>
+            Creates a gradient table for the specified pump.
+            </summary>
+            <param name="section">Section for table.</param>
+            <param name="pumpMethod">Pump method.</param>
+            <returns>XmlNode for gradient table.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreCreateMethodXml.AddGradientSteps(System.Xml.XmlNode,Clearcore2.Data.WiffReader.WiffPumpMethod)">
+            <summary>
+            Adds a row to the provided table for each of the gradient steps associated with the
+            provided pump method.
+            </summary>
+            <param name="table">Xml node for table.</param>
+            <param name="pumpMethod">Pump method.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreCreateMethodXml.AddGlpInfo">
+            <summary>
+            Adds information for so-called GLP tables to the XML.
+            </summary>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreCreateMethodXml.AddSoftwareDeviceInfo">
+            <summary>
+            Adds any information for external "software devices" to the XML.
+            </summary>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreCreateMethodXml.CreateSoftwareDeviceEntry(Clearcore2.Data.WiffReader.WiffSoftwareDeviceMethod)">
+            <summary>
+            Creates a key-value section for the specified "software device".
+            </summary>
+            <param name="method">Method for which to add info.</param>
+        </member>
+        <member name="T:Sciex.Clearcore.FMan.ParametersHelper">
+            <summary>
+            This class manages adding InstrumentParameters to MSExperiment objects.
+            </summary>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ParametersHelper.AddParameters(Sciex.FMan.MSExperiment,System.Boolean,Clearcore2.Data.WiffReader.WiffPeriod,Clearcore2.Data.WiffReader.WiffExperiment)">
+            <summary>
+            This method sets the experiment's "Parameters" list and does the same for any
+            mass ranges contained by the experiment.
+            </summary>
+            <param name="experiment">Experiment to which parameters are added.</param>
+            <param name="mergeMassRanges">Only use common mass range parameters (for TOF).</param>
+            <param name="wiffPeriod">Wiff period.</param>
+            <param name="wiffExperiment">Wiff experiment.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ParametersHelper.AddOrRemoveParameters(Clearcore2.Data.WiffReader.WiffParameterTable,Sciex.FMan.InstrumentParameterCollection,System.Boolean)">
+            <summary>
+            If "add" is true this method copies any parameters from "wiffParameters" to
+            "parameters". If "add" is false we remove any items from "parameters" IF the
+            corresponding item (if any) in "wiffParameters" is different (i.e. has a 
+            different start or stop value).
+            </summary>
+            <param name="wiffParameters">Source for copy.</param>
+            <param name="parameters">Destination for copy.</param>
+            <param name="add">Add to "parameters" or remove un-equal values?</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ParametersHelper.AddSteppedIdaParameterHack(Sciex.FMan.MSMethod,Clearcore2.Data.WiffReader.WiffSampleRun)">
+            <summary>
+            This hack is used to add a fake cycle-dependent parameter to our method's
+            experiments for the special case of "stepped IDA". This is an IDA-like
+            experiment (with a single dependent experiment) in which the IDA mass starts
+            at a given value and increments by a fixed value. For this kind of data,
+            faking a CDP allows the x-axis in chromatograms to indicate the parent m/z.
+            </summary>
+            <param name="method">Method to potentially update.</param>
+            <param name="sampleRun">Wiff sample run.</param>
+            <returns>The fake "Precursor" parameter or null if N/A.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ParametersHelper.GetSteppedIdaExperimentIndex(Sciex.FMan.MSMethod)">
+            <summary>
+            Returns the index of the one-and-only IDA dependent experiment if any. If there
+            are no dependents or more than one we return -1. We also demand a reasonable
+            number of cycles for the experiment.
+            </summary>
+            <param name="method">MSMethod object.</param>
+            <returns>Index of dependent experiment.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ParametersHelper.UpdateMethod(Sciex.FMan.MSMethod)">
+            <summary>
+            Finishes initialising the provided method.
+            </summary>
+            <param name="method">Method to update.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ParametersHelper.AddMissingSwathParameters(Sciex.FMan.MSMethod)">
+            <summary>
+            If at least one experiment for the provided method is swath, then we add
+            an "N/A" swath parameter for the other experiments.
+            </summary>
+            <param name="method">Method.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ParametersHelper.AdjustExperimentNamesForParameters(Sciex.FMan.MSMethod)">
+            <summary>
+            This method adjusts the experiment names by appending a description of any
+            parameters (if any) which are different for ALL experiments.
+            </summary>
+            <param name="method">Method to update.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ParametersHelper.HideParameters(Sciex.FMan.MSMethod,System.Boolean,System.String[])">
+            <summary>
+            Hides or shows any instrument parameters associated with the provided method
+            which match the provided names.
+            </summary>
+            <param name="method">Method to update.</param>
+            <param name="hidden">True for hidden; false for visible.</param>
+            <param name="names">Parameter names.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ParametersHelper.HideParameters(Sciex.FMan.InstrumentParameterCollection,System.Boolean,System.String[])">
+            <summary>
+            Hides or shows any instrument parameters associatd with the provided table
+            which match the provided names.
+            </summary>
+            <param name="ipc">Parametes to update.</param>
+            <param name="hidden">True for hidden; false for visible.</param>
+            <param name="names">Parameter names.</param>
+        </member>
+        <member name="T:Sciex.Clearcore.FMan.ExternalStorageProviderMapper">
+            <summary>
+            This class is used to map between the IExternalStorageProvider potentially provided 
+            to a ClearcoreFMan object and the similar (but not identical) IWiffStorageProvider
+            interface used by the WiffReader objects. One point to note is that the owning
+            ClearcoreFMan is responsible for calling CloseFile() when needed.
+            </summary>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ExternalStorageProviderMapper.#ctor(Sciex.Clearcore.FMan.IExternalStorageProvider,System.String)">
+            <summary>
+            Constructor.
+            </summary>
+            <param name="provider">The external provider.</param>
+            <param name="path">Path to wiff file.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ExternalStorageProviderMapper.#ctor(Sciex.Clearcore.FMan.IExternalStorageProvider,System.String,Sciex.Clearcore.FMan.IExternalStorage)">
+            <summary>
+            Constructor.
+            </summary>
+            <param name="provider">The external provider.</param>
+            <param name="path">Path to wiff file.</param>
+            <param name="storage">The storage.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ExternalStorageProviderMapper.CloseFile">
+            <summary>
+            This method must be called after constructing a new file object.
+            </summary>
+        </member>
+        <member name="T:Sciex.Clearcore.FMan.ClearcoreWavelengthSpectrum">
+            <summary>
+            This subclass of FManWavelengthSpectrum is used for reading a diode array spectrum
+            from a wiff file.
+            </summary>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreWavelengthSpectrum.#ctor(Sciex.Clearcore.FMan.ClearcoreFMan)">
+            <summary>
+            Constructor.
+            </summary>
+            <param name="fman">Used to get info, etc.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreWavelengthSpectrum.#ctor(Sciex.Clearcore.FMan.ClearcoreWavelengthSpectrum)">
+            <summary>
+            Copy constructor.
+            </summary>
+            <param name="toCopy">The object to copy.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreWavelengthSpectrum.#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <summary>
+            Constructor used when de-serialising.
+            </summary>
+            <param name="info">Object with data.</param>
+            <param name="context">Not used.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreWavelengthSpectrum.GetObjectData(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <summary>
+            Serialises this object.
+            </summary>
+            <param name="info">Object which holds data to write.</param>
+            <param name="context">Not used.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreWavelengthSpectrum.Clone">
+            <summary>
+            Returns a copy of this object.
+            </summary>
+            <returns>The copy.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreWavelengthSpectrum.SetToSpectrum(Sciex.FMan.FManSample,System.Int32,System.Int32)">
+            <summary>
+            Sets our XY data to a wavelength spectrum for the specified sample and spectrum
+            index range. The spectrum is averaged over the range.
+            </summary>
+            <param name="sample">Sample to use.</param>
+            <param name="startIndex">Start spectrum index.</param>
+            <param name="endIndex">End spectrum index.</param>
+        </member>
+        <member name="P:Sciex.Clearcore.FMan.ClearcoreWavelengthSpectrum.FMan">
+            <summary>
+            We hide the base class implementation to return a typed FMan, namely a
+            ClearcoreFMan.
+            </summary>
+        </member>
+        <member name="P:Sciex.Clearcore.FMan.ClearcoreWavelengthSpectrum.Sample">
+            <summary>
+            We hide the base class implementation of this method to return a
+            typed sample, namely an "WiffSample".
+            </summary>
+        </member>
+        <member name="T:Sciex.Clearcore.FMan.Properties.Resources">
+            <summary>
+              A strongly-typed resource class, for looking up localized strings, etc.
+            </summary>
+        </member>
+        <member name="P:Sciex.Clearcore.FMan.Properties.Resources.ResourceManager">
+            <summary>
+              Returns the cached ResourceManager instance used by this class.
+            </summary>
+        </member>
+        <member name="P:Sciex.Clearcore.FMan.Properties.Resources.Culture">
+            <summary>
+              Overrides the current thread's CurrentUICulture property for all
+              resource lookups using this strongly typed resource class.
+            </summary>
+        </member>
+        <member name="P:Sciex.Clearcore.FMan.Properties.Resources.ClearcoreRecalibrateSample_FilecouldNotBeOpenedForWriting">
+             <summary>
+               Looks up a localized string similar to The file could not be opened for writing.
+            
+            Is it currently open in another application?.
+             </summary>
+        </member>
+        <member name="P:Sciex.Clearcore.FMan.Properties.Resources.GE_ClearcoreMassSpectrum_InvalidMassIndexRange">
+            <summary>
+              Looks up a localized string similar to Invalid mass index range..
+            </summary>
+        </member>
+        <member name="P:Sciex.Clearcore.FMan.Properties.Resources.GE_ClearcoreMethodHelper_UknownWiffScanType">
+            <summary>
+              Looks up a localized string similar to Uknown wiff scan type..
+            </summary>
+        </member>
+        <member name="P:Sciex.Clearcore.FMan.Properties.Resources.GE_ClearcoreRecalibrateSample_PeriodIndexIsOutOfRange">
+            <summary>
+              Looks up a localized string similar to Period index is out of range..
+            </summary>
+        </member>
+        <member name="P:Sciex.Clearcore.FMan.Properties.Resources.GE_WiffReaderSpectrumHelper_CouldNotGetSpectrumForSamplePeriodExperimentCycle_6">
+             <summary>
+               Looks up a localized string similar to Could not get spectrum for {0} (sample {1})
+            (Period = {2}, Experiment = {3}, Cycle = {4}).
+            
+            {5}.
+             </summary>
+        </member>
+        <member name="P:Sciex.Clearcore.FMan.Properties.Resources.GL_ClearcoreChromatogram_From_3">
+            <summary>
+              Looks up a localized string similar to {0} from {1} - {2}.
+            </summary>
+        </member>
+        <member name="P:Sciex.Clearcore.FMan.Properties.Resources.GL_ClearcoreChromatogram_TwcFrom_2">
+            <summary>
+              Looks up a localized string similar to TWC from {0} - {1}.
+            </summary>
+        </member>
+        <member name="P:Sciex.Clearcore.FMan.Properties.Resources.GL_ClearcoreChromatogram_XwcFrom_3">
+            <summary>
+              Looks up a localized string similar to XWC from {0} - {1}: {2} nm.
+            </summary>
+        </member>
+        <member name="P:Sciex.Clearcore.FMan.Properties.Resources.GL_ClearcoreChromatogram_XwcFrom_4">
+            <summary>
+              Looks up a localized string similar to XWC from {0} - {1}: {2} to {3} nm.
+            </summary>
+        </member>
+        <member name="P:Sciex.Clearcore.FMan.Properties.Resources.GL_ClearcoreCreateMethodXml_KHz_1">
+            <summary>
+              Looks up a localized string similar to {0} kHz.
+            </summary>
+        </member>
+        <member name="P:Sciex.Clearcore.FMan.Properties.Resources.GL_ClearcoreCreateMethodXml_Ms_1">
+            <summary>
+              Looks up a localized string similar to {0} ms.
+            </summary>
+        </member>
+        <member name="T:Sciex.Clearcore.FMan.IExternalStorage">
+            <summary>
+            This interface is used to allow an external implementation to be used for
+            opening wiff files and for opening the various storages and streams. This
+            interface is used for the return value of IExternalStorageProvider.OpenFile
+            and for IExternalStorage.OpenStorage. In both cases the Close() method is
+            called on the result.
+            </summary>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.IExternalStorage.StorageExists(System.String)">
+            <summary>
+            Returns true if there is a storage of the specified name.
+            </summary>
+            <param name="name">Name of storage.</param>
+            <returns>True if storage exists.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.IExternalStorage.OpenStorage(System.String)">
+            <summary>
+            Opens and returns the storage of the specified name. It is an error if the
+            storage does not exist. Calls to this method will be balanced by a call
+            to Close().
+            </summary>
+            <param name="name">Name of storage.</param>
+            <returns>Requested storage.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.IExternalStorage.Close">
+            <summary>
+            Called after a successful call to OpenStorage() on the result of that method
+            OR after a call to IExternalStorageProvider.OpenFile.
+            </summary>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.IExternalStorage.StreamExists(System.String)">
+            <summary>
+            Returns true if there is a stream of the specified name.
+            </summary>
+            <param name="name">Name of stream.</param>
+            <returns>True if stream exists.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.IExternalStorage.OpenStream(System.String)">
+            <summary>
+            Opens and returns the stream of the specified name. It is an error if the
+            stream does not exist. The Close() or Dispose() method will be called on
+            the result.
+            </summary>
+            <param name="name">Name of stream.</param>
+            <returns>Requested stream.</returns>
+        </member>
+        <member name="T:Sciex.Clearcore.FMan.ConvertShimadzuToInfoXml">
+            <summary>
+            This class is used to add information to an XML document for a Shimadzu device. We
+            parse information from the associated text blob.
+            </summary>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ConvertShimadzuToInfoXml.AddInfo(Clearcore2.Data.WiffReader.WiffDeviceWithTextBlobMethod,System.Xml.XmlNode,Clearcore2.Utility.IO.InfoXml.CreateInfoXml)">
+            <summary>
+            Adds information to "mainSection" section of the XML document associated with 
+            "createXml" for the provided Shimadzu device method.
+            </summary>
+            <param name="method">Shimadzu method.</param>
+            <param name="mainSection">Section to which XML is added.</param>
+            <param name="createXml">Used to populate XML.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ConvertShimadzuToInfoXml.AddTable(System.String[],System.Int32@,System.Xml.XmlNode,Clearcore2.Utility.IO.InfoXml.CreateInfoXml)">
+            <summary>
+            If lines[index] appears to be the start of a table, we process the table and return true;
+            otherwise we do nothing and return false.
+            </summary>
+            <param name="lines">List of text lines.</param>
+            <param name="index">Current index in "lines".</param>
+            <param name="section">Section to which we add table.</param>
+            <param name="createXml">Used to add table to XML.</param>
+            <returns>True iff we added a table.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ConvertShimadzuToInfoXml.ParseTableRow(System.String)">
+            <summary>
+            This method returns a table row parsed from the provided line.
+            </summary>
+            <param name="line">Line to parse.</param>
+            <returns>List of row items for line.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ConvertShimadzuToInfoXml.GetKeyValue(System.String,System.String@,System.String@)">
+            <summary>
+            Given a string containing both a key and a value, we parse and return the
+            key and value separately. We assume that the key/value is separated by
+            a colon.
+            </summary>
+            <param name="keyValue">String with key and value.</param>
+            <param name="key">Set to key.</param>
+            <param name="value">Set to value.</param>
+        </member>
+        <member name="T:Sciex.Clearcore.FMan.ClearcoreFMan">
+            <summary>
+            This class implements the IFMan interface to return sample and method
+            information for a wiff file; it is also used to create chromatograms and
+            spectra.
+            </summary>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreFMan.#cctor">
+            <summary>
+            Class constructor.
+            </summary>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreFMan.#ctor">
+            <summary>
+            Constructor.
+            </summary>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreFMan.#ctor(Sciex.Clearcore.FMan.ClearcoreFMan)">
+            <summary>
+            Copy constructor.
+            </summary>
+            <param name="toCopy">Object to copy.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreFMan.Clone">
+            <summary>
+            We override this method to return a copy of this object.
+            </summary>
+            <returns>The copy.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreFMan.GetMSMethodHashtable">
+            <summary>
+            Since there are multiple subclasses of AbstractFMan which read wiff files, we
+            want to keep the MSMethod objects which we create separate (i.e. we do not want a
+            common cache).
+            </summary>
+            <returns>Hashtable for caching our MSMethod objects.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreFMan.Close">
+            <summary>
+            This method should be called after the caller is finished with this
+            object so that we can clean up. Note that it's safe to continue using 
+            this object after calling Close().
+            </summary>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreFMan.CloseWiffSampleRun">
+            <summary>
+            This method closes "fWiffSampleRun" if it is not null. We also clear any corresponding
+            item from "fSampleToRealTimeCycles" if the sample is no longer being acquired.
+            </summary>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreFMan.CreateSampleInfo(Sciex.FMan.FManSample)">
+            <summary>
+            Returns sample information for the specified sample. Note that
+            "sample" must be a "WiffSample" object.
+            </summary>
+            <param name="sample">Sample for which to get info.</param>
+            <returns>The sample info.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreFMan.GetSampleXml(Sciex.FMan.FManSample)">
+            <summary>
+            Returns "opaque" sample information for the given sample which is used
+            for display-only purposes. The xml must follow the Sciex.Utility.IO.InfoXml 
+            schema.
+            </summary>
+            <param name="sample">Sample for which to get info.</param>
+            <returns>The information.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreFMan.GetMethodXml(Sciex.FMan.FManSample)">
+            <summary>
+            Returns "opaque" method information for the given sample which is used
+            for display-only purposes. The xml must follow the Sciex.Utility.IO.InfoXml
+            schema.
+            </summary>
+            <param name="sample">Sample for which to get info.</param>
+            <returns>The information.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreFMan.CreateMethod(Sciex.FMan.FManSample)">
+            <summary>
+            Returns MS method information for the specified sample. Note that
+            "sample" must be a "WiffSample" object.
+            </summary>
+            <param name="sample">Sample for which to get info.</param>
+            <returns>The method info.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreFMan.GetTime(Sciex.FMan.FManSample,System.Int32,System.Int32,System.Int32)">
+            <summary>
+            Returns the retention time for the specified cycle. Note that "sample" 
+            must be an "WiffSample" object.
+            </summary>
+            <param name="sample">Sample for which to get RT.</param>
+            <param name="period">Period number.</param>
+            <param name="experiment">Experiment number.</param>
+            <param name="cycle">Cycle for which to get RT.</param>
+            <returns>The retention time.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreFMan.GetSpectrumInfo(Sciex.FMan.FManSample,System.Int32,System.Int32,System.Int32)">
+            <summary>
+            Returns information about the specified mass spectrum. This information
+            is also returned when a spectrum itself is requested - using this method
+            prevents having to also obtain the (mass, intensity) points if they are
+            not needed (for efficiency).
+            </summary>
+            <param name="sample">Sample for which to get info.</param>
+            <param name="period">Period index.</param>
+            <param name="experiment">Experiment index.</param>
+            <param name="cycle">Cycle number.</param>
+            <returns>The spectrum information.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreFMan.GetSpectrumInfo(Sciex.FMan.FManSample,System.Int32,System.Int32,System.Int32,System.Int32)">
+            <summary>
+            Returns information about the specified mass spectrum. This information
+            is also returned when a spectrum itself is requested - using this method
+            prevents having to also obtain the (mass, intensity) points if they are
+            not needed (for efficiency).
+            </summary>
+            <param name="sample">Sample for which to get info.</param>
+            <param name="period">Period index.</param>
+            <param name="experiment">Experiment index.</param>
+            <param name="startCycle">Starting cycle number.</param>
+            <param name="endCycle">Ending cycle number.</param>
+            <returns>The spectrum information.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreFMan.GetOrthogonalSpectrumInfo(Sciex.FMan.FManSample,System.Int32,System.Int32,System.Int32,System.Int32)">
+            <summary>
+            Returns information about the specified mass spectrum. This information
+            is also returned when a spectrum itself is requested - using this method
+            prevents having to also obtain the (mass, intensity) points if they are
+            not needed (for efficiency).
+            </summary>
+            <param name="sample">Sample for which to get info.</param>
+            <param name="period">Period index.</param>
+            <param name="experiment">Experiment index.</param>
+            <param name="cycle">Cycle number.</param>
+            <param name="parentMassIndex">Mass index in parent experiment.</param>
+            <returns>The spectrum information.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreFMan.GetOrthogonalSpectrumInfo(Sciex.FMan.FManSample,System.Int32,System.Int32,System.Int32,System.Int32,System.Int32,System.Int32)">
+            <summary>
+            Returns information about the specified mass spectrum. This information
+            is also returned when a spectrum itself is requested - using this method
+            prevents having to also obtain the (mass, intensity) points if they are
+            not needed (for efficiency).
+            </summary>
+            <param name="sample">Sample for which to get info.</param>
+            <param name="period">Period index.</param>
+            <param name="experiment">Experiment index.</param>
+            <param name="startCycle">Starting cycle number.</param>
+            <param name="endCycle">Ending cycle number.</param>
+            <param name="startParentMassIndex">Start mass index in parent experiment.</param>
+            <param name="endParentMassIndex">End mass index in parent experiment.</param>
+            <returns>The spectrum information.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreFMan.CreateMassSpectrum">
+            <summary>
+            Creates a new mass spectrum. Callers can subsequently call the
+            SetToSpectrum() method on the result.
+            </summary>
+            <returns>A new spectrum object.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreFMan.GetSpectralPeakInfo(Sciex.FMan.FManSample,System.Int32,System.Int32,System.Int32)">
+            <summary>
+            Where available, this method returns information determined at run time for
+            the requested mass spectrum. If such information is not available the return
+            value is null. WARNING: In some cases the return value may be non-null but not
+            all fields of the IPeakList inteface are actually available - for example
+            the GetXValue() method may return a mass as expected but the GetYValue()
+            method may throw an exception or return -1. This is because only a subset of
+            the possible information may have been determined and saved persistently. Also
+            note that the return value may support IPeakListExtra in which case standard
+            strings to use for these "extra" fields are defined in the FManConstants
+            class. 
+            </summary>
+            <param name="sample">Sample.</param>
+            <param name="period">Period index.</param>
+            <param name="experiment">Experiment index.</param>
+            <param name="cycle">Cycle index.</param>
+            <returns>The spectral info or null.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreFMan.CreateChromatogram">
+            <summary>
+            Creates a new chromatogram. Callers can subsequently call the
+            SetToTIC(), SetToXIC(), etc. method on the result.
+            </summary>
+            <returns>A new chromatogram object.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreFMan.CreateWavelengthSpectrum">
+            <summary>
+            Creates a new wavelength spectrum. Callers can subsequently call the
+            SetToSpectrum() method on the result.
+            </summary>
+            <returns>A new wavelength spectrum object.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreFMan.CanUseRelativeCalibration(Sciex.FMan.FManSample,System.Int32,System.Int32,System.Int32,System.Int32)">
+            <summary>
+            Returns true if it's possible to perform a so-called "relative" calibration. See
+            the IRecalibration interface for details.
+            </summary>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreFMan.RecalibrateSample(Sciex.FMan.Calibration,Sciex.FMan.FManSample,System.Int32,System.Int32,System.Int32,System.Int32,Sciex.FMan.Calibration,System.Boolean)">
+            <summary>
+            Recalibrates the specified sample using the provided calibration. See the 
+            IRecalibration interface for details.
+            </summary>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreFMan.RecalibrateSample(Sciex.FMan.FManSample,System.Int32,System.Int32,System.Int32,Sciex.FMan.Calibration[])">
+            <summary>
+            Recalibrates the specified sample using the provided calibrations. In some cases this
+            method may be more efficient than calling the overloaded method multiple times. See the 
+            IRecalibration interface for details.
+            </summary>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreFMan.GetNumSamples(System.String)">
+            <summary>
+            Returns the number of samples in the provided wiff file.
+            </summary>
+            <param name="wiffPath">Full path for file.</param>
+            <returns>The number of samples.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreFMan.GetAllSampleNames(System.String)">
+            <summary>
+            Returns a list of sample names for all samples in the specified wiff file.
+            </summary>
+            <param name="wiffPath">Full path to file.</param>
+            <returns>All the sample names.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreFMan.GetNumSamples(Sciex.FMan.FManSample)">
+            <summary>
+            Given a sample, returns the number of samples in the same file.
+            </summary>
+            <param name="sample">Sample.</param>
+            <returns>Number of samples in file.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreFMan.GetSampleIndex(Sciex.FMan.FManSample)">
+            <summary>
+            Given a sample, returns the index of this sample within its file.
+            </summary>
+            <param name="sample">Sample.</param>
+            <returns>Index of specified sample.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreFMan.CreateSample(Sciex.FMan.FManSample,System.Int32)">
+            <summary>
+            Given a sample associated with a particular file, returns a new sample for
+            the same file with the specified group index.
+            </summary>
+            <param name="sample">Sample.</param>
+            <param name="index">Index of new sample in file.</param>
+            <returns>New sample.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreFMan.CreateFileSampleWithIndex(System.String,System.Int32)">
+            <summary>
+            Given a path to a wiff file and a sample index, returns a new WiffSample object.
+            </summary>
+            <param name="filePath">Path to file.</param>
+            <param name="index">Sample index.</param>
+            <returns>New WiffSample.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreFMan.GetIntensitySumInterface(Sciex.FMan.FManSample,System.Int32,System.Int32)">
+            <summary>
+            This method implements IGetGetIntensitySum by returning a new GetIntensitySumImpl
+            object.
+            </summary>
+            <param name="sample">Sample.</param>
+            <param name="period">Period index.</param>
+            <param name="experiment">Experiment index.</param>
+            <returns>IGetItensitySum implementation.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreFMan.RealTimeUpdate(Sciex.FMan.FManSample)">
+            <summary>
+            Updates the provided sample. If there is new data we return true.
+            </summary>
+            <param name="sample">Sample to update.</param>
+            <returns>True if there is new data.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreFMan.SetWiffFile(System.String,System.Boolean)">
+            <summary>
+            Sets the current wiff file.
+            </summary>
+            <param name="filename">Path to file.</param>
+            <param name="checkSize">Refresh if file size has changed?</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreFMan.GetWiffSampleRun(Sciex.Wiff.WiffSample)">
+            <summary>
+            Returns the WiffSampleRun object for the specified sample. This method
+            caches the current sample run, so it is generally more efficient to call 
+            this method rather than create a new WiffSampleRun.
+            </summary>
+            <param name="sample">Sample for which to get sample run.</param>
+            <returns>Requested WiffSampleRun object.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreFMan.SetMethodHelper(Sciex.Wiff.WiffSample)">
+            <summary>
+            Sets our "fMethodHelper" to correspond to the specified sample.
+            </summary>
+            <param name="sample">Sample to use.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreFMan.GetMethodHelper(Sciex.Wiff.WiffSample)">
+            <summary>
+            Returns an object which helps with obtaining method parameters.
+            </summary>
+            <param name="sample">Sample to use.</param>
+            <returns>Requested helper.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreFMan.GetSpectrumHelper(Sciex.Wiff.WiffSample,System.Int32,System.Int32)">
+            <summary>
+            Returns the spectrum helper for the specified sample and experiment. This method 
+            caches these helpers so it is more efficient to call this method than to create a 
+            new object.
+            </summary>
+            <param name="sample">Sample to use.</param>
+            <param name="period">Period index.</param>
+            <param name="experiment">Experiment index.</param>
+            <returns>Requested spectrum helper.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreFMan.GetDataSize(Sciex.FMan.FManSample)">
+            <param name="sample">Sample.</param>
+            <returns>Estimated size of sample.</returns>
+        </member>
+        <member name="P:Sciex.Clearcore.FMan.ClearcoreFMan.ExternalStorageProvider">
+            <summary>
+            Sets the object which is used for reading wiff files in "real time".
+            </summary>
+        </member>
+        <member name="P:Sciex.Clearcore.FMan.ClearcoreFMan.AllowLargeMemoryAllocations">
+            <summary>
+            This implementation is more efficient if it is able to use large memory
+            allocations to cache data. Callers should set this propertry to true (the
+            default is false) ONLY if they will process MANY spectra; otherwise it is 
+            better to fetch data on demand and not cache it all. Note that even if this
+            property is set to true large allocations will not be made if there is not
+            sufficient free memory.
+            </summary>
+        </member>
+        <member name="P:Sciex.Clearcore.FMan.ClearcoreFMan.CanRecalibrateSample">
+            <summary>
+            Always returns true since we allow persistent recalibration.
+            </summary>
+        </member>
+        <member name="T:Sciex.Clearcore.FMan.ClearcoreCreateSampleXml">
+            <summary>
+            This subclass of CreateSampleXml is used to add Log information to the XML document.
+            </summary>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreCreateSampleXml.#ctor(Sciex.FMan.FManSample,Sciex.FMan.SampleInfo,Clearcore2.Data.WiffReader.WiffSampleRun)">
+            <summary>
+            Constructor.
+            </summary>
+            <param name="sample">Sample for which to get info.</param>
+            <param name="info">Sample info.</param>
+            <param name="wiffSampleRun">WiffSampleRun for sample.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreCreateSampleXml.PopulateDocument">
+            <summary>
+            We override this method to add our log info.
+            </summary>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreCreateSampleXml.AddAcquisitionInfo(System.Xml.XmlNode)">
+            <summary>
+            Adds the acquisition information to the provided key-values node.
+            </summary>
+            <param name="keyValues">Key-values node for info.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreCreateSampleXml.AddLogInfo">
+            <summary>
+            Adds our log info (if any) to the XML.
+            </summary>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreCreateSampleXml.BuggyLogInfo(Clearcore2.Data.WiffReader.WiffLogInfoItem,System.Int32)">
+            <summary>
+            There can sometimes be many thousands of entries from the Dionex system. If we
+            detect this case we will not write these buggy items.
+            </summary>
+            <param name="item">Item to check.</param>
+            <param name="numLogItems">Total number of items.</param>
+            <returns>True iff this is a buggy item.</returns>
+        </member>
+        <member name="T:Sciex.Clearcore.FMan.CustomWiffSampleForUnitTests">
+            <summary>
+            This class has been created for use with unit tests only. It simply
+            exposes some of the internal and sealed classes to testing.
+            
+            **It should not be used for production purposes.**
+            
+            </summary>
+        </member>
+        <member name="T:Sciex.Clearcore.FMan.SpectralPeakInfo">
+            <summary>
+            This class implements a VERY PARTIAL spectral peak list by wrapping an array of
+            WiffSpectralPeakInfo items. This structure is determined at run-time and just
+            contains a time-of-flight-bin number (which we can convert to a mass) and a
+            peak confidence value for saturated peaks. Most of the fields for IPeakList,
+            etc. will throw a NotImplementedException - only the ability to retrieve the
+            x-values and the confidences (as a custom field) is implemented.
+            </summary>
+        </member>
+        <member name="F:Sciex.Clearcore.FMan.SpectralPeakInfo.kTimeBinName">
+            <summary>
+            This constant is provided to GetExtraField() to request the time bin.
+            </summary>
+        </member>
+        <member name="F:Sciex.Clearcore.FMan.SpectralPeakInfo.kTimeBinCFDName">
+            <summary>
+            This constant is provided to GetExtraField() to request the time bin CFD.
+            </summary>
+        </member>
+        <member name="F:Sciex.Clearcore.FMan.SpectralPeakInfo.kIntensityConfName">
+            <summary>
+            This constant is provided to GetExtraField() to request the intensity confidence.
+            </summary>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.SpectralPeakInfo.#ctor(Clearcore2.Data.WiffReader.WiffSpectralPeakInfo[],Sciex.FMan.DefaultTofCalibration)">
+            <summary>
+            Constructor.
+            </summary>
+            <param name="peaks">Array of spectral peaks.</param>
+            <param name="calibration">TOF calibration.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.SpectralPeakInfo.SortIfNeeded">
+            <summary>
+            The Analyst peak finder will sometimes (rarely) generate a list with the masses
+            not sorted. We rely on the list being sorted (for a binary search), so we sort
+            the list here, but only if needed.
+            </summary>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.SpectralPeakInfo.Sort">
+            <summary>
+            Sorts our peak list.
+            </summary>
+        </member>
+        <member name="P:Sciex.Clearcore.FMan.SpectralPeakInfo.Sorted">
+            <summary>
+            Returns true iff the masses in our peak list are in sorted order.
+            </summary>
+        </member>
+        <member name="T:Sciex.Clearcore.FMan.ConvertSoftwareDeviceXmlToInfoXml">
+            <summary>
+            Given XML using the "SCIEX_ANALYST_ACQUISITION_METHOD" schema, this class is used to 
+            populate a second XML document in the "info" format used by the CreateInfoXml helper. 
+            </summary>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ConvertSoftwareDeviceXmlToInfoXml.#ctor(Clearcore2.Utility.IO.InfoXml.CreateInfoXml)">
+            <summary>
+            Constructor. We use the provider "CreateInfoXml" helper object to populate its
+            XML.
+            </summary>
+            <param name="createXml">Used to populate XML.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ConvertSoftwareDeviceXmlToInfoXml.AddToInfoXml(System.Xml.XmlNode,System.Byte[])">
+            <summary>
+            This method populates the XML document associated with the "CreateInfoXml" object
+            provided to our constructor using XML extracted from "deviceBlob". If the blob
+            cannot be converted to valid XML we do nothing.
+            </summary>
+            <param name="infoSection">Section of CreateInfoXml document to which XML is added.</param>
+            <param name="deviceBlob">Data blob.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ConvertSoftwareDeviceXmlToInfoXml.AddToInfoXml(System.Xml.XmlNode,System.Xml.XmlDocument)">
+            <summary>
+            This method populates the XML document associated with the "CreateInfoXml" object
+            provided to our constructor using the provided XmlDocument.
+            </summary>
+            <param name="infoSection">Section of CreateInfoXml document to which XML is added.</param>
+            <param name="deviceDocument">XML document with device info.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ConvertSoftwareDeviceXmlToInfoXml.ProcessSoftwareDeviceXmlNode(System.Xml.XmlNode,System.Xml.XmlNode)">
+            <summary>
+            Processes the provided "deviceNode" adding information for any known sub-node
+            types to the XML info document.
+            </summary>
+            <param name="infoSection">Section to which XML is added.</param>
+            <param name="deviceNode">Node with device info.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ConvertSoftwareDeviceXmlToInfoXml.ProcessDeviceCategory(System.Xml.XmlNode,System.Xml.XmlNode)">
+            <summary>
+            Processes a "Category" node from the device XML.
+            </summary>
+            <param name="infoSection">Section to which XML is added.</param>
+            <param name="deviceCategory">Device "Category" node.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ConvertSoftwareDeviceXmlToInfoXml.ProcessDeviceParameter(System.Xml.XmlNode,System.Xml.XmlNode)">
+            <summary>
+            Processes a "Parameter" node from the device XML.
+            </summary>
+            <param name="infoKeyValues">Section to which (key, values) are added.</param>
+            <param name="deviceParameter">Device "Parameter" node.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ConvertSoftwareDeviceXmlToInfoXml.ProcessDeviceTable(System.Xml.XmlNode,System.Xml.XmlNode)">
+            <summary>
+            Processes a "Table" node from the device XML.
+            </summary>
+            <param name="infoSection">Section to which table is added.</param>
+            <param name="deviceTable">Device "Table" node.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ConvertSoftwareDeviceXmlToInfoXml.GetDeviceTable(System.Xml.XmlNode)">
+            <summary>
+            This method reads the entire device table from the provided "Table" node of
+            the device XML. The return value is a list of table rows, each of which has
+            a list of cells for the row.
+            </summary>
+            <param name="deviceTable">The "Table" node.</param>
+            <returns>List of table rows.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ConvertSoftwareDeviceXmlToInfoXml.CreateInfoTable(System.Xml.XmlNode,System.Xml.XmlNode,System.Int32)">
+            <summary>
+            Adds a table node to the provided section of our info XML.
+            </summary>
+            <param name="infoSection">Section for new table.</param>
+            <param name="deviceTable">Device "Table" node.</param>
+            <param name="numColumns">Number of columns for table.</param>
+            <returns>The new table node.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ConvertSoftwareDeviceXmlToInfoXml.GetChildNodeInnerText(System.Xml.XmlNode,System.String)">
+            <summary>
+            For the given node, returns the inner text of the first child node with the 
+            specified name. If we have no such node we return null.
+            </summary>
+            <param name="node">Node for which to get first child.</param>
+            <param name="childName">Name of child node.</param>
+            <returns>InnerText for child node or null.</returns>
+        </member>
+        <member name="T:Sciex.Clearcore.FMan.AddTofData">
+            <summary>
+            This class is used to Add time-of-flight spectra together for the case that multiple
+            scans are being averaged. We don't use a standard addition routine because we want to
+            do the best job possible to preserve mass accuracy for the case that not all cycles
+            use the same calibration. In this case we have a "master" calibration (the average
+            for all cycles) and align all scans to these integral bins. For a particular cycle
+            if a given (Fractional) bin does not exactly match one of the output (integral) bins
+            (which will usually be the case if the calibrations are different) we assign some
+            of the intensity to the truncated bin and some to the next higher bin; this is done
+            in a weighted way so that the closer a (fractional) bin is to a particular integral
+            value, the more of the intensity that bin receives.
+            </summary>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.AddTofData.#ctor(Sciex.FMan.DefaultTofCalibration)">
+            <summary>
+            Constructor. The specified calibration is the "master" to which everything
+            is aligned.
+            </summary>
+            <param name="calibration">The master calibration.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.AddTofData.Add(System.Collections.Generic.List{System.Double},System.Collections.Generic.List{System.Double},System.Double,System.Double)">
+            <summary>
+            Adds the specified data points to our sum. Note that we assume that we can take
+            ownership of the provided arrays if needed (i.e. they won't get reused).
+            </summary>
+            <param name="bins">TOF bins (really integral values).</param>
+            <param name="intensities">TOF intensities.</param>
+            <param name="calA">Calibration 'a' parameter for spectrum to add.</param>
+            <param name="calT0">Calibration 't0' parameter for spectrum to add.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.AddTofData.AddPrivate(System.Collections.Generic.List{System.Double},System.Collections.Generic.List{System.Double},System.Double,System.Double)">
+            <summary>
+            Adds the specified data points to our sum. 
+            </summary>
+            <param name="bins">TOF bins (really integral values).</param>
+            <param name="intensities">TOF intensities.</param>
+            <param name="calA">Calibration 'a' parameter for spectrum to add.</param>
+            <param name="calT0">Calibration 't0' parameter for spectrum to add.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.AddTofData.Add(System.Collections.Generic.List{System.Int32},System.Collections.Generic.List{System.Double},System.Collections.Generic.List{System.Double},System.Collections.Generic.List{System.Double},System.Double,System.Double,System.Int32)">
+            <summary>
+            Adds the "toAdd" (bin, intensity) values to the bins in "previousBins" and the intensities 
+            in "previousIntensities". The result will go in "fBins" and "fIntensities" which we assume 
+            are already initialised to empty lists. Note that we assume that there is at least one point
+            in the "toAdd" arrays.
+            </summary>
+            <param name="previousBins">Previous bins from running sum.</param>
+            <param name="previousIntensities">Previous intensities from running sum.</param>
+            <param name="toAddBins">TOF bins to add (really integral values).</param>
+            <param name="toAddIntensities">TOF intensities to add.</param>
+            <param name="calMultFactor">Used to convert a current bin to a master bin.</param>
+            <param name="calSubFactor">Used to convert a current bin to a master bin.</param>
+            <param name="numTimeBinsSummed">Number of time bins summed.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.AddTofData.GetSpectrum">
+            <summary>
+            Returns the summed spectrum.
+            </summary>
+            <returns>The summed spectrum.</returns>
+        </member>
+        <member name="T:Sciex.Clearcore.FMan.ClearcoreMethodHelper">
+            <summary>
+            This class is used to create an MSMethod for a given sample. It also contains
+            a few additional method-related utility functions.
+            </summary>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreMethodHelper.PreprocessSampleRun(Clearcore2.Data.WiffReader.WiffSampleRun)">
+            <summary>
+            Adjusts the provided object as needed. In particular if we detect a sample
+            acquired with the CoV ramped parameter hack, we adjust the sample to use the
+            required number of virtual experiments rather than just one.
+            </summary>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreMethodHelper.#ctor(Clearcore2.Data.WiffReader.WiffSampleRun,Sciex.FMan.MSMethod)">
+            <summary>
+            Constructor.
+            </summary>
+            <param name="wiffSampleRun">Sample.</param>
+            <param name="method">MSMethod or null if not yet created.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreMethodHelper.GetTime(System.Int32,System.Int32,System.Int32)">
+            <summary>
+            Given a period, experiment and cycle, returns the corresponding acquisition time
+            in minutes.
+            </summary>
+            <param name="period">Period number.</param>
+            <param name="experiment">Experiment number.</param>
+            <param name="cycle">Cycle number.</param>
+            <returns>Acquisition time.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreMethodHelper.GetSpectrumInfo(System.Int32,System.Int32,System.Int32,System.Int32,Sciex.Clearcore.FMan.WiffReaderSpectrumHelper)">
+            <summary>
+            Returns information about the specified mass spectrum.
+            </summary>
+            <param name="period">Period index.</param>
+            <param name="experiment">Experiment index.</param>
+            <param name="startCycle">Starting cycle number.</param>
+            <param name="endCycle">Ending cycle number.</param>
+            <param name="specHelper">Spectrum helper.</param>
+            <returns>The spectrum information.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreMethodHelper.GetOrthogonalSpectrumInfo(System.Int32,System.Int32,System.Int32,System.Int32,System.Int32,System.Int32,Sciex.Clearcore.FMan.WiffReaderSpectrumHelper)">
+            <summary>
+            Returns information about the specified mass spectrum for a so-called
+            orthogonal experiment. For more information see the description for the 
+            OrthogonalMSExperiment class.
+            </summary>
+            <param name="period">Period index.</param>
+            <param name="experiment">Experiment index.</param>
+            <param name="startCycle">Starting cycle number.</param>
+            <param name="endCycle">Ending cycle number.</param>
+            <param name="parentStartMassIndex">Start mass index for orthogonal data.</param>
+            <param name="parentEndMassIndex">End mass index for orthogonal data.</param>
+            <param name="specHelper">Spectrum helper.</param>
+            <returns>The spectrum information.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreMethodHelper.GetSpectrumInfo(System.Int32,System.Int32,System.Int32,System.Int32,System.Int32,System.Int32,Sciex.Clearcore.FMan.WiffReaderSpectrumHelper)">
+            <summary>
+            Returns information about the specified mass spectrum.
+            </summary>
+            <param name="period">Period index.</param>
+            <param name="experiment">Experiment index.</param>
+            <param name="startCycle">Starting cycle number.</param>
+            <param name="endCycle">Ending cycle number.</param>
+            <param name="parentStartMassIndex">Start mass index for orthogonal data.</param>
+            <param name="parentEndMassIndex">End mass index for orthogonal data.</param>
+            <param name="specHelper">Spectrum helper.</param>
+            <returns>The spectrum information.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreMethodHelper.GetPrecursorInfo(System.Int32,System.Int32,System.Int32,System.Int32,System.Int32,System.Int32,System.Single@,System.Int16@)">
+            <summary>
+            Returns a list of parent m/z values for the specified cycle range. If the 
+            corresponding spectrum is not an MS/MS scan we return null.
+            </summary>
+            <param name="period">Period index.</param>
+            <param name="experiment">Experiment index.</param>
+            <param name="startCycle">Starting cycle number.</param>
+            <param name="endCycle">Ending cycle number.</param>
+            <param name="parentStartMassIndex">Start mass index for orthogonal data.</param>
+            <param name="parentEndMassIndex">End mass index for orthogonal data.</param>
+            <param name="ce">Set to collision energy.</param>
+            <param name="charge">Set to charge state.</param>
+            <returns>List of precursor m/z values of null if N/A.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreMethodHelper.GetIDAPrecursorInfo(System.Int32,System.Int32,System.Int32,System.Int32,System.Single@,System.Int16@)">
+            <summary>
+            Reeturns a list of parent m/z vlaues for the specified cycle range for an IDA
+            experiment. If the masses are the same for all cycles they are returned, otherwise
+            the return value is null.
+            </summary>
+            <param name="period">Period index.</param>
+            <param name="experiment">Experiment index.</param>
+            <param name="startCycle">Starting cycle number.</param>
+            <param name="endCycle">Ending cycle number.</param>
+            <param name="ce">Set to collision energy.</param>
+            <param name="charge">Set to charge state.</param>
+            <returns>List of precursor m/z values of null if N/A.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreMethodHelper.SetSpectrumSpecificCountsConversionFactor(Sciex.FMan.MassSpectrumInfo)">
+            <summary>
+            If scale factors needed to convert from counts/second to counts are available on
+            a spectrum-by-spectrum basis, we set info.CountsConversionFactor to the appropriate
+            value; otherwise it is left as-is.
+            </summary>
+            <param name="info">Info object to update.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreMethodHelper.SetTOFInfo(Sciex.FMan.MassSpectrumInfo,Sciex.Clearcore.FMan.WiffReaderSpectrumHelper)">
+            <summary>
+            Sets the fields of "info" which are specific to time-of-flight data (if needed).
+            </summary>
+            <param name="info">Info object to update.</param>
+            <param name="specHelper">Spectrum helper.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreMethodHelper.CreateMethod">
+            <summary>
+            Creates an MSMethod for the sample set in our constructor.
+            </summary>
+            <returns>A new method.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreMethodHelper.CreateExperiment">
+            <summary>
+            Creates an MSExperiment object.
+            </summary>
+            <returns>The new experiment.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreMethodHelper.CreateExperiment(Sciex.FMan.MSExperiment)">
+            <summary>
+            Creates a new MSExperiment object. If "tofPrecursorExpt" is not null, we will create
+            and return an OrthogonalMSExperiment which uses the provided experiment as the 
+            parent. This only applies to QqTOF quad precursor data for which the "store all" TOF
+            product option is used.
+            </summary>
+            <param name="tofPrecursorExpt">Parent experiment for TOF precursor or null.</param>
+            <returns>The new experiment.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreMethodHelper.CloneIsolationWindowsForNumMassRanges(System.Int32)">
+            <summary>
+            The MSExperiment class wants an array of isolation windows (for each mass range),
+            however in our case they are all the same. So this method returns an array 
+            of length "numRanges" with identical values (from "IsolationWindow"). However
+            if the isolation window is not being used we return null.
+            </summary>
+            <param name="numRanges">Number of mass ranges.</param>
+            <returns>List of identical windows or null.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreMethodHelper.EstimateIsolationWindow(Clearcore2.Data.WiffReader.WiffQuadrupoleResolution)">
+            <summary>
+            Returns a ROUGH AND READY estimate of the actual isolation window given a
+            Wiff resolution type. The instrument can be tuned in an arbitrary way so
+            that (theoretically) what's called "High" resolution could actually be low,
+            however the values returned below are reasonable estimates.
+            </summary>
+            <param name="resolution">Resolution type.</param>
+            <returns>Estimate of resolution.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreMethodHelper.GetMRMMasses(System.Double[]@,System.Double[]@,System.Double[]@,System.Double[]@,System.String[]@,System.Double[]@,System.Double[]@,System.Double[]@)">
+            <summary>
+            This method is used to get the Q1 and Q3 masses for an MRM experiment. If specific
+            names and retention times are available for the transitions, they are returned - 
+            otherwise null.
+            </summary>
+            <param name="q1Masses">Set to Q1 masses.</param>
+            <param name="q3Masses">Set to Q3 masses.</param>
+            <param name="dwells">Set to dwell times.</param>
+            <param name="countFactors">Set to count conversion factors (dwell times).</param>
+            <param name="names">Compound names if available, otherwise null.</param>
+            <param name="expectedRTs">Expected RTs if available, otherwise null.</param>
+            <param name="startRTs">Start ret. times for sMRM, otherwise null.</param>
+            <param name="endRTs">End ret. times for sMRM, otherwise null.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreMethodHelper.GetSIMMasses(System.Double[]@,System.Double[]@,System.Double[]@,System.String[]@,System.Double[]@,System.Double[]@,System.Double[]@)">
+            <summary>
+            This method is used to get the masses for a SIM experiment. If specific names and
+            retention times are available for the masses, they are returned - otherwise null.
+            </summary>
+            <param name="masses">Set to SIM masses.</param>
+            <param name="dwells">Set to dwell times.</param>
+            <param name="countFactors">Set to count conversion factors (dwell times).</param>
+            <param name="names">Compound names if available, otherwise null.</param>
+            <param name="expectedRTs">Expected RTs if available, otherwise null.</param>
+            <param name="startRTs">Start ret. times for sMRM, otherwise null.</param>
+            <param name="endRTs">End ret. times for sMRM, otherwise null.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreMethodHelper.GetTOFScanMasses(System.Double[]@,System.Double[]@,System.Double[]@)">
+            <summary>
+            This method is used to get the masses for a full-scan TOF experiment.
+            </summary>
+            <param name="starts">The start masses.</param>
+            <param name="stops">The stop masses.</param>
+            <param name="countFactors">Set to count conversion factors.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreMethodHelper.GetQuadScanMasses(System.Double[]@,System.Double[]@,System.Double[]@,System.Double[]@,System.Double[]@)">
+            <summary>
+            This method is used to get the masses for a full-scan quadrupole experiment.
+            </summary>
+            <param name="starts">The start masses.</param>
+            <param name="stops">The stop masses.</param>
+            <param name="steps">Step sizes.</param>
+            <param name="dwells">Dwell times</param>
+            <param name="countFactors">Set to count conversion factors (dwell times).</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreMethodHelper.GetNamesAndExpectedRTs(System.String[]@,System.Double[]@,System.Double[]@,System.Double[]@,System.Double[]@)">
+            <summary>
+            This method is used to get the known retention times and specific compound names
+            for SIM or MRM data -- if this information is available. If it isn't we set
+            these values to null. On input "dwells" are the dwell times read from the mass ranges;
+            on output if the current sample is an sMRM run this value is set to null since
+            the are not valid in this case - since the dwell time field was re-used to store
+            the retention time.
+            </summary>
+            <param name="names">Compound names if available, otherwise null.</param>
+            <param name="expectedRTs">Expected RTs if available, otherwise null.</param>
+            <param name="startRTs">Start ret. times for sMRM, otherwise null.</param>
+            <param name="endRTs">End ret. times for sMRM, otherwise null.</param>
+            <param name="dwells">Original dwell times.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreMethodHelper.PopulateCycleRanges(System.Double[],System.Double[],System.Double[],System.Double[])">
+            <summary>
+            Given a list of expected retention times and total windows, this method determines the
+            minimum and maximum retention times acquired for each mass range for an sMRM run. We
+            assume that "startRTs" and "endRTs" are initially filled with zeros. We need to check 
+            all of acquired data points looking for non-zero values. This is not ideal because it
+            can take some time to look through all scans, but Analyst does not store the actual
+            starting and ending retention times (data can be acquired outside the window specified
+            by the user).
+            </summary>
+            <param name="expectedRTs">Expected RTs for mass ranges.</param>
+            <param name="rtWindows">RT windows for mass ranges.</param>
+            <param name="startRTs">On input all zeros, on output starting RTs for mass ranges.</param>
+            <param name="endRTs">On input all zeros, on output ending RTs for mass ranges.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreMethodHelper.GetTofPrecursorParentMasses">
+            <summary>
+            For the case of a quadrupole precursor experiment with the storage of TOF
+            product spectra, this method returns the quadrupole masses.
+            </summary>
+            <returns>List of quadrupole masses.</returns>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreMethodHelper.AddADCChannels(Sciex.FMan.ADCMethod)">
+            <summary>
+            This routine adds the names of any ADC channels to the provided method.
+            </summary>
+            <param name="method">Method to which ADC info is added.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreMethodHelper.AddDADInfo(Sciex.FMan.DADMethod)">
+            <summary>
+            This routine updates the provided DAD method if we have DAD data.
+            </summary>
+            <param name="method">Method to update.</param>
+        </member>
+        <member name="M:Sciex.Clearcore.FMan.ClearcoreMethodHelper.SetSteppedIda(Sciex.FMan.MSMethod)">
+            <summary>
+            Sets "fSteppedIda" to true if we are dealing with a so-called "stepped IDA" method.
+            See AddSteppedIdaParameterHack() for details.
+            </summary>
+            <param name="method">Method or null.</param>
+        </member>
+        <member name="P:Sciex.Clearcore.FMan.ClearcoreMethodHelper.IsTof">
+            <summary>
+            Returns true if we have time-of-flight data.
+            </summary>
+        </member>
+        <member name="P:Sciex.Clearcore.FMan.ClearcoreMethodHelper.ExperimentType">
+            <summary>
+            Returns the experiment type for the current experiment.
+            </summary>
+        </member>
+        <member name="P:Sciex.Clearcore.FMan.ClearcoreMethodHelper.ExperimentTypeName">
+            <summary>
+            Returns the name of our experiment string - we append any instrument parameters which
+            vary from experiment to experiment to make the name more descriptive.
+            </summary>
+        </member>
+        <member name="P:Sciex.Clearcore.FMan.ClearcoreMethodHelper.RawExperimentTypeName">
+            <summary>
+            Returns the name of our experiment type.
+            </summary>
+        </member>
+        <member name="P:Sciex.Clearcore.FMan.ClearcoreMethodHelper.IdaType">
+            <summary>
+            Returns the IDA experiment type.
+            </summary>
+        </member>
+        <member name="P:Sciex.Clearcore.FMan.ClearcoreMethodHelper.DefaultTofResolution">
+            <summary>
+            Returns the "typical" resolution for a time-of-flight instrument. For other
+            instrument types we return -1.
+            </summary>
+        </member>
+        <member name="P:Sciex.Clearcore.FMan.ClearcoreMethodHelper.DefaultQuadPeakWidth">
+            <summary>
+            Returns the "typical" peak width for a quadrupole (or QTrap) instrument. For other
+            instrument types we return -1.
+            </summary>
+        </member>
+        <member name="P:Sciex.Clearcore.FMan.ClearcoreMethodHelper.CentroidMode">
+            <summary>
+            Returns true iff the data for the current experiment is centroid.
+            </summary>
+        </member>
+        <member name="P:Sciex.Clearcore.FMan.ClearcoreMethodHelper.MSLevel">
+            <summary>
+            Returns the level of MS/MS (1 for MS, 2 for normal MS/MS, etc).
+            </summary>
+        </member>
+        <member name="P:Sciex.Clearcore.FMan.ClearcoreMethodHelper.PositivePolarity">
+            <summary>
+            Returns true iff the current experiment uses positive polarity.
+            </summary>
+        </member>
+        <member name="P:Sciex.Clearcore.FMan.ClearcoreMethodHelper.CountsConversionFactor">
+            <summary>
+            Returns the conversion factor needed to convert intensities from counts/second
+            to raw counts.
+            </summary>
+        </member>
+        <member name="P:Sciex.Clearcore.FMan.ClearcoreMethodHelper.SaturationThreshold">
+            <summary>
+            Returns an ESTIMATE of the threreshold at which saturation happens or -1
+            if this cannot be determined.
+            </summary>
+        </member>
+        <member name="P:Sciex.Clearcore.FMan.ClearcoreMethodHelper.FixedMasses">
+            <summary>
+            Returns the fixed masses for MS/MS (parent, product or neutral loss).
+            </summary>
+        </member>
+        <member name="P:Sciex.Clearcore.FMan.ClearcoreMethodHelper.IsolationWindow">
+            <summary>
+            Returns an estimate of the isolation window; for an experiment for which this does
+            not apply we return -1. Note that in most cases the return value is an estimate.
+            NOTE: For an MRM experiment the return value is based on the Q1 resolution only;
+            ideally the Q1 and Q3 resolutions should be tracked separately.
+            </summary>
+        </member>
+        <member name="P:Sciex.Clearcore.FMan.ClearcoreMethodHelper.AdjustTimes">
+            <summary>
+            This method returns true if MS "retention" times need to be adjusted. If so, this is
+            done by calling our GetTime() method. The reason for this is so that when using the
+            so-called "stepped IDA" approach we need the times to be *exactly* equally spaced
+            (also see AddSteppedIdaParameterHack).
+            </summary>
+        </member>
+    </members>
+</doc>

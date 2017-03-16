@@ -1,0 +1,1314 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Sciex.FMan.UI</name>
+    </assembly>
+    <members>
+        <member name="T:Sciex.FMan.UI.SelectOneFromFileDialog">
+            <summary>
+            This class is used to select one or more samples from a file where
+            there is possibly more than one sample per file.
+            </summary>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectOneFromFileDialog.GetSamples(Sciex.FMan.ICreateFileSampleWithIndex,System.String,System.Boolean,System.Windows.Forms.Form,System.Boolean)">
+            <summary>
+            Allows the user to select one or (potentially) more samples from a file. The return
+            value is a list of samples selected by the user - it will never be null, but may be
+            empty if the user cancels the operation. Note that if the specified sample contains only
+            one sample, we do not show UI but just return that sample directly.
+            </summary>
+            <param name="creator">Used to obtain sample names.</param>
+            <param name="filePath">Path to file.</param>
+            <param name="allowMultiple">Allow more than one sample to be selected?</param>
+            <param name="owner">Owning form or null.</param>
+            <param name="isRealTime"> </param>
+            <returns>List of selected samples (may be empty).</returns>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectOneFromFileDialog.GetSamples(Sciex.FMan.ICreateFileSampleWithIndex,System.String,System.Int32[])">
+            <summary>
+            Given a file and a list of sample indices, returns the corresponding 
+            FManFileSampleWithIndex objects.
+            </summary>
+            <param name="creator"></param>
+            <param name="filePath">Path to file.</param>
+            <param name="indices">List of sample indices (may be empty but not null).</param>
+            <returns>List of FManFileSampleWithIndex.</returns>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectOneFromFileDialog.#ctor">
+            <summary>
+            Constructor.
+            </summary>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectOneFromFileDialog.SetSampleNames(System.String[])">
+            <summary>
+            Sets the sample names.
+            </summary>
+            <param name="names">List of names.</param>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectOneFromFileDialog.ProcessCmdKey(System.Windows.Forms.Message@,System.Windows.Forms.Keys)">
+            <summary>
+            Overridden to allow the escape key to cancel the dialog.
+            </summary>
+            <param name="msg">Windows message.</param>
+            <param name="keyData">The command key.</param>
+            <returns>True if we handled message.</returns>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectOneFromFileDialog.ListViewMouseDoubleClick(System.Object,System.Windows.Forms.MouseEventArgs)">
+            <summary>
+            Called when the user double-clicks in the list box. We end the dialog.
+            </summary>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectOneFromFileDialog.GetSelectedIndices">
+            <summary>
+            Returns a list of the currently selected indices; note that the return value
+            may be empty (but will not be null).
+            </summary>
+            <returns>Currently selected indices.</returns>
+        </member>
+        <member name="F:Sciex.FMan.UI.SelectOneFromFileDialog.components">
+            <summary>
+            Required designer variable.
+            </summary>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectOneFromFileDialog.Dispose(System.Boolean)">
+            <summary>
+            Clean up any resources being used.
+            </summary>
+            <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectOneFromFileDialog.InitializeComponent">
+            <summary>
+            Required method for Designer support - do not modify
+            the contents of this method with the code editor.
+            </summary>
+        </member>
+        <member name="P:Sciex.FMan.UI.SelectOneFromFileDialog.AllowMultiple">
+            <summary>
+            Sets whether multiple selections are allowed.
+            </summary>
+        </member>
+        <member name="T:Sciex.FMan.UI.SelectMultipleDialog">
+            <summary>
+            This class is used to show a modal dialog allowing the user to select
+            exactly one or more samples residing in the file system (with potentially
+            more than one sample per file). The UI contains a combo box allowing 
+            the user to navigate between the various projects (if any) or to navigate 
+            to other directories.
+            
+            To use this class, create an instance and call ShowDialog(). If that
+            method returns DialogResult.OK call GetSelectedSamples() to get the
+            user-specified sample(s). Then call Dispose().
+            </summary>
+        </member>
+        <member name="F:Sciex.FMan.UI.SelectMultipleDialog.DefaultFManSampleValidator">
+            <summary>
+            Default Validator is null. But custom validator can be plugged in.
+            </summary>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectMultipleDialog.GetSamples(Sciex.FMan.UI.FileWithIndexSampleProvider,Sciex.FMan.FManFileSampleWithIndex[])">
+            <summary>
+            Returns the user-selected samples or, if the user cancels, null. If "intialSamples"
+            is not null we select these samples initially in the UI.
+            </summary>
+            <param name="provider">Selected sample or null.</param>
+            <param name="initialSamples">Initial samples to select or null.</param>
+            <returns>Used to get sample names.</returns>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectMultipleDialog.GetSamples(Sciex.FMan.UI.FileWithIndexSampleProvider,Sciex.FMan.FManFileSampleWithIndex[],Sciex.FMan.UI.ValidateFileSamplesWithIndex)">
+            <summary>
+            Returns the user-selected samples or, if the user cancels, null. If "intialSamples"
+            is not null we select these samples initially in the UI.
+            </summary>
+            <param name="provider">Selected sample or null.</param>
+            <param name="initialSamples">Initial samples to select or null.</param>
+            <param name="validator">If not null, used to validate user-selected samples.</param>
+            <returns>Used to get sample names.</returns>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectMultipleDialog.#ctor(Sciex.FMan.UI.FileWithIndexSampleProvider)">
+            <summary>
+            Constructor.
+            </summary>
+            <param name="provider">Used to get sample names.</param>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectMultipleDialog.Dispose(System.Boolean)">
+            <summary>
+            Cleans up any resources being used.
+            </summary>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectMultipleDialog.InitializeComponent">
+            <summary>
+            Required method for Designer support - do not modify
+            the contents of this method with the code editor.
+            </summary>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectMultipleDialog.GetSelectedSamples">
+            <summary>
+            Returns our selected samples. If the dialog was cancelled, we return null.
+            </summary>
+            <returns>Selected samples, or null.</returns>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectMultipleDialog.ProcessCmdKey(System.Windows.Forms.Message@,System.Windows.Forms.Keys)">
+            <summary>
+            Overridden to allow the escape key to cancel the dialog.
+            </summary>
+            <param name="msg">Windows message.</param>
+            <param name="keyData">The command key.</param>
+            <returns>True if we handled message.</returns>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectMultipleDialog.CancelClick(System.Object,System.EventArgs)">
+            <summary>
+            Called when the user clicks the "Cancel" button.
+            </summary>
+            <param name="sender">The cancel button.</param>
+            <param name="e">Event arguments.</param>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectMultipleDialog.OKClick(System.Object,System.EventArgs)">
+            <summary>
+            Called when the user clicks the OK button. If at least one sample is selected
+            we end the dialog, otherwise we complain to the user.
+            </summary>
+            <param name="sender">OK button.</param>
+            <param name="e">Event arguments.</param>
+        </member>
+        <member name="P:Sciex.FMan.UI.SelectMultipleDialog.SelectMultiple">
+            <summary>
+            Returns our selection control.
+            </summary>
+        </member>
+        <member name="T:Sciex.FMan.UI.SelectFileSampleHelper">
+            <summary>
+            This class is used to provide UI to an IFMan (by implementing ISelectSample
+            and IBrowseForNewLocation) for samples which are located in the file system,
+            one sample per file.
+            </summary>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectFileSampleHelper.Sciex#FMan#ISelectSampleProvider#Init(Sciex.FMan.IFMan,System.String)">
+            <summary>
+            Called after creation to attach IFMan to this object. The FMan MUST 
+            implement ICreateFileSample.
+            </summary>
+            <param name="fman">IFMan object for which to provide UI.</param>
+            <param name="data">File filter.</param>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectFileSampleHelper.Sciex#FMan#ISelectSample#SelectSample">
+            <summary>
+            Displays UI allowing the user to select a single sample. If the user
+            cancels the process null is returned.
+            </summary>
+            <returns>Selected sample or null.</returns>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectFileSampleHelper.Sciex#FMan#ISelectSample#SelectSample(Sciex.FMan.FManSample)">
+            <summary>
+            Displays UI allowing the user to select a single sample. If the user
+            cancels the process null is returned. If "startingSample" is not null, it
+            is initially selected in the UI (if the sample exists).
+            </summary>
+            <param name="startingSample">Sample to initially select or null.</param>
+            <returns>Selected sample or null.</returns>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectFileSampleHelper.Sciex#FMan#ISelectSample#SelectSample(Sciex.FMan.FManSample,Sciex.FMan.GetErrorMessageIfInvalidISelectSamples)">
+            <summary>
+            Displays UI allowing the user to select a single sample. If the user
+            cancels the process null is returned. If "startingSample" is not null, it
+            is initially selected in the UI (if the sample exists). If "validator" is
+            not null it is used to check that the selected sample is valid.
+            </summary>
+            <param name="startingSample">Sample to initially select or null.</param>
+            <param name="validator">Used to check sample.</param>
+            <returns>Selected sample or null.</returns>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectFileSampleHelper.Sciex#FMan#ISelectSample#SelectSamples">
+            <summary>
+            Displays UI allowing the user to select one or more samples. If the
+            user cancels the process null is returned.
+            </summary>
+            <returns>Selected samples or null.</returns>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectFileSampleHelper.Sciex#FMan#ISelectSample#SelectSamples(Sciex.FMan.FManSample[])">
+            <summary>
+            Displays UI allowing the user to select one or more samples. If the
+            user cancels the process null is returned. If "startingSamples" is not
+            null or empty, these samples are initially selected in the UI.
+            </summary>
+            <param name="startingSamples">Samples to initially select or null.</param>
+            <returns>Selected samples or null.</returns>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectFileSampleHelper.Sciex#FMan#ISelectSample#SelectSamples(Sciex.FMan.FManSample[],Sciex.FMan.GetErrorMessageIfInvalidISelectSamples)">
+            <summary>
+            Displays UI allowing the user to select one or more samples. If the
+            user cancels the process null is returned. If "startingSamples" is not
+            null or empty, these samples are initially selected in the UI. If
+            "validator" is not null it is used to check that the selected samples
+            are valid.
+            </summary>
+            <param name="startingSamples">Samples to initially select or null.</param>
+            <param name="validator">Used to check samples.</param>
+            <returns>Selected samples or null.</returns>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectFileSampleHelper.Sciex#FMan#ISelectSample#CreateSampleUIControl(System.Boolean,Sciex.FMan.FManSample[],Sciex.FMan.GetErrorMessageIfInvalidISelectSamples)">
+            <summary>
+            This method creates a Windows.Forms control suitable for embedding in 
+            custom user interface allowing the user to select samples. Callers should 
+            Dispose() of the control.
+            </summary>
+            <param name="singleSample">True if user can only pick one sample.</param>
+            <param name="startingSamples">Samples to initially select or null if none.</param>
+            <param name="validator">Used to validate samples or null.</param>
+            <returns>Object managing custom UI control.</returns>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectFileSampleHelper.Sciex#FMan#ISelectSample#ShowNetworkWarningMessage(Sciex.FMan.FManSample)">
+            <summary>
+            This method is called by the UI to determine if a warning message should be 
+            displayed to the effect that "for best performance do not use a network location
+            for large files". So, this method should return true if (1) the sample is in
+            fact located on a network and (2) it is "large".
+            </summary>
+            <param name="sample">Sample object.</param>
+            <returns>True if sample is located on a network and is large.</returns>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectFileSampleHelper.Sciex#FMan#FManFileSample#IBrowseForNewLocation#Browse(Sciex.FMan.FManFileSample)">
+            <summary>
+            This method is called when resolving a sample which is no longer present
+            at its original location. The implementation should return a new path for the 
+            provided sample or null if the user cancels the UI.
+            </summary>
+            <param name="sample">Sample (with original location).</param>
+            <returns>New path or null.</returns>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectFileSampleHelper.SelectFileSample(Sciex.FMan.FManSample,Sciex.FMan.GetErrorMessageIfInvalidISelectSamples)">
+            <summary>
+            This utility method presents a standard file dialog allowing the user to pick a
+            file.
+            </summary>
+            <param name="startingSample">Initial path to select in UI or null.</param>
+            <param name="validator">If not null, used to validate selected sample.</param>
+            <returns>Selected sample or null.</returns>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectFileSampleHelper.SelectFileSamples(Sciex.FMan.FManSample[],Sciex.FMan.GetErrorMessageIfInvalidISelectSamples)">
+            <summary>
+            This utility method presents a dialog allowing the user to pick one or more
+            files. 
+            </summary>
+            <param name="startingSamples">Initial files to select or null.</param>
+            <param name="validator">If not null, used to validate selected samples.</param>
+            <returns>Selected samples or null.</returns>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectFileSampleHelper.GetWhatToSelect(System.String[])">
+            <summary>
+            Returns a string describing what kind of files to select.
+            </summary>
+            <param name="extensions">File extensions.</param>
+            <returns>What to select.</returns>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectFileSampleHelper.CreateExtensions">
+            <summary>
+            This method parses our file filter and returns a list of corresponding
+            file extensions.
+            </summary>
+            <returns>List of file extensions.</returns>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectFileSampleHelper.CreateFilePaths(Sciex.FMan.FManSample[])">
+            <summary>
+            Given an array of samples, returns a corresponding array of file paths.
+            </summary>
+            <param name="samples">Array of samples.</param>
+            <returns>Array of file paths.</returns>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectFileSampleHelper.CreateFileSamples(System.String[])">
+            <summary>
+            Given an array of file paths, returns a corresponding array of FManSample
+            objects.
+            </summary>
+            <param name="filePaths">List of full-paths to files.</param>
+            <returns>Array of samples.</returns>
+        </member>
+        <member name="P:Sciex.FMan.UI.SelectFileSampleHelper.Sciex#FMan#ISelectSampleProvider#SelectSample">
+            <summary>
+            Returns the interface used to display sample selection UI (this object).
+            </summary>
+        </member>
+        <member name="T:Sciex.FMan.UI.SelectFileSampleHelper.SelectFileSampleHelperUIControl">
+            <summary>
+            This class helps with the UI selection of samples contained in the local
+            file system (for the case in which the UI is embedded in custom UI).
+            </summary>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectFileSampleHelper.SelectFileSampleHelperUIControl.#ctor(Sciex.FMan.UI.SelectFileSampleHelper,System.Boolean,Sciex.FMan.FManSample[],Sciex.FMan.GetErrorMessageIfInvalidISelectSamples)">
+            <summary>
+            Constructor.
+            </summary>
+            <param name="owner">Owning object.</param>
+            <param name="singleSample">True if user can only pick one sample.</param>
+            <param name="startingSamples">Samples to initially select or null if none.</param>
+            <param name="validator">Used to validate samples or null.</param>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectFileSampleHelper.SelectFileSampleHelperUIControl.Sciex#FMan#ISelectSampleUIControl#GetValidationMessage">
+            <summary>
+            If the UI is in an invalid state (for example the user has not selected a sample),
+            this method returns an error message suitable for displaying to the user. If
+            everything is valid the return value is null or empty.
+            </summary>
+            <returns>Error message if invalid, otherwise null or empty.</returns>
+        </member>
+        <member name="P:Sciex.FMan.UI.SelectFileSampleHelper.SelectFileSampleHelperUIControl.Sciex#FMan#ISelectSampleUIControl#UIControl">
+            <summary>
+            A Control object suitable for embedded in custom UI. Callers should call
+            Dispose() for the control (which will happen by default if the control is
+            embedded in a container and the container is disposed).
+            </summary>
+        </member>
+        <member name="P:Sciex.FMan.UI.SelectFileSampleHelper.SelectFileSampleHelperUIControl.Sciex#FMan#ISelectSampleUIControl#SelectedSamples">
+            <summary>
+            Returns the currently selected samples in the UI.
+            </summary>
+        </member>
+        <member name="P:Sciex.FMan.UI.SelectFileSampleHelper.SelectFileSampleHelperUIControl.Sciex#FMan#ISelectSampleUIControl#CurrentDirectory">
+            <summary>
+            Returns the current directory which is active in the UI. For some implementations
+            (for example those which interact with a database rather than the file system)
+            the return value may be null.
+            </summary>
+        </member>
+        <member name="T:Sciex.FMan.UI.SelectFileSampleWithIndexHelper">
+            <summary>
+            This class provides UI suitable for selecting a sample from a file which
+            contain multiple samples.
+            </summary>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectFileSampleWithIndexHelper.Init(Sciex.FMan.IFMan,System.String)">
+            <summary>
+            Called after creation to attach IFMan to this object.
+            </summary>
+            <param name="fman">FMan.</param>
+            <param name="data">Not used.</param>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectFileSampleWithIndexHelper.Sciex#FMan#ISelectSample#SelectSample">
+            <summary>
+            Displays UI allowing the user to select a single sample. If the user
+            cancels the process null is returned.
+            </summary>
+            <returns>Selected sample or null.</returns>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectFileSampleWithIndexHelper.Sciex#FMan#ISelectSample#SelectSample(Sciex.FMan.FManSample)">
+            <summary>
+            Displays UI allowing the user to select a single sample. If the user
+            cancels the process null is returned. If "startingSample" is not null, it
+            is initially selected in the UI (if the sample exists).
+            </summary>
+            <param name="startingSample">Sample to initially select or null.</param>
+            <returns>Selected sample or null.</returns>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectFileSampleWithIndexHelper.Sciex#FMan#ISelectSample#SelectSample(Sciex.FMan.FManSample,Sciex.FMan.GetErrorMessageIfInvalidISelectSamples)">
+            <summary>
+            Displays UI allowing the user to select a single sample. If the user
+            cancels the process null is returned. If "startingSample" is not null, it
+            is initially selected in the UI (if the sample exists). If "validator" is
+            not null it is used to check that the selected sample is valid.
+            </summary>
+            <param name="startingSample">Sample to initially select or null.</param>
+            <param name="validator">Used to check sample.</param>
+            <returns>Selected sample or null.</returns>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectFileSampleWithIndexHelper.Sciex#FMan#ISelectSample#SelectSamples">
+            <summary>
+            Displays UI allowing the user to select one or more samples. If the
+            user cancels the process null is returned.
+            </summary>
+            <returns>Selected samples or null.</returns>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectFileSampleWithIndexHelper.Sciex#FMan#ISelectSample#SelectSamples(Sciex.FMan.FManSample[])">
+            <summary>
+            Displays UI allowing the user to select one or more samples. If the
+            user cancels the process null is returned. If "startingSamples" is not
+            null or empty, these samples are initially selected in the UI.
+            </summary>
+            <param name="startingSamples">Samples to initially select or null.</param>
+            <returns>Selected samples or null.</returns>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectFileSampleWithIndexHelper.Sciex#FMan#ISelectSample#SelectSamples(Sciex.FMan.FManSample[],Sciex.FMan.GetErrorMessageIfInvalidISelectSamples)">
+            <summary>
+            Displays UI allowing the user to select one or more samples. If the
+            user cancels the process null is returned. If "startingSamples" is not
+            null or empty, these samples are initially selected in the UI. If
+            "validator" is not null it is used to check that the selected samples
+            are valid.
+            </summary>
+            <param name="startingSamples">Samples to initially select or null.</param>
+            <param name="validator">Used to check samples.</param>
+            <returns>Selected samples or null.</returns>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectFileSampleWithIndexHelper.Sciex#FMan#ISelectSample#CreateSampleUIControl(System.Boolean,Sciex.FMan.FManSample[],Sciex.FMan.GetErrorMessageIfInvalidISelectSamples)">
+            <summary>
+            This method creates a Windows.Forms control suitable for embedding in 
+            custom user interface allowing the user to select samples. Callers should 
+            Dispose() of the control.
+            </summary>
+            <param name="singleSample">True if user can only pick one sample.</param>
+            <param name="startingSamples">Samples to initially select or null if none.</param>
+            <param name="validator">Used to validate samples or null.</param>
+            <returns>Object managing custom UI control.</returns>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectFileSampleWithIndexHelper.Sciex#FMan#ISelectSample#ShowNetworkWarningMessage(Sciex.FMan.FManSample)">
+            <summary>
+            This method is called by the UI to determine if a warning message should be 
+            displayed to the effect that "for best performance do not use a network location
+            for large files". So, this method should return true if (1) the sample is in
+            fact located on a network and (2) it is "large".
+            </summary>
+            <param name="sample">Sample object.</param>
+            <returns>True if sample is located on a network and is large.</returns>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectFileSampleWithIndexHelper.GetDataSize(Sciex.FMan.FManSample)">
+            <summary>
+            Subclasses should override this method if they have a way to obtain the
+            approximate size of a file.
+            </summary>
+            <param name="sample">Sample.</param>
+            <returns>File size for sample.</returns>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectFileSampleWithIndexHelper.SelectFileSample(Sciex.FMan.FManSample,Sciex.FMan.GetErrorMessageIfInvalidISelectSamples)">
+            <summary>
+            Returns the user-selected sample or null if the user cancels. If 
+            "startingSample" is not null it is initially selected.
+            </summary>
+            <param name="startingSample">Intial sample to select.</param>
+            <param name="validator">If not null, used to validate selected samples.</param>
+            <returns>New sample or null.</returns>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectFileSampleWithIndexHelper.SelectSamples(Sciex.FMan.FManSample[],Sciex.FMan.GetErrorMessageIfInvalidISelectSamples)">
+            <summary>
+            Returns the user-selected samples, or null if the user cancels. If 
+            "startingSamples" is not null or empty, these samples are initially 
+            selected in the UI.
+            </summary>
+            <param name="startingSamples">Samples to initially select or null.</param>
+            <param name="validator">If not null, used to validate selected samples.</param>
+            <returns>Selected samples.</returns>
+        </member>
+        <member name="P:Sciex.FMan.UI.SelectFileSampleWithIndexHelper.Provider">
+            <summary>
+            Subclasses must override this method to return a subclass of 
+            FileWithIndexSampleProvider suitable for opening files of their
+            particular type.
+            </summary>
+        </member>
+        <member name="P:Sciex.FMan.UI.SelectFileSampleWithIndexHelper.FMan">
+            <summary>
+            Returns the IFMan provider to our Init() method.
+            </summary>
+        </member>
+        <member name="P:Sciex.FMan.UI.SelectFileSampleWithIndexHelper.SelectSample">
+            <summary>
+            Returns the main sample selection interface (this object).
+            </summary>
+        </member>
+        <member name="T:Sciex.FMan.UI.SelectFileSampleWithIndexHelper.SelectSampleHelperUIControl">
+            <summary>
+            This class helps with the UI selection of samples.
+            </summary>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectFileSampleWithIndexHelper.SelectSampleHelperUIControl.#ctor(Sciex.FMan.IFMan,Sciex.FMan.UI.FileWithIndexSampleProvider,System.Boolean,Sciex.FMan.FManSample[],Sciex.FMan.GetErrorMessageIfInvalidISelectSamples)">
+            <summary>
+            Constructor.
+            </summary>
+            <param name="fman">Owning fman.</param>
+            <param name="provider">Used to get samples.</param>
+            <param name="singleSample">True if user can only pick one sample.</param>
+            <param name="startingSamples">Samples to initially select or null if none.</param>
+            <param name="validator">Used to validate samples or null.</param>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectFileSampleWithIndexHelper.SelectSampleHelperUIControl.Sciex#FMan#ISelectSampleUIControl#GetValidationMessage">
+            <summary>
+            If the UI is in an invalid state (for example the user has not selected a sample),
+            this method returns an error message suitable for displaying to the user. If
+            everything is valid the return value is null or empty.
+            </summary>
+            <returns>Error message if invalid, otherwise null or empty.</returns>
+        </member>
+        <member name="P:Sciex.FMan.UI.SelectFileSampleWithIndexHelper.SelectSampleHelperUIControl.Sciex#FMan#ISelectSampleUIControl#UIControl">
+            <summary>
+            A Control object suitable for embedded in custom UI. Callers should call
+            Dispose() for the control (which will happen by default if the control is
+            embedded in a container and the container is disposed).
+            </summary>
+        </member>
+        <member name="P:Sciex.FMan.UI.SelectFileSampleWithIndexHelper.SelectSampleHelperUIControl.Sciex#FMan#ISelectSampleUIControl#SelectedSamples">
+            <summary>
+            Returns the currently selected samples in the UI.
+            </summary>
+        </member>
+        <member name="P:Sciex.FMan.UI.SelectFileSampleWithIndexHelper.SelectSampleHelperUIControl.Sciex#FMan#ISelectSampleUIControl#CurrentDirectory">
+            <summary>
+            Returns the current directory which is active in the UI. For some implementations
+            (for example those which interact with a database rather than the file system)
+            the return value may be null.
+            </summary>
+        </member>
+        <member name="T:Sciex.FMan.UI.Select">
+            <summary>
+            This class is used as the base for a UI which allows users to select samples
+            for the case in which multiple samples reside in one physical file; there is a 
+            concrete class which allows exactly one sample to be selected, and another for 
+            multiple samples. The UI contains a combobox allowing users to navigate between the 
+            various projects or to navigate to other directories.
+            </summary>
+        </member>
+        <member name="M:Sciex.FMan.UI.Select.#ctor">
+            <summary>
+            Constructor.
+            </summary>
+        </member>
+        <member name="M:Sciex.FMan.UI.Select.#ctor(Sciex.FMan.UI.FileWithIndexSampleProvider)">
+            <summary>
+            Constructor.
+            </summary>
+            <param name="provider">Used to get sample names.</param>
+        </member>
+        <member name="M:Sciex.FMan.UI.Select.Init">
+            <summary>
+            Performs common construction.
+            </summary>
+        </member>
+        <member name="M:Sciex.FMan.UI.Select.SetStartingProject(System.String)">
+            <summary>
+            Sets the starting location to use the specified project. It is an error 
+            to specify the name of a project which does not exist.
+            </summary>
+            <param name="project">Name of project.</param>
+        </member>
+        <member name="M:Sciex.FMan.UI.Select.SetStartingBrowsePath(System.String)">
+            <summary>
+            Sets the starting "Browse" location. Note that to set the starting location
+            to a particular project (rather than an arbitrary directory) the
+            SetStartingProject() method should be used.
+            </summary>
+            <param name="path">The starting path.</param>
+        </member>
+        <member name="M:Sciex.FMan.UI.Select.TrySetStartingLocation(System.String)">
+            <summary>
+            This routine tries to set the starting path so that the file with the specified
+            path is visible. If the file is part of a project, we preferentially
+            use the corresponding project, otherwise a browse location. We return true if we
+            set the path, otherwise false (if the directory for the file does not exist).
+            </summary>
+            <param name="filePath">File path for which to set starting location.</param>
+            <returns>True iff we set the location.</returns>
+        </member>
+        <member name="M:Sciex.FMan.UI.Select.PopulateCombo">
+            <summary>
+            Populates our ComboBox with the names of all of the available projects
+            and previous browse locations. We also select the current default item in the list.
+            </summary>
+        </member>
+        <member name="M:Sciex.FMan.UI.Select.SetStartingLocation">
+            <summary>
+            This routine sets the RootDirectory of our fSampleProvider provider object
+            so that it starts from the last used location (if any).
+            </summary>
+        </member>
+        <member name="M:Sciex.FMan.UI.Select.ClipRootDirectoryFromPath(System.String)">
+            <summary>
+            Given a file path, this routine removes the intial porition of the path corresponding
+            to our root directory. If the specified path does not start with the root directory,
+            we return "path" as-is. This is useful so that the partial path can be provided to
+            SampleSelection controls. 
+            </summary>
+            <param name="path">File path.</param>
+            <returns>Path with initial portion removed.</returns>
+        </member>
+        <member name="M:Sciex.FMan.UI.Select.Dispose(System.Boolean)">
+            <summary> 
+            Cleans up any resources being used.
+            </summary>
+        </member>
+        <member name="M:Sciex.FMan.UI.Select.InitializeComponent">
+            <summary> 
+            Required method for Designer support - do not modify 
+            the contents of this method with the code editor.
+            </summary>
+        </member>
+        <member name="M:Sciex.FMan.UI.Select.ResetRootDirectory">
+            <summary>
+            Subclasses should override this method to set the root directory in their
+            sample selection UI.
+            </summary>
+        </member>
+        <member name="M:Sciex.FMan.UI.Select.GetSelectedKeys">
+            <summary>
+            Subclasses must override this method to return the user-selected 
+            samples.
+            </summary>
+            <returns>List of selected samples.</returns>
+        </member>
+        <member name="M:Sciex.FMan.UI.Select.GetNumSelectedSamples">
+            <summary>
+            Returns the number of selected samples.
+            </summary>
+            <returns>Number of selected samples.</returns>
+        </member>
+        <member name="M:Sciex.FMan.UI.Select.GetSelectedSamples">
+            <summary>
+            Returns our selected sampmles, or null if we have none.
+            </summary>
+            <returns>The selected samples (or null).</returns>
+        </member>
+        <member name="M:Sciex.FMan.UI.Select.SelectedSourceChanged(System.Object,System.EventArgs)">
+            <summary>
+            Called whenever the selection in our ComboBox changes. We need to
+            let subclasses know so that they can update the UI.
+            </summary>
+        </member>
+        <member name="M:Sciex.FMan.UI.Select.OnBrowse(System.Object,System.EventArgs)">
+            <summary>
+            Called when the user clicks the "Browse" button.
+            </summary>
+        </member>
+        <member name="M:Sciex.FMan.UI.Select.SetBrowsedFolder(System.String,System.Boolean)">
+            <summary>
+            This method sets the RootDirectory of our fSampleProvider object to the
+            specified "Browsed" folder. In addition we set the text for the "Browse"
+            item in the combobox and select it.
+            </summary>
+            <param name="folderPath">Path for folder.</param>
+            <param name="updateOptions">Update list of saved paths?</param>
+        </member>
+        <member name="E:Sciex.FMan.UI.Select.ProjectChanged">
+            <summary>See the description of the ProjectChangedHandler delegate.</summary>
+        </member>
+        <member name="P:Sciex.FMan.UI.Select.CurrentDirectory">
+            <summary>
+            Returns our current directory. This may be a project "Data" folder or
+            it may be an arbitrary browse location.
+            </summary>
+        </member>
+        <member name="P:Sciex.FMan.UI.Select.SampleProvider">
+            <summary>
+            Returns our object which implements ISampleProvider.
+            </summary>
+        </member>
+        <member name="P:Sciex.FMan.UI.Select.MainPanel">
+            <summary>
+            Returns our main panel inside of which subclasses will install their
+            sample selection UI.
+            </summary>
+        </member>
+        <member name="T:Sciex.FMan.UI.Select.ProjectChangedHandler">
+            <summary>
+            Delegates of this type are used by the "ProjectChanged" event when the user selects
+            a project or browses to a specific location.
+            </summary>
+            <param name="sender">The sending control.</param>
+            <param name="project">Project (null if user browsed).</param>
+            <param name="browseLocation">Data root (project or browse, never null).</param>
+        </member>
+        <member name="T:Sciex.FMan.UI.SelectOptions">
+            <summary>
+            This class maintains a list of the last locations to which the user browses
+            for files.
+            </summary>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectOptions.#ctor(System.String,System.Boolean)">
+            <summary>
+            Constructor.
+            </summary>
+            <param name="name">Options name (for example type of file, "wiff").</param>
+            <param name="haveProject">Do we have any projects?</param>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectOptions.ReadBrowsePaths">
+            <summary>
+            Reads the previous browse paths from the options file. Note that some of these
+            paths may no longer exist (we fix this up later).
+            </summary>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectOptions.GetLastBrowsePath">
+            <summary>
+            Returns the last path to which the user browsed looking for wiff files. Note that
+            the last location may in fact have been an Analyst project and not a browse location.
+            If there is no such path we return an empty string.
+            </summary>
+            <returns>Path or empty string.</returns>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectOptions.GetBrowsePaths">
+            <summary>
+            Returns a list of the last locations to which the user browsed looking for wiff
+            files. All of the returned paths are guaranteed to still exist.
+            </summary>
+            <returns>List of previous browse locationis.</returns>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectOptions.RemoveInvalidPaths">
+            <summary>
+            Removes any items from "sBrowsePaths" for which the path does not exist.
+            </summary>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectOptions.AddBrowsePath(System.String,System.Boolean)">
+            <summary>
+            Adds a new browse location to our list.
+            </summary>
+            <param name="path">New location.</param>
+            <param name="append"> </param>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectOptions.SavePaths">
+            <summary>
+            Saves our current list of "sBrowsePaths" to the options file.
+            </summary>
+        </member>
+        <member name="P:Sciex.FMan.UI.SelectOptions.LastWasProject">
+            <summary>
+            Returns true if the last time a wiff file was selected it was from an official
+            Analyst project folder; otherwise the last file was from a browse location and we
+            return false.
+            </summary>
+        </member>
+        <member name="T:Sciex.FMan.UI.ValidateFileSamplesWithIndex">
+            <summary>
+            This delegate is used to validate that the user selected samples are valid.
+            Return null or empty if all is fine otherwise an error message. If "filter" 
+            is true the delegate is being called to filter samples completely from the UI 
+            AND there will be exactly one sample in the provided list. In this case the 
+            error message is not displayed to the user - return non-null, non-empty to 
+            remove the sample. Otherwise the delgate is being called to validate selected 
+            samples before the dialog is closed and any resulting message IS shown to the 
+            user (and there may be more than one sample). It may be more efficient to only 
+            check at the validation stage.
+            </summary>
+            <param name="filter">Filtering or validation stage?</param>
+            <param name="samples">Samples to check.</param>
+            <returns>Null or empty if all is fine, otherwise error message.</returns>
+        </member>
+        <member name="T:Sciex.FMan.UI.FileWithIndexSampleProvider">
+            <summary>
+            This subclass of FileSampleProvider deals specifically with files
+            containing multiple samples.
+            </summary>
+        </member>
+        <member name="M:Sciex.FMan.UI.FileWithIndexSampleProvider.#ctor(Sciex.FMan.ICreateFileSampleWithIndex,System.String[],Sciex.FMan.UI.IProjectDirectories)">
+            <summary>
+            Constructor.
+            </summary>
+            <param name="creator">Used to get sample names.</param>
+            <param name="extensions">File extensions.</param>
+            <param name="directories">Used to get project directory info.</param>
+        </member>
+        <member name="M:Sciex.FMan.UI.FileWithIndexSampleProvider.GetFileSources(System.String)">
+            <summary>
+            The base class always returns null (since it treats physical files as samples), so
+            we override this method to return the physical files.
+            </summary>
+            <param name="source">Relative path.</param>
+            <returns>Names of files in provided directory.</returns>
+        </member>
+        <member name="M:Sciex.FMan.UI.FileWithIndexSampleProvider.GetSamples(System.String,System.String[]@,System.Object[]@)">
+            <summary>
+            Returns the names of the samples within the provided file (relative to
+            our current root directory). We also return a "key" which uniquely identifies
+            each sample.
+            </summary>
+            <param name="source">Relative path.</param>
+            <param name="names">Set to sample names.</param>
+            <param name="keys">Set to sample "keys".</param>
+        </member>
+        <member name="M:Sciex.FMan.UI.FileWithIndexSampleProvider.HasSubItems(System.String)">
+            <summary>
+            We override this method to check inside files.
+            </summary>
+            <param name="source">Relative path.</param>
+            <returns>True if directory or file has sub-items.</returns>
+        </member>
+        <member name="M:Sciex.FMan.UI.FileWithIndexSampleProvider.IsValidFile(System.String)">
+            <summary>
+            We override this method to return false if we have a valid file but which
+            contains no valid samples (according to our Validator object).
+            </summary>
+            <param name="source">Partial path to file.</param>
+            <returns>True iff file is vlaid.</returns>
+        </member>
+        <member name="M:Sciex.FMan.UI.FileWithIndexSampleProvider.GetSamplesFromFile(System.String,System.String[]@,System.Object[]@)">
+            <summary>
+            This method is similar to the base class GetSamples() method except that we
+            filter out invalid samples. This method should only be called if "source"
+            represents an actual file.
+            </summary>
+            <param name="source">Partial path to file.</param>
+            <param name="names">Set to sample names.</param>
+            <param name="keys">Set to sample keys.</param>
+        </member>
+        <member name="M:Sciex.FMan.UI.FileWithIndexSampleProvider.IsValidSample(System.String,System.Int32)">
+            <summary>
+            Returns true if the specified sample is valid according to our Validator
+            object.
+            </summary>
+            <param name="fullPath">Full path to file.</param>
+            <param name="index">Sample index.</param>
+            <returns>True iff sample is valid.</returns>
+        </member>
+        <member name="M:Sciex.FMan.UI.FileWithIndexSampleProvider.GetSourceFromPath(System.String)">
+            <summary>
+            This method is overridden to return the owning data source for the specified path.
+            </summary>
+            <param name="source">Partial path to file.</param>
+            <returns>Directory in which file is located.</returns>
+        </member>
+        <member name="M:Sciex.FMan.UI.FileWithIndexSampleProvider.GetSampleName(Sciex.FMan.FManFileSampleWithIndex)">
+            <summary>
+            Given a sample, returns the name of the sample.
+            </summary>
+            <param name="sample">Sample for which to get name.</param>
+            <returns>Name of sample.</returns>
+        </member>
+        <member name="M:Sciex.FMan.UI.FileWithIndexSampleProvider.ConvertKeysToSamples(System.Object[])">
+            <summary>
+            Given an array of opaque keys, returns a corresponding array of FManFileSampleWithIndex
+            objects (if "keys" is null we return null, otherwise a non-null array).
+            </summary>
+            <param name="keys">Array of keys.</param>
+            <returns>Array of new FManFileSampleWithIndex.</returns>
+        </member>
+        <member name="M:Sciex.FMan.UI.FileWithIndexSampleProvider.ConvertSampleToKey(Sciex.FMan.FManFileSampleWithIndex)">
+            <summary>
+            Given a sample, returns the correspoding key used by the sample selection
+            classes.
+            </summary>
+            <param name="sample">Sample for which to get key.</param>
+            <returns>Key for sample.</returns>
+        </member>
+        <member name="P:Sciex.FMan.UI.FileWithIndexSampleProvider.ProjectDirectories">
+            <summary>
+            Returns our object which manages project directories.
+            </summary>
+        </member>
+        <member name="P:Sciex.FMan.UI.FileWithIndexSampleProvider.ProjectPath">
+            <summary>
+            Sets our RootDirectory to the corresponding data folder for the project with
+            the specified name.
+            </summary>
+        </member>
+        <member name="P:Sciex.FMan.UI.FileWithIndexSampleProvider.Validator">
+            <summary>
+            Gets or sets the object which is used to filter unwanted samples. See the
+            description of the ValidateFileSamplesWithIndex delegate for details.
+            </summary>
+        </member>
+        <member name="T:Sciex.FMan.UI.SelectOne">
+            <summary>
+            This class allows users to select a single sample residing in a file (with
+            possibly more than one sample per file). The UI contains a combo box
+            allowing users to navigate between the various projects (if any) or to
+            navigate to other directories.
+            </summary>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectOne.#ctor(Sciex.FMan.UI.FileWithIndexSampleProvider)">
+            <summary>
+            Constructor.
+            </summary>
+            <param name="provider">Used to get sample names.</param>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectOne.Init">
+            <summary>
+            Performs common construction.
+            </summary>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectOne.SetSelectedSample(Sciex.FMan.FManFileSampleWithIndex,System.Boolean)">
+            <summary>
+            Sets the sample which will be selected when the control is displayed.
+            </summary>
+            <param name="sample">Sample to select.</param>
+            <param name="keepPrevious">Keep any previously selected items?</param>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectOne.Dispose(System.Boolean)">
+            <summary>
+            Cleans up any resources being used.
+            </summary>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectOne.InitializeComponent">
+            <summary>
+            Required method for Designer support - do not modify
+            the contents of this method with the code editor.
+            </summary>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectOne.OnBackColorChanged(System.EventArgs)">
+            <summary>
+            Overridden to set our contained object's BackColor.
+            </summary>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectOne.GetSelectedSample">
+            <summary>
+            Returns the selected sample, if any. If there is no selected sample
+            we return null.
+            </summary>
+            <returns>Selected sample, or null.</returns>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectOne.SampleTreeClicked(Sciex.Controls.Utility.SampleSelection.SampleTreeBase)">
+            <summary>
+            This method gets called when the user clicks on a sample in our underlying
+            SampleTreeBase object. We just re-fire this event to our listeners.
+            </summary>
+            <param name="tree">Object clicked.</param>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectOne.SampleTreeDoubleClicked(Sciex.Controls.Utility.SampleSelection.SampleTreeBase)">
+            <summary>
+            This method gets called when the user double-clicks a sample in our underlying 
+            SampleTreeBase object. We just re-fire this event to our listeners.
+            </summary>
+            <param name="tree">Object double-clicked.</param>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectOne.ResetRootDirectory">
+            <summary>
+            We override this method to update our sample selection UI to display the
+            samples for the new root directory.
+            </summary>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectOne.GetSelectedKeys">
+            <summary>
+            Returns the keys for all samples currently selected in our sample
+            selection UI.
+            </summary>
+            <returns>Selected keys, if any.</returns>
+        </member>
+        <member name="E:Sciex.FMan.UI.SelectOne.SampleClicked">
+            <summary>
+            This event is fired when the user clicks on a sample.
+            </summary>
+        </member>
+        <member name="E:Sciex.FMan.UI.SelectOne.SampleDoubleClicked">
+            <summary>
+            This event is fired when the user double-clicks on a sample.
+            </summary>
+        </member>
+        <member name="P:Sciex.FMan.UI.SelectOne.SampleTreeProvider">
+            <summary>
+            Returns our sample selection object.
+            </summary>
+        </member>
+        <member name="P:Sciex.FMan.UI.SelectOne.ExactlyOneSelectedSample">
+            <summary>
+            Returns true if there is exactly one selected sample.
+            </summary>
+        </member>
+        <member name="P:Sciex.FMan.UI.SelectOne.NoSelectedSamples">
+            <summary>
+            Returns true if there are no selected samples.
+            </summary>
+        </member>
+        <member name="T:Sciex.FMan.UI.SelectOne.SampleClickDelegate">
+            <summary>
+            Events of this type are fired when the user clicks a sample.
+            </summary>
+        </member>
+        <member name="T:Sciex.FMan.UI.SelectOne.SampleDblClickDelegate">
+            <summary>
+            Events of this type are fired when the user double-clicks a sample.
+            </summary>
+        </member>
+        <member name="T:Sciex.FMan.UI.Resource">
+            <summary>
+              A strongly-typed resource class, for looking up localized strings, etc.
+            </summary>
+        </member>
+        <member name="P:Sciex.FMan.UI.Resource.ResourceManager">
+            <summary>
+              Returns the cached ResourceManager instance used by this class.
+            </summary>
+        </member>
+        <member name="P:Sciex.FMan.UI.Resource.Culture">
+            <summary>
+              Overrides the current thread's CurrentUICulture property for all
+              resource lookups using this strongly typed resource class.
+            </summary>
+        </member>
+        <member name="P:Sciex.FMan.UI.Resource.GE_SampleProvider_TheSpecifiedSampleDoesNotExist">
+            <summary>
+              Looks up a localized string similar to The specified sample does not exist..
+            </summary>
+        </member>
+        <member name="P:Sciex.FMan.UI.Resource.GE_Select_SubclassMustOverride">
+            <summary>
+              Looks up a localized string similar to Subclass must override..
+            </summary>
+        </member>
+        <member name="P:Sciex.FMan.UI.Resource.GE_Select_TheSpecifiedPathDoesNotExist">
+            <summary>
+              Looks up a localized string similar to The specified path does not exist..
+            </summary>
+        </member>
+        <member name="P:Sciex.FMan.UI.Resource.GE_Select_TheSpecifiedProjectDoesNotExist">
+            <summary>
+              Looks up a localized string similar to The specified project does not exist..
+            </summary>
+        </member>
+        <member name="P:Sciex.FMan.UI.Resource.GE_SelectMultipleDialog_AllTheSamplesCannotBeOpened">
+             <summary>
+               Looks up a localized string similar to Unable to open all of the files.
+            
+            {0}
+            
+            Select other files..
+             </summary>
+        </member>
+        <member name="P:Sciex.FMan.UI.Resource.GE_SelectMultipleDialog_MissingScanAllMissing">
+            <summary>
+              Looks up a localized string similar to The scan files for all selected samples are missing. Select another sample or file..
+            </summary>
+        </member>
+        <member name="P:Sciex.FMan.UI.Resource.GE_SelectMultipleDialog_MissingScanFileOpenRemaining_1">
+            <summary>
+              Looks up a localized string similar to The scan file for one or more of the selected samples is missing: {0}. Do you want to open the remaining samples?.
+            </summary>
+        </member>
+        <member name="P:Sciex.FMan.UI.Resource.GE_SelectMultipleDialog_TheFollowingSamplesCannotBeOpened">
+             <summary>
+               Looks up a localized string similar to Unable to open the following files.
+            
+            {0}
+            
+            Do you want to open the remaining files?.
+             </summary>
+        </member>
+        <member name="P:Sciex.FMan.UI.Resource.GE_SelectMultipleDialog_YouMustSelectASample">
+            <summary>
+              Looks up a localized string similar to You must select at least one sample..
+            </summary>
+        </member>
+        <member name="P:Sciex.FMan.UI.Resource.GE_SelectOne_YouMustSelectOneSample">
+            <summary>
+              Looks up a localized string similar to You must select one sample..
+            </summary>
+        </member>
+        <member name="P:Sciex.FMan.UI.Resource.GE_SelectOneDialog_MissingScanFile">
+            <summary>
+              Looks up a localized string similar to The scan file for this sample is missing. Select another sample or file..
+            </summary>
+        </member>
+        <member name="P:Sciex.FMan.UI.Resource.GE_SelectOneDialog_YouMustSelectASample">
+            <summary>
+              Looks up a localized string similar to Select a sample and then click OK..
+            </summary>
+        </member>
+        <member name="P:Sciex.FMan.UI.Resource.GE_SelectOneDialog_YouMustSelectOneSample">
+            <summary>
+              Looks up a localized string similar to You must select one sample..
+            </summary>
+        </member>
+        <member name="P:Sciex.FMan.UI.Resource.GL_Sample_sample_2">
+            <summary>
+              Looks up a localized string similar to {0} (sample {1}).
+            </summary>
+        </member>
+        <member name="P:Sciex.FMan.UI.Resource.GL_SampleProvider_SampleIndexName_2">
+            <summary>
+              Looks up a localized string similar to #{0} - {1}.
+            </summary>
+        </member>
+        <member name="P:Sciex.FMan.UI.Resource.GL_Select_SelectADirectoryContainingFiles">
+            <summary>
+              Looks up a localized string similar to Select a directory containing samples..
+            </summary>
+        </member>
+        <member name="P:Sciex.FMan.UI.Resource.GL_SelectOneDialog_SelectAnotherFile">
+            <summary>
+              Looks up a localized string similar to Select another file..
+            </summary>
+        </member>
+        <member name="T:Sciex.FMan.UI.SelectMultiple">
+            <summary>
+            This class allows users to select one or more samples residing in the file
+            system with more than one sample per file. The UI contains a combo box allowing 
+            users to navigate between the various projects (if any) or to navigate to 
+            other directories.
+            </summary>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectMultiple.#ctor">
+            <summary>
+            Constructor.
+            </summary>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectMultiple.#ctor(Sciex.FMan.UI.FileWithIndexSampleProvider)">
+            <summary>
+            Constructor.
+            </summary>
+            <param name="provider">Used to get sample names.</param>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectMultiple.Init">
+            <summary>
+            Performs common construction.
+            </summary>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectMultiple.AddSelectedSample(Sciex.FMan.FManFileSampleWithIndex)">
+            <summary>
+            This routine adds the specified sample to the list of selected samples. This
+            method can be called after constructing a new instance before it is displayed.
+            NOTE: The sample must currently exist: if it does not, we display UI asking the
+            user to select it (if the user cancels this we throw an Abort exception). This
+            UI may be confusing to users, so callers should probably only call this method 
+            if the file exists.
+            </summary>
+            <param name="sample">Sample to add.</param>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectMultiple.Dispose(System.Boolean)">
+            <summary>
+            Cleans up any resources being used.
+            </summary>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectMultiple.InitializeComponent">
+            <summary>
+            Required method for Designer support - do not modify
+            the contents of this method with the code editor.
+            </summary>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectMultiple.OnBackColorChanged(System.EventArgs)">
+            <summary>
+            Overridden to set our contained object's BackColor.
+            </summary>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectMultiple.ResetRootDirectory">
+            <summary>
+            We override this method to update our sample selection UI to display the
+            samples for the new root directory.
+            </summary>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectMultiple.GetSelectedKeys">
+            <summary>
+            Returns the keys for all samples currently selected in our sample
+            selection UI.
+            </summary>
+            <returns>Selected keys, if any.</returns>
+        </member>
+        <member name="P:Sciex.FMan.UI.SelectMultiple.SelectSamples">
+            <summary>
+            Returns our sample selection object.
+            </summary>
+        </member>
+        <member name="T:Sciex.FMan.UI.SelectOneDialog">
+            <summary>
+            This class is used to show a modal dialog allowing the user to select
+            exactly one sample residing in a file (with possibly more than one sample
+            per file). The UI contains a combo box allowing the user to navigate 
+            between the various projects (if any) or to navigate to other directories.
+            
+            To use this class, create an instance and call ShowDialog(). If that
+            method returns DialogResult.OK call GetSelectedSample() to get the
+            user-specified sample. Then call Dispose().
+            </summary>
+        </member>
+        <member name="F:Sciex.FMan.UI.SelectOneDialog.DefaultFManSampleValidator">
+            <summary>
+            Default Validator is null. But custom validator can be plugged in.
+            </summary>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectOneDialog.GetSample(Sciex.FMan.UI.FileWithIndexSampleProvider,Sciex.FMan.FManFileSampleWithIndex)">
+            <summary>
+            Returns the user-selected sample or, if the user cancels, null. If
+            "startingSample" is not null it is selected by default in the UI.
+            </summary>
+            <param name="provider">Used to get sample names.</param>
+            <param name="startingSample">Sample to select or null.</param>
+            <returns>Selected sample.</returns>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectOneDialog.GetSample(Sciex.FMan.UI.FileWithIndexSampleProvider,Sciex.FMan.FManFileSampleWithIndex,Sciex.FMan.UI.ValidateFileSamplesWithIndex)">
+            <summary>
+            Returns the user-selected sample or, if the user cancels, null. If
+            "startingSample" is not null it is selected by default in the UI.
+            </summary>
+            <param name="provider">Used to get sample names.</param>
+            /// <param name="startingSample">Sample to select or null.</param>
+            <param name="validator">If not null, used to validate sample.</param>
+            <returns>Selected sample.</returns>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectOneDialog.#ctor(Sciex.FMan.UI.FileWithIndexSampleProvider)">
+            <summary>
+            Constructor.
+            </summary>
+            <param name="provider">Used to get sample names.</param>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectOneDialog.SetSelectedSample(Sciex.FMan.FManFileSampleWithIndex,System.Boolean)">
+            <summary>
+            Sets the sample which will be selected when the control is displayed.
+            </summary>
+            <param name="sample">Sample to select.</param>
+            <param name="keepPrevious">Keep any previously selected items?</param>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectOneDialog.Dispose(System.Boolean)">
+            <summary>
+            Cleans up any resources being used.
+            </summary>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectOneDialog.InitializeComponent">
+            <summary>
+            Required method for Designer support - do not modify
+            the contents of this method with the code editor.
+            </summary>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectOneDialog.GetSelectedSample">
+            <summary>
+            Returns our selected sample. If the dialog was cancelled, we return
+            null.
+            </summary>
+            <returns>Selected sample, or null.</returns>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectOneDialog.ProcessCmdKey(System.Windows.Forms.Message@,System.Windows.Forms.Keys)">
+            <summary>
+            Overridden to allow the escape key to cancel the dialog.
+            </summary>
+            <param name="msg">Windows message.</param>
+            <param name="keyData">The command key.</param>
+            <returns>True if we handled message.</returns>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectOneDialog.SampleDoubleClicked(Sciex.FMan.UI.SelectOne)">
+            <summary>
+            This method will be called when the user double-clicks on a sample
+            in our tree. We use this as a shortcut for the user to end the dialog
+            (selecting the double-clicked sample).
+            </summary>
+            <param name="tree">Our sample tree object.</param>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectOneDialog.CancelClick(System.Object,System.EventArgs)">
+            <summary>
+            Called when the user clicks the "Cancel" button.
+            </summary>
+            <param name="sender">The cancel button.</param>
+            <param name="e">Event arguments.</param>
+        </member>
+        <member name="M:Sciex.FMan.UI.SelectOneDialog.OKClick(System.Object,System.EventArgs)">
+            <summary>
+            Called when the user clicks the OK button. If exactly one sample is selected
+            we end the dialog, otherwise we complain to the user.
+            </summary>
+            <param name="sender">OK button.</param>
+            <param name="e">Event arguments.</param>
+        </member>
+        <member name="P:Sciex.FMan.UI.SelectOneDialog.SelectOne">
+            <summary>
+            Returns our sample selection object.
+            </summary>
+        </member>
+        <member name="T:Sciex.FMan.UI.IProjectDirectories">
+            <summary>
+            Defines an interface used for UI to obtain a list of projects.
+            </summary>
+        </member>
+        <member name="M:Sciex.FMan.UI.IProjectDirectories.GetDataDirectory(System.String)">
+            <summary>
+            Given a project name, returns the path to the data folder.
+            </summary>
+            <param name="project">Project name.</param>
+            <returns>Path to data folder.</returns>
+        </member>
+        <member name="M:Sciex.FMan.UI.IProjectDirectories.GetProjectFromSubDirectoryPath(System.String)">
+            <summary>
+            Given a path to a data file, returns the project name.
+            </summary>
+            <param name="filePath">Path to sample file.</param>
+            <returns>Project name for file.</returns>
+        </member>
+        <member name="M:Sciex.FMan.UI.IProjectDirectories.GetProjectNames">
+            <summary>
+            Returns a list of all available projects.
+            </summary>
+            <returns>Available projects.</returns>
+        </member>
+        <member name="P:Sciex.FMan.UI.IProjectDirectories.ActiveProjectName">
+            <summary>
+            Returns the currently active project name (if any).
+            </summary>
+        </member>
+    </members>
+</doc>
