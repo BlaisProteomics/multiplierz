@@ -1,0 +1,32 @@
+mascot_server=http://rc-proteomics.dfci.harvard.edu/mascot
+mascot_version=2.5
+
+USEREMAIL=Testman@testcorp.com
+USERNAME=Testman
+
+DB=Marto_FR_Human,Marto_Lab
+
+CHARGE=2+
+CLE=Trypsin
+TOL=10
+TOLU=ppm
+ITOL=25
+ITOLU=mmu
+
+IT_MODS=Oxidation (M)
+MODS=Carbamidomethyl (C)
+
+PEP_ISOTOPE_ERROR=0
+PFA=2
+
+bold_red=
+ion_cutoff=8
+isobaric=TMT-10plex
+max_hits=99999999
+mgf_script=
+quant=
+rank_one=
+show_query_data=
+show_same_set=
+show_sub_set=
+
