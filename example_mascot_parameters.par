@@ -1,10 +1,10 @@
-mascot_server=http://rc-proteomics.dfci.harvard.edu/mascot
+mascot_server=http://MyMascotServer.org/Mascot
 mascot_version=2.5
 
 USEREMAIL=Testman@testcorp.com
 USERNAME=Testman
 
-DB=Marto_FR_Human,Marto_Lab
+DB=SwissProt,AnotherDatabase
 
 CHARGE=2+
 CLE=Trypsin
