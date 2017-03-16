@@ -2,4 +2,4 @@
 The Multiplierz Proteomics Library
 
 
-Coming soon... !
+Description coming soon... (Or see the wiki!)
