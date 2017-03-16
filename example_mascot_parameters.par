@@ -21,12 +21,8 @@ PFA=2
 
 bold_red=
 ion_cutoff=8
-isobaric=TMT-10plex
 max_hits=99999999
-mgf_script=
-quant=
 rank_one=
 show_query_data=
 show_same_set=
 show_sub_set=
-
