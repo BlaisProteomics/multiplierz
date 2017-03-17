@@ -37,7 +37,6 @@ def registerInterfaces():
     import sys
     import subprocess
     import glob
-    from collections import defaultdict
     from win32com.client import Dispatch
     
     interfaceModules = {"BlaisWiff.dll" : "WIFF",

@@ -62,3 +62,22 @@ class mzFile(multiplierz.mzAPI.mzFile):
     def info(self):
         return self._info
 
+if __name__ == '__main__':
+    #foo = mzFile(r'\\rc-data1\blaise\ms_data_share\Max\T2D\C5_MS_6.t2d')
+    import os
+    import time
+    foo = mzFile(r'\\rc-data1\blaise\ms_data_share\Max\T2D\H9_MSMS_1998.9380_3.t2d')
+    
+    
+    
+    print foo.source.GetInfo
+    print "FOO"
+    #for thing in os.listdir(dir):
+        #if not thing.lower().endswith('t2d'): continue
+        #foo = os.path.join(dir, thing)
+        #start = time.clock()
+        #bar = mzFile(foo)
+        #baz = bar.scan()
+        #print bar.info()
+        #print time.clock() - start
+    #print "FOO"

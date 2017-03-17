@@ -104,6 +104,8 @@ class XLSXReader(XLSheetReader):
         try:
             self.wb = openpyxl.load_workbook(file_name, read_only = True, use_iterators = True)
         except TypeError:
+            #print "Check your version of openpyxl!  2.2.2 or higher recommended."
+            # Work on updating this soon!  TODO!
             # I think read_only is the only supported mode in this openpyxl version.
             self.wb = openpyxl.load_workbook(file_name, read_only = True)
         if sheet_name:
@@ -138,6 +140,7 @@ class XLSXReader(XLSheetReader):
         try:
             del self.wb
             del self.sheet
+            del self.columns
         except AttributeError:
             print "WARNING: Close called multiple times. (XLSXReader.)"
         
@@ -152,6 +155,10 @@ class XLSXWriter(XLSheetReader):
         if os.path.exists(file_name):
             self.wb = openpyxl.load_workbook(file_name)
             
+            #try:
+                #targetIndex = self.wb.get_sheet_names().index(sheet_name)
+                #self.sheet = self.wb.create_sheet(targetIndex, sheet_name) # Assuming this overwrites.
+            #except ValueError:
             try:
                 self.wb.remove_sheet(self.wb.get_sheet_by_name(sheet_name))
             except (ValueError, KeyError):
@@ -176,6 +183,10 @@ class XLSXWriter(XLSheetReader):
             raise ValueError, "Row has extra columns: %s" % missing 
         # It should be impossible for this error to show an empty set!
         
+        #elif len(row) < len(self.columns):
+            #missing = set([str(x).lower() for x in self.columns]) - set([str(x).lower() for x in row.keys()])
+            #raise ValueError, "Row is missing values for some columns: %s" % missing
+        
         if isinstance(row, dict):
             row = dict(row)
             for key in row.keys(): # There's probably a better way to do that.
@@ -184,11 +195,12 @@ class XLSXWriter(XLSheetReader):
             try:
                 row = [row[x] for x in self.columns]
             except KeyError as err:
-                print (sorted(row.keys()), '\n', sorted(self.columns))
+                print (sorted(row.keys()), sorted(self.columns))
                 raise err
         
         for index, value in enumerate(row, start = 1):
             cell = self.sheet.cell(row = self.currentRow, column = index)
+            #cell.value = value if (isinstance(value, Number) or value == None) else str(value)
             if value == None:
                 cell.value = ''
             elif isinstance(value, Number):
@@ -198,18 +210,18 @@ class XLSXWriter(XLSheetReader):
         self.currentRow += 1
     
     def close(self):
+        print "Closing..."
         try:
             self.wb.save(self.file_name)
-            print "Closed %s (Sheet %s)" % (self.file_name, self.sheet_name)
         except IOError as err: 
             # Goodness knows how much data has been lost the grabby
-            # lock Excel puts on open files, so we try to at least save
-            # things somewhere.
-            print "Overwrite failed..."
+            # lock Excel puts on open files.
+            print "Overwrite triggered..."
             self.wb.save(self.file_name[:-5] + '.OVERWRITE.xlsx')
-            print "Closed %s (Sheet %s)" % (self.file_name[:-5] + '.OVERWRITE.xlsx',
-                                            self.sheet_name)
-        
+        #del self.columns
+        #del self.sheet
+        #del self.wb
+        print "Closed %s" % self.file_name        
         
         
 class XLSWriter(XLSheetWriter):
@@ -248,6 +260,9 @@ class XLSWriter(XLSheetWriter):
         
         if isinstance(row, dict):
             row = dict(row)
+            #for key in row.keys(): # There's probably a better way to do that.
+                #lKey = key.lower()
+                #if lKey != key: row[lKey] = row[key]
             row = [row[x] for x in self.columns]         
     
         for index, value in enumerate(row):
@@ -255,6 +270,7 @@ class XLSWriter(XLSheetWriter):
         self.currentRow += 1
         
     def close(self):
+        print "Closing %s" % self.file_name
         for previousSheetName, previousSheetRows in self.previous_data:
             previousSheet = self.wb.add_sheet(previousSheetName)
             for rowNum, row in enumerate(previousSheetRows):
@@ -265,13 +281,15 @@ class XLSWriter(XLSheetWriter):
             flptr = open(self.file_name, 'w+b')
             self.wb.save(flptr)
             flptr.close()
-            print "Closed %s (Sheet %s)" % (self.file_name, self.sheet_name)
+            
+            #foo = open(self.file_name, 'w+b')
+            #foo.close()
+            
+            #flptr = open(self.file_name, 'w+b')
+            #self.wb.save(flptr)
+            #flptr.close()            
         except IOError as err:
             self.wb.save(self.file_name[:-4] + '.~OVERWRITE.xls')
-            print "Couldn't overwrite %s" % self.sheet_name
-            print "Closed %s (Sheet %s)" % (self.file_name[:-4] + '.~OVERWRITE.xls',
-                                            self.sheet_name)
-
         
 class XLSReader(XLSheetWriter):
     def __init__(self, file_name, sheet_name = None):
@@ -310,4 +328,65 @@ class XLSReader(XLSheetWriter):
 
 
 
+#if __name__ == '__main__':
+    #print "MZSPREADSHEET VALIDATION TEST"
+    #print os.getcwd()
+    #import mzSpreadsheetClassic as oldstyle
+    #from multiplierz.mzReport import writer
+    
+    #target = r'\\glu2\PipelineStuff\testUser\copdTestCys\2014-10-02-Amgen-COPD-Set2-15-800.CID_ITMS.xls'
+    
+    #infile = XLSheetReader(target)
+    #retroinfile = oldstyle.XLSheetReader(target)
+    
+    #columns = infile.columns
+    #retrocolumns = retroinfile.columns
+    #assert columns == retrocolumns
+    
+    #outfile = writer("doubleOf-" + os.path.basename(target), columns = ['foobar'], sheet_name = 'Decoy', delayed_write = True)
+    #retrooutfile = oldstyle.XLSheetWriter(os.path.abspath("OldstyleDoubleOf-" + os.path.basename(target)), columns = ['foobar'])
+    
+    #outfile.write(['bar'])
+    #retrooutfile.write(['bar'])
+    #outfile.close()
+    #retrooutfile.close()
+    
+    #outfile = writer("doubleOf-" + os.path.basename(target), columns = columns, delayed_write = True)
+    #retrooutfile = oldstyle.XLSheetWriter(os.path.abspath("OldstyleDoubleOf-" + os.path.basename(target)), columns = columns)
+   
+    
+    #data = list(infile)
+    #retrodata = list(retroinfile)
+    
+    #for row, retrorow in zip(data, retrodata):
+        #assert row == retrorow
+        
+        #outfile.write(row)
+        #retrooutfile.write(row)
+        
+    #outfile.close()
+    #retrooutfile.close()
+    
+    
+    #reinfile = oldstyle.XLSheetReader(os.path.abspath("doubleOf-" + os.path.basename(target)))
+    #reretroinfile = oldstyle.XLSheetReader(os.path.abspath("OldstyleDoubleOf-" + os.path.basename(target)))
+    
+    #redata = list(reinfile)
+    #reretrodata = list(reretroinfile)
+    
+    #print (len(redata), len(reretrodata))
+    
+    #try:
+        #assert redata == reretrodata
+        #print "SUCCESS."    
+    #except AssertionError:
+        #assert all([all([first[x] == second[x] for x in first.keys() if not isinstance(first[x], float)]) for (first, second) in zip(redata, reretrodata)])
+        #print "SUCCESS except for float rounding errors."
+        
+        
 
+if __name__ == '__main__':
+    from multiplierz.mzReport import writer
+    foo = writer('foobar.xlsx', columns = ['foo', 'bar', 'baz'], classic_mode = True)
+    print foo
+    print "Done."

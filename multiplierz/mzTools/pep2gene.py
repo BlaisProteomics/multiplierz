@@ -56,11 +56,8 @@ def convertAccessionsViaUniprot(accessions):
             acc = row[0]
             # The gene field seems to be a list of synonymous names,
             # which should be considered as a unit.
-            try:
-                geneNames[acc].append(row[6])
-            except IndexError as err:
-                print row
-                raise err
+            geneNames[acc].append(row[6])
+            #uniprotIDs[acc] = row[3]
     
     normedGeneNames = dict()
     for acc, genes in geneNames.items():
@@ -134,7 +131,6 @@ def add_gene_ids(target_file, p2g_database,
     
     dataRdr = open(p2g_database, 'rb')
     data = pickle.load(dataRdr)
-    k_len = None
     if isinstance(data, tuple) and len(data) == 6:
         k_len, seqLookup, fmerLookup, geneLookup, isoSeqLookup, isoFmerLookup = data
     elif isinstance(data, tuple) and not len(data) == 6:
@@ -152,8 +148,7 @@ def add_gene_ids(target_file, p2g_database,
         assert isoFmerLookup, ("Pep2Gene database does not contain leucine-isoleucine " 
                                "ambiguity data; re-compile database or "
                                "select distinguish_leucine = False .")
-    if k_len:
-        assert k_len == K, "Pep2Gene database created with kmers of length %s, not %s" % (k_len, K)
+    assert k_len == K, "Pep2Gene database created with kmers of length %s, not %s" % (k_len, K)
     
     print "P2G database loaded: %.2f\n\n" % (time.clock() - starttime)
     prevtime = time.clock()
@@ -162,10 +157,10 @@ def add_gene_ids(target_file, p2g_database,
     
     
     add_legacy_cols = ["pro_count","pro_list",
-                       "gene_count","gene_symbols",]
+                       "gene_count","gene_symbols","entrez_gene_ids"]
 
     add_cols = ["Protein Count", "Proteins",
-                "Gene Count", "Gene Symbols"]
+                "Gene Count", "Gene Symbols", "Gene IDs"]
     if legacy_columns:
         new_cols = add_legacy_cols
         colname = dict(zip(add_cols, add_legacy_cols))
@@ -174,9 +169,10 @@ def add_gene_ids(target_file, p2g_database,
         colname = dict(zip(add_cols, add_cols))
         
     iso_legacy_cols = ['IL Ambiguity pro_count', 'IL Ambiguity pro_list', 
-                       "IL Ambiguity gene_count", "IL Ambiguity gene_symbols"]
+                       "IL Ambiguity gene_count", "IL Ambiguity gene_symbols",
+                       "IL Ambiguity entrez_gene_ids"]
     iso_cols = ['I<->L Protein Count', 'I<->L Proteins', 'I<->L Gene Count',
-                'I<->L Gene Symbols']
+                'I<->L Gene Symbols', 'I<->L Gene IDs']
     if legacy_columns and distinguish_leucine:
         new_cols += iso_legacy_cols
         colname.update(dict(zip(iso_cols, iso_legacy_cols)))
@@ -186,8 +182,8 @@ def add_gene_ids(target_file, p2g_database,
     
         
     if not outputfile:
-        ext = target_file.split('.')[-1]
-        outputfile = '.'.join(target_file.split('.')[:-1] + ['GENES', ext])
+        ext = outputfile.split('.')[-1]
+        outputfile = '.'.join(outputfile.split('.')[:-1] + ['GENES', ext])
     output = writer(outputfile,
                     columns = rdr.columns + new_cols)
     
@@ -209,7 +205,8 @@ def add_gene_ids(target_file, p2g_database,
             pepToProts[pep] = set(prot for prot in candidate_prots
                                   if pep_find.search(seqLookup[prot]))
             
-            if distinguish_leucine and isoPep not in isoPepToProts:
+            if distinguish_leucine:
+                assert isoPep not in isoPepToProts
                 iso_candidate_prots = reduce(set.intersection,
                                              (isoFmerLookup[isoPep[x:x+K]] for x
                                               in range(len(isoPep)-K)))
@@ -263,19 +260,14 @@ def add_gene_ids(target_file, p2g_database,
         
 
         
-#if __name__ == '__main__':
-    #create_fasta_index(r'C:\Users\Max\Downloads\UP000005640_9606.fasta\Human_Uniprot_Full_8-4-16.fasta', 
-                     #r'C:\Users\Max\Downloads\UP000005640_9606.fasta\Human_Uniprot_Full_8-4-16_newMode.pickle',
-                     #labelParser = lambda x: x.split('|')[1])
+if __name__ == '__main__':
+    create_fasta_index(r'C:\Users\Max\Downloads\UP000005640_9606.fasta\Human_Uniprot_Full_8-4-16.fasta', 
+                     r'C:\Users\Max\Downloads\UP000005640_9606.fasta\Human_Uniprot_Full_8-4-16_newMode.pickle',
+                     labelParser = lambda x: x.split('|')[1])
                      
 if __name__ == '__main__':
-    add_gene_ids(r'\\rc-data1\blaise\ms_data_share\Max\CSF\LoadingTitration\resultFiles\Fifth-combined.xlsx',
-                 r'\\rc-data1\blaise\ms_data_share\Databases\Updated_Marto_F_Human_NonRedundant.pep2gene',
+    add_gene_ids(r'C:\Users\Max\Desktop\Projects\guillaume_gene_analysis\somethingElse\20160710_Eif4g1-1-2.xlsx.SILAC_annotated_FDR.xlsx',
+                 r'C:\Users\Max\Downloads\UP000005640_9606.fasta\Human_Uniprot_Full_8-4-16_newMode.pickle',
+                 outputfile = r'C:\Users\Max\Desktop\Projects\guillaume_gene_analysis\somethingElse\timetest.xlsx',
                  target_sheet = None)    
-    add_gene_ids(r'\\rc-data1\blaise\ms_data_share\Max\CSF\LoadingTitration\resultFiles\Tenth-combined.xlsx',
-                 r'\\rc-data1\blaise\ms_data_share\Databases\Updated_Marto_F_Human_NonRedundant.pep2gene',
-                 target_sheet = None)    
-    add_gene_ids(r'\\rc-data1\blaise\ms_data_share\Max\CSF\LoadingTitration\resultFiles\Half-combined.xlsx',
-                 r'\\rc-data1\blaise\ms_data_share\Databases\Updated_Marto_F_Human_NonRedundant.pep2gene',
-                 target_sheet = None)        
     
