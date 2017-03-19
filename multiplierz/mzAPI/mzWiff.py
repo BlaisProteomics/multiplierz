@@ -100,7 +100,7 @@ class mzFile_implicit_numbering(mzAPImzFile):
                 
         #experiment = (scan-1) % self.exp_num
         # experiment, cycle = exp_cycle_from_scan(self.exp_num, scan)
-        experiment, cycle = self.make_explicit[scan]
+        cycle, experiment = self.make_explicit[scan]
         return self.data.scan(cycle, experiment = experiment, sample = self.sample,
                               **kwargs)
     
