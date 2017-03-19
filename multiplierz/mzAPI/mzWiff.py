@@ -100,7 +100,7 @@ class mzFile_implicit_numbering(mzAPImzFile):
                 
         #experiment = (scan-1) % self.exp_num
         # experiment, cycle = exp_cycle_from_scan(self.exp_num, scan)
-        experiment, cycle = self.make_explicit(scan)
+        experiment, cycle = self.make_explicit[scan]
         return self.data.scan(cycle, experiment = experiment, sample = self.sample,
                               **kwargs)
     
@@ -109,7 +109,7 @@ class mzFile_implicit_numbering(mzAPImzFile):
         exp_info = self.data.scan_info(start_scan, stop_scan, sample = self.sample)
 
         # scan_from_exp_cycle(self.exp_num, experiment, cycle)
-        return [(rt, precM, self.make_implicit(cycle, experiment), level, centroid)
+        return [(rt, precM, self.make_implicit[cycle, experiment], level, centroid)
                 for (rt, precM, (cycle, experiment, sample), level, centroid)
                 in exp_info
                 if sample == self.sample]
@@ -134,7 +134,7 @@ class mzFile_implicit_numbering(mzAPImzFile):
     def scan_range(self):
         # Source gives cycle count.
         start, stop = self.data.scan_range(sample = self.sample)
-        return start, stop * self.exp_num
+        return start, len(self.make_implicit)
     
     def scan_for_time(self, rt):
         """
