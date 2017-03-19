@@ -84,6 +84,10 @@ class mzFile_implicit_numbering(mzAPImzFile):
         
         self.sample = sample
         self.exp_num = self.data.source.GetExperiments(sample-1)
+
+        scans_present = [(c, e) for c, e, s in zip(*self.data.scan_info())[2] if s == self.sample]
+        self.make_explicit = dict(enumerate(scans_present))
+        self.make_implicit = dict((y, x) for x, y in self.make_explicit.items())
         
     def scan(self, scan, **kwargs):
         if isinstance(scan, float):
@@ -95,15 +99,17 @@ class mzFile_implicit_numbering(mzAPImzFile):
                 scan = int(scan)
                 
         #experiment = (scan-1) % self.exp_num
-        experiment, cycle = exp_cycle_from_scan(self.exp_num, scan)
+        # experiment, cycle = exp_cycle_from_scan(self.exp_num, scan)
+        experiment, cycle = self.make_explicit(scan)
         return self.data.scan(cycle, experiment = experiment, sample = self.sample,
                               **kwargs)
     
     
     def scan_info(self, start_scan = 0, stop_scan = 999999, start_mz = 0, stop_mz = 999999):
         exp_info = self.data.scan_info(start_scan, stop_scan, sample = self.sample)
-        
-        return [(rt, precM, scan_from_exp_cycle(self.exp_num, experiment, cycle), level, centroid)
+
+        # scan_from_exp_cycle(self.exp_num, experiment, cycle)
+        return [(rt, precM, self.make_implicit(cycle, experiment), level, centroid)
                 for (rt, precM, (cycle, experiment, sample), level, centroid)
                 in exp_info
                 if sample == self.sample]

@@ -217,6 +217,14 @@ class mzFile(object):
 
         """
 
+        import platform
+        bitness = platform.architecture()[0]
+        if bitness != '64bit':
+            if '32' in bitness:
+                raise Exception, "mzAPI does not support 32-bit Python!"
+            else:
+                print "WARNING- System architecture string %s not recognized.  Is this 64-bit Windows Python?" % bitness
+        
         #if data_file.lower().endswith('.lnk') or os.path.islink(data_file):
             #data_file = follow_link(data_file)
 
