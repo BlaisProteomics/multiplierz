@@ -1,8 +1,10 @@
 from comtypes.client import CreateObject
 import os
-from multiplierz.mzAPI import mzScan, mzFile as mzAPImzFile
 from collections import defaultdict
 import warnings
+from multiplierz.mzAPI import mzScan, mzFile as mzAPImzFile
+from multiplierz.internalAlgorithms import ProximityIndexedSequence
+
 
 __author__ = 'William Max Alexander'
 
@@ -87,7 +89,6 @@ class mzFile_implicit_numbering(mzAPImzFile):
             else:
                 scan = int(scan)
                 
-
         cycle, experiment = self.make_explicit[scan]
         return self.data.scan(cycle, experiment = experiment, sample = self.sample,
                               **kwargs)
@@ -127,10 +128,12 @@ class mzFile_implicit_numbering(mzAPImzFile):
         """
         Gets the scan index for the specified retention time.
         """
+        
+        return self.make_implicit[self.data.scan_for_time(rt, sample = self.sample)[:2]]
     
-        warnings.warn('.scan_for_time() on implicitly-numbered WIFF files '
-                      'may not currently work; GetIndexOfRT uses ambiguous exp number.')
-        self.data.scan_for_time(rt, sample = self.sample)
+    def time_for_scan(self, scan):
+        cycle, exp = self.make_explicit[scan]
+        return self.data.time_for_scan(cycle, exp, self.sample)
         
     def filters(self):
         return self.data.filters()
@@ -173,6 +176,17 @@ class mzFile_explicit_numbering(mzAPImzFile):
         # Will only store list for default parameters, 
         # since that's what's used by headers() and filters().
         self._scan_info = {} 
+        
+        # Until we get around to fixing the COM-level time/scan 
+        # translation functions, can use the scan_info data to
+        # provide a lookup.
+        scan_rt = [(scan, rt) for rt, _, scan, _, _ in self.scan_info()]
+        self._scan_to_rt = dict(scan_rt)
+        self._rt_to_scan = ProximityIndexedSequence(scan_rt, indexer = lambda x: x[1])
+        self._rt_to_scan.seal()
+        
+        
+        
        
     
     def scan(self, scan_name, experiment, sample = None, centroid = False):
@@ -311,23 +325,31 @@ class mzFile_explicit_numbering(mzAPImzFile):
         
         return tuple(self.source.GetRTRange(sample-1))
     
-    def scan_time_from_scan_name(self, cycle, experiment = None, sample = None):
+    def time_for_scan(self, cycle, experiment = None, sample = None):
         """
         Returns the retention time of a given cycle.
         """
         if sample == None:
             sample = self.sample
         
-        return self.source.GetRTOfScan(sample-1, experiment-1, cycle-1)
+        #return self.source.GetRTOfScan(sample-1, experiment-1, cycle-1)
+        return self._scan_to_rt[(cycle, experiment, sample)]
     
     def scan_for_time(self, rt, experiment = None, sample = None):
         """
-        Returns the cycle at a given retention time, if any.
+        Returns the (cycle, experiment, sample) at a given retention time, if any.
         """        
         if sample == None:
             sample = self.sample
         
-        return int(self.source.GetIndexOfRT(sample-1, experiment-1, rt))
+        #return int(self.source.GetIndexOfRT(sample-1, experiment-1, rt))
+        return self._rt_to_scan[rt][0]
+    
+    def scan_name_from_scan_time(self, rt, experiment = None, sample = None):
+        return self.scan_for_time(rt, experiment, sample)
+    
+    def scan_time_from_scan_name(self, cycle, experiment = None, sample = None):
+        return self.time_for_scan(cycle, experiment, sample)
     
     def scan_range(self, sample = None, experiment = None):
         """
@@ -373,50 +395,3 @@ class mzFile_explicit_numbering(mzAPImzFile):
         self._headers = self.scan_info()
         return self._headers
         
-        
-
-        
-        
-        
-        
-        
-
-if __name__ == '__main__':
-    print "TEST MODE"
-    foo = mzFile_explicit_numbering(r'C:\Users\Max\Desktop\SpectrometerData\2015-05-27-CDK7-Indirect-Pep-4plex-3D-Exp0-16-100.WIFF')
-    bar = foo.filters()
-    #bar = foo.scan_info()
-    
-    #i = 0
-    #j = 0
-    #for _, precm, scanname, level, _ in bar:
-        #if (not precm) and level != 'MS1':
-            #i += 1
-            #assert not foo.scan(scanname)
-        #else:
-            #if not foo.scan(scanname):
-                #j += 1
-                #print scanname
-    
-    
-    #print i
-    print "Done."
-    
-
-
-
-#if __name__ == '__main__':
-    #from time import clock
-    
-    #foo = CreateObject("{9eabbbb3-5a2a-4f73-aa60-f87b736d3476}")
-    #foo.OpenWiffFile(r'C:\Users\Max\Desktop\SpectrometerData\2015-05-27-CDK7-Indirect-Pep-4plex-3D-Exp0-16-100.WIFF')
-    
-    #time = clock()
-    #for _ in range(0, 10):
-        #start = clock()
-        #foo.OpenWiffFile(r'C:\Users\Max\Desktop\SpectrometerData\2015-05-27-CDK7-Indirect-Pep-4plex-3D-Exp0-16-100.WIFF')
-        #bar = foo.GetSpectrumIndex(0, 0, 1)
-        #del foo
-        #time += clock() - start
-    
-    #print time
