@@ -4,6 +4,7 @@ from collections import defaultdict
 import warnings
 from multiplierz.mzAPI import mzScan, mzFile as mzAPImzFile
 from multiplierz.internalAlgorithms import ProximityIndexedSequence
+from multiplierz.internalAlgorithms import centroid as centroid_func
 
 
 __author__ = 'William Max Alexander'
@@ -205,8 +206,8 @@ class mzFile_explicit_numbering(mzAPImzFile):
         if sample == None:
             sample = self.sample            
         
-        if centroid:
-            raise NotImplementedError, 'Centroid argument to scan() does not currently work for WIFF files.'
+        #if centroid:
+            #print 'WARNING- Centroid argument to scan() does not currently work for WIFF files.'
                 
         if isinstance(scan_name, int):
             cycle = scan_name  
@@ -215,8 +216,10 @@ class mzFile_explicit_numbering(mzAPImzFile):
         else:
             raise NotImplementedError, "scan_name must be float or int."
      
-        scan = self.source.GetSpectrumIndex(sample-1, experiment-1, cycle-1)
-        return zip(*scan)
+        scan = zip(*self.source.GetSpectrumIndex(sample-1, experiment-1, cycle-1))
+        if centroid:
+            scan = centroid_func(scan)
+        return scan
     
     
     def scan_info(self, start_cycle = 0, stop_cycle = 999999, experiment = None, sample = None):
