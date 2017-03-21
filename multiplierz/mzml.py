@@ -25,11 +25,6 @@ def marshal(data):
 def demarshal(data):
     return pickle.loads(zlib.decompress(base64.b64decode(data)))
 
-#def marshal(data):
-    #return base64.b64encode(pickle.dumps(data))
-#def demarshal(data):
-    #return pickle.loads(base64.b64decode(data))
-
 def child(element, tag):
     return [x for x in element if x.tag == ns(tag)][0]
 
@@ -226,7 +221,7 @@ def readChromatoXML(chromatoEl):
     if 'total ion current chromatogram' in cvparams:
         span = 'total'
     else:
-        raise NotImplementedError, "Non-total XIC element!"
+        raise NotImplementedError, "Non-total XIC element."
 
     for array in list(child(chromatoEl, 'binaryDataArrayList')):
         assert array.tag == ns('binaryDataArray')
@@ -291,7 +286,6 @@ def readSpectrumData(data):
         specData['spectrum'] = data.scan(scanNum)
         
         
-        #foo = makeSpectrumXML(specData)
         spectrumDataObjs.append(specData)
         
     
@@ -371,12 +365,10 @@ def mzmlToSqlite_writer(sqlitefile, inputs):
             
     connection.commit()
     connection.close()
-    #print "Worker exiting!"
         
     
     
 def mzmlToSqlite(xmlfile, sqlitefile):
-    #assert not os.path.exists(sqlitefile)
     parser = xml.iterparse(xmlfile)
     
     writeQueue = multiprocessing.Queue()
@@ -457,79 +449,24 @@ def iterate_chromatograms(xmlfile):
             obj.clear()
 
 
-def reduceObject(descent, obj):
-    lineage = [obj.tag]
-    #cur = obj
-    #while cur in descent:
+#def reduceObject(descent, obj):
+    #lineage = [obj.tag]
         
 
-class iterate_spectra(object):
-    def __init__(self, xmlfile, get_attrbiutes = True):
-        self.parser = xml.iterparse(xmlfile)
-        self.get_attributes = get_attributes
-        self.attributes = {}
-        self.descent = {}
+#class iterate_spectra(object):
+    #def __init__(self, xmlfile, get_attrbiutes = True):
+        #self.parser = xml.iterparse(xmlfile)
+        #self.get_attributes = get_attributes
+        #self.attributes = {}
+        #self.descent = {}
         
-    def __iter__(self, xmlfile):
-        for evt, obj in self.parser:
-            self.descent.update({obj:x for x in obj})
-            if obj.tag == ns('spectrum'):
-                yield readSpectrumXML(obj)
-            elif self.get_attributes:
-                objatts = reduceObject(self.descent, obj)
-                self.attributes.update(objatts)
+    #def __iter__(self, xmlfile):
+        #for evt, obj in self.parser:
+            #self.descent.update({obj:x for x in obj})
+            #if obj.tag == ns('spectrum'):
+                #yield readSpectrumXML(obj)
+            #elif self.get_attributes:
+                #objatts = reduceObject(self.descent, obj)
+                #self.attributes.update(objatts)
     
         
-#if __name__ == '__main__':
-    #foo = r'C:\Users\Max\Desktop\SpectrometerData\112608_HCD_CE_K562_35.mzML'
-    #import os
-    #import time
-    #if os.path.exists(r'C:\Users\Max\Downloads\tempmzmlprocessingexperiment.sql'):
-        #os.remove(r'C:\Users\Max\Downloads\tempmzmlprocessingexperiment.sql')
-    #start = time.clock()
-    #mzmlToSqlite(foo, r'C:\Users\Max\Downloads\tempmzmlprocessingexperiment.sql')
-    #print time.clock() - start
-    
-    #bar = mzmlsql_reader(r'C:\Users\Max\Downloads\tempmzmlprocessingexperiment.sql')
-    ##bar = readXML(foo)
-    
-    #print "FOO"
-
-
-
-#if __name__ == '__main__':
-    ##foo = r'C:\Users\Max\Desktop\SpectrometerData\112608_HCD_CE_K562_35.mzML'
-    #foo = r'C:\Users\Max\Downloads\small.pwiz.1.1.mzML'
-    #import os
-    #import time    
-    #start = time.clock()
-    #bar = readXML(foo)
-    #print time.clock() - start
-    #print "BAR"
-    
-#if __name__ == '__main__':
-    #foo = r'C:\Users\Max\Downloads\small.pwiz.1.1.mzML'
-    #bar = r'C:\Users\Max\Downloads\experimentaltemp.sql'
-    ##if os.path.exists(bar):
-        ##os.remove(bar)
-    #import time
-    #start = time.clock()
-    #baz = mzmlToSqlite(foo, bar)
-    #print time.clock() - start
-    #reader = mzmlsql_reader(baz)
-    #print "FOO"
-    
-    
-if __name__ == '__main__':
-    foo = mzFile(r'C:\Users\Max\Desktop\SpectrometerData\112608_HCD_CE_K562_35.mzML')
-    bar = mzFile(r'C:\Users\Max\Desktop\SpectrometerData\112608_HCD_CE_K562_35.raw')
-    
-    import matplotlib.pyplot as pyt
-    
-    fooscan = foo.scan(1000)
-    barscan = bar.scan(1000)
-    
-    pyt.vlines(zip(*fooscan)[0], [0] * len(fooscan), zip(*fooscan)[1])
-    pyt.vlines(zip(*barscan)[0], [0] * len(barscan), [x*-1 for x in zip(*barscan)[1]])
-    pyt.show()
-    print "FOO"

@@ -4,11 +4,16 @@ from multiplierz import myHome
 from multiplierz.mzAPI import mzFile as baseFile
 from multiplierz.mzAPI import mzScan
 
-import os
+import os, sys
 from math import floor, ceil
 
-agilentDir = os.path.join(os.path.dirname(__file__), 'agilentdlls')
-assert os.path.exists(agilentDir)
+print sys.executable
+if os.path.basename(sys.executable) == 'mzDesktop.exe':
+    agilentDir = os.path.join(os.path.dirname(sys.executable),
+                              'interface_modules', 'agilentdlls')
+else:
+    agilentDir = os.path.join(os.path.dirname(__file__), 'agilentdlls')
+assert os.path.exists(agilentDir), agilentDir
 # File 'MassSpecDataReader.dll' has to be regasm'd before this works.
 msdr = GetModule(os.path.join(agilentDir, r'MassSpecDataReader.tlb'))
 bc = GetModule(os.path.join(agilentDir, r'BaseCommon.tlb'))
@@ -307,41 +312,3 @@ class mzFile(baseFile):
         return zip(scanObj.XArray, scanObj.YArray)
         
         
-if __name__ == '__main__':
-    print "TEST MODE"
-    foo = mzFile(r'\\rc-data1\blaise\ms_data_share\Software\Agilent\MHDAC_MIDAC_Package_B.08.00_B8132.0\MHDAC_MIDAC_Package\ExampleData\BSA100_Sero100_MS1_09.d')
-    
-    print foo.time_range()
-    bar = foo.scan_info()
-    #bar = foo.xic()
-    #baz = foo.xic(start_time = 3, stop_time = 5, start_mz = 100, stop_mz = 500)
-    
-    bar = foo.scan(10)
-    #baz = foo.deisotope_scan(10)
-    
-    print "Done!"
-    
-#if __name__ == '__main__':
-    #import ctypes
-    #foo = CreateObject(r'Agilent.MassSpectrometry.DataAnalysis.MassSpecDataReader')    
-    #foo.OpenDataFile(r'\\rc-data1\blaise\ms_data_share\Software\Agilent\MHDAC_MIDAC_Package_B.08.00_B8132.0\MHDAC_MIDAC_Package\ExampleData\TMRM_Mix_092110_50ppb_02.d')
-
-    #foo.scan_info()
-
-    ##for i in range(1, 1000):
-        ##try:
-            ##bar = foo.GetSpectrum_6(i)
-            ##if bar.ParentScanId != 0:
-                ##break
-        ##except:
-            ##print i
-            ##break    
-    ## i == 788
-
-    ##bar = foo.GetSpectrum_6(100)
-    ##baz = bar.MZOfInterest[0]
-    
-    ##empty = CreateObject(r'Agilent.MassSpectrometry.DataAnalysis.MinMaxRange')
-    ##empty.Start
-    
-    #print "FOO"

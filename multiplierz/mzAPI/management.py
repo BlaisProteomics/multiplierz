@@ -19,13 +19,21 @@
 
 # Utility commands to make getting multiplierz to work a bit easier.
 
+import os
+
 def pause():
     print "\n-"
     print "Press enter to exit."
     raw_input()
     return
 
+import sys
+#foo = sys.path + [os.path.dirname(sys.executable)]
 
+#print foo
+#print zip(*os.walk(foo[1]))[0]
+#print os.path.dirname(__file__)
+#print sys.executable
 
 def registerInterfaces():
     print "Checking for access to MS data formats..."
@@ -37,6 +45,7 @@ def registerInterfaces():
     import sys
     import subprocess
     import glob
+    from collections import defaultdict
     from win32com.client import Dispatch
     
     interfaceModules = {"BlaisWiff.dll" : "WIFF",
@@ -72,9 +81,8 @@ def registerInterfaces():
 
     
     dllsFound = {}
-    for directory in sys.path:
+    for directory in sys.path + [os.path.dirname(sys.executable)]:
         for path, names, files in os.walk(directory):
-            if ('x86' in path) or ('x64' in path): continue
             for filename in files:
                 if (filename in interfaceModules.keys()) and (not filename in dllsFound.keys()):
                     dllsFound[filename] = os.path.join(path, filename)

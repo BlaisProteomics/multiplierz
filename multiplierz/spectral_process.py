@@ -2,6 +2,7 @@ from collections import defaultdict
 from internalAlgorithms import average
 from multiplierz import protonMass
 from collections import deque
+from numpy import std
 
 def centroid(scan):
     """
@@ -249,6 +250,7 @@ def top_n_peaks(spectrum, N):
     """
     Takes the most-intense N peaks of the given scan, and discards the rest.
     """
+    N = int(N) if N else 0
     return sorted(spectrum, key = lambda x: x[1], reverse = True)[:int(N)]
 
 def exclusion_radius(spectrum, exclusion):
@@ -258,8 +260,9 @@ def exclusion_radius(spectrum, exclusion):
     exclusion "radius" (in Daltons.)  Continues until all peaks have been taken
     or discarded.
     """
-    if not exclusion:
+    if not exclusion or not float(exclusion):
         return spectrum
+    exclusion = float(exclusion)
     
     acc = []
     while spectrum:
@@ -276,9 +279,10 @@ def signal_noise(spectrum, minSN):
     ratio and discarding those.
     """
     
-    if not minSN:
+    if not minSN or not float(minSN):
         return spectrum
     
+    minSN = float(minSN)
     spectrum.sort(key = lambda x: x[1])
     for i in range(0, len(spectrum)):
         ints = [x[1] for x in spectrum[i:]]
@@ -293,7 +297,7 @@ def intensity_threshold(spectrum, threshold):
     Discards all peaks in the spectrum that have an intensity below
     the specified threshold.
     """
-    
+    threshold = float(threshold)
     return [x for x in spectrum if float(x[1]) > threshold]
 
 def mz_range(spectrum, range):

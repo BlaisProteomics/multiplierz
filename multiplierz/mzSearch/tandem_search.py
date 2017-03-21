@@ -10,12 +10,9 @@ from multiplierz.mzReport.formats.xtandem import format_XML
 __all__ = ['TandemSearch']
 
 xtandemExe = settings.xtandem
-defaultParameterFile = r'C:\Users\Max\Desktop\Dev\mzdesktop\xtandem\xTandem\bin\default_input.xml'
+defaultParameterFile = os.path.join(os.path.dirname(xtandemExe), 'default_input.xml')
 
 
-
-# Consensussearch.py probably has the most convenient knowledge of the xtandem
-# setting file setup... bah!
 
 defaultParameters = [('list path, default parameters', 'default_input.xml'),
                      ('list path, taxonomy information', None),

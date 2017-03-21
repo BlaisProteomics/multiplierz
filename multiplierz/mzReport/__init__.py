@@ -60,13 +60,14 @@ multiplierzHeaders = {
     }
 
 # These are the default columns that every mzReport should be aware of.
-# they can be deleted or modified, but these are the basics
-default_columns = ['Protein Rank', 'Accession Number',
+# They should not be changed, since these columns and their sequence is
+# still hardcoded in mzSearch.mascot.interface.output_peptides() .
+default_columns = ['Protein Rank', 'Protein Database', 'Accession Number',
                    'Protein Description', 'Protein Mass', 'Protein Matches', 'Protein Score',
                    'Peptide Sequence', 'Variable Modifications', 'Experimental mz', 'Charge',
                    'Predicted mr', 'Delta', 'Peptide Score', 'Peptide Rank',
                    'Start Position', 'End Position', 'Preceding Residue', 'Following Residue',
-                   'Missed Cleavages', 'Spectrum Description', 'Query', 'Quant']
+                   'Missed Cleavages', 'Spectrum Description', 'Query']
 
 # the types of the default columns
 default_types = dict((k.lower(),t)

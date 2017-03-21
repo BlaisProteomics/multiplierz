@@ -24,25 +24,15 @@ parameterPreamble = ['# comet_version 2015.01 rev. 2\n',
 cometRegex = r'comet\.20[0-9]{5}\.win(64|32)\.exe'
 cometExecutable = re.compile(cometRegex)
 
-cometPath = None
-if not sys.executable.lower().endswith('python.exe'):
-    # mzDesktop mode; use packaged-with copy of Comet.
-    sourcePath = os.path.dirname(sys.executable)
-    for path, _, files in os.walk(sourcePath):
-        executables = [x for x in files if cometExecutable.match(x)]
-        if executables:
-            cometPath = os.path.join(path, executables[0])
-            break
-    assert cometPath, "No Comet executable matching pattern %s found in %s" % (cometRegex,
-                                                                               sourcePath)
+from multiplierz import SettingsFile, myData
+import multiplierz.settings as settings
+cometPath = settings.get_comet()
 
-if not cometPath:
-    # mzPy mode (also mzDesktop failback.)
-    from multiplierz import SettingsFile, myData
-    import multiplierz.settings as settings
-    cometPath = settings.comet
-    # An error will be raised on invoking a CometSearch object if this path is
-    # missing or invalid.
+
+# An error will be raised on invoking a CometSearch object if this path is
+# missing or invalid.
+
+
     
     
 enzymeDict = {'Arg_C': ['1', 'R', 'P'],
@@ -541,7 +531,7 @@ def mgf_to_ms2(mgfFile, outputfile = None):
                     extractorOptions = "None")
     
     sampleTitle = mgf.values()[0]['title']
-    if extractorName in sampleTitle:
+    if 'MultiplierzMGF' in sampleTitle:
         titleMode = 'standard'
     elif sampleTitle.split('.')[1] == sampleTitle.split('.')[2] and '|' in sampleTitle:
         titleMode = 'classic' # From that old, barbaric format.
@@ -561,7 +551,7 @@ def mgf_to_ms2(mgfFile, outputfile = None):
             
         ms2.write(entry['spectrum'], 
                   scanNum = scanNum,
-                  charge = entry['charge'],
+                  charge = entry.get('charge', 0), # TODO Add default charge to PyComet?
                   precursorMZ = entry['pepmass'])
     
     ms2.close()

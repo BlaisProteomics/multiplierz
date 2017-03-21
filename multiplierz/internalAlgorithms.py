@@ -22,6 +22,9 @@ def floatrange(start, stop, step = 1):
         
         
         
+def insert_tag(filename, tag):
+    words = filename.split('.')
+    return '.'.join(words[:-1] + [tag, words[-1]])
         
 
 def print_progress(step, total = None):
@@ -764,76 +767,8 @@ def deisocompare(envelopes1, unassigned1, envelopes2, unassigned2):
     pyt.show()  
     
     
-    
-    
-##Yay unit testing!
-#if __name__ == '__main__':
-    #from random import random, shuffle, seed
-    #seed(1)
-    #for _ in range(3):
-        #noise = [(random()*1000, random()*1000) for _ in range(0, 1000)]
-        #counternoise = [random()*1000 for _ in range(0, 1000)]
-        #delnoise = noise[:100]
-        #shuffle(delnoise)
-        
-        #foo = ProximityIndexedSequenceAgain([], indexer = lambda x: x[0])
-        #for n in noise:
-            #foo.add(n)
-        #foo.tidyBins()
-        #bar = NaiveProximitySequence(noise[:], indexer = lambda x: x[0])
-        
-        #for noise in delnoise:
-            #foo.remove(noise)
-            #bar.remove(noise)
-            #assert set(foo.asList()) == set(bar.asList())
-            
-        
-        #for counter in counternoise:
-            #assert foo[counter] == bar[counter]
-        ##assert set(foo.asList()) == set(noise)
-        #print "TESTING"
-    
-    
-    
-    
-#if __name__ == '__main__':
-    #from random import random, randrange, seed
-    #seed(1)
-    #testdata = [random() for _ in range(1000)]
-    #testintervalstarts = [random() for _ in range(1000)]
-    #testintervals = [(x, x+randrange(1, 10)) for x in testintervalstarts]
-    
-    #testprox = ProximityIndexedSequenceAgain(testdata, lambda x: x)
-    #for start, stop in testintervals:
-        #testrange = set(testprox.returnRange(start, stop))
-        #if not testrange == set([x for x in testdata if start <= x <= stop]):
-            #print "PROBLEM"
-            #testprox.returnRange(start, stop)
-    
-    #print "Done!"
         
 
-if __name__ == '__main__':
-    from multiplierz.mzAPI import mzFile
-    foo = mzFile(r'C:\Users\Max\Desktop\Projects\SILAC\2015-10-13-RIME-VDR-1EF.raw')
-    ms1s = [x for x in foo.scan_info() if x[3] == 'MS1']
-    for ms1 in ms1s:
-        scanNum = ms1[2]
-        scan = foo.scan(scanNum, centroid = True)
-        envelopes1, unassigned1 = peak_pick(scan)
-        scan2 = foo.scan(scanNum, centroid = True)
-        assert scan == scan2
-        envelopes2, unassigned2 = peak_pick_PPM(scan2, tolerance = 7.142857142857142)
-        assert scan == scan2
-        
-        #s1 = sum([sum(x, []) for x in envelopes1.values()], []) + unassigned1
-        #s2 = sum([sum(x, []) for x in envelopes2.values()], []) + unassigned2
-        
-        #assert set(s1) == set(scan) == set(s2)
-        
-        deisocompare(envelopes1, unassigned1, envelopes2, unassigned2)
-        print "FOO"
-        
         
         
         

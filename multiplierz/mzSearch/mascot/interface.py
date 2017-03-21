@@ -60,6 +60,15 @@ import multiplierz.mzReport as mzReport
 from multiplierz import myData, logger_message
 from multiplierz.settings import settings
 
+
+
+default_max_hits = 999999
+default_ion_cutoff = 8
+default_show_same_set = False
+default_show_sub_set = False
+default_bold_red = False
+
+
 multiplierzHeaderConversions = dict((k,mzReport.multiplierzHeaders.get(v,v)) for k,v in
                                     zip(('prot_acc', 'prot_desc', 'prot_score', 'prot_mass',
                                          'prot_matches', 'prot_hit_num', 'pep_query', 'pep_exp_mz',
@@ -180,18 +189,8 @@ class mascot(object):
         fd, self.cookie_file_name = tempfile.mkstemp(text=True)
         os.close(fd)
 
-        ## Handle to libcurl object
-        #self.crl = pycurl.Curl()
-
-        ## set some general options
-        #self.crl.setopt(pycurl.COOKIEFILE, self.cookie_file_name)
-        #self.crl.setopt(pycurl.COOKIEJAR, self.cookie_file_name)
-        #self.crl.setopt(pycurl.FOLLOWLOCATION, True)
-        #self.crl.setopt(pycurl.VERBOSE, verbose)
-
         # Buffer for output
         self.output = cStringIO.StringIO()
-        #self.crl.setopt(pycurl.WRITEFUNCTION, self.output.write)
         
         self.loginToken = ''
 
@@ -212,42 +211,11 @@ class mascot(object):
                           ('action', 'login'),
                           ('userid', ''),
                           ('onerrdisplay', 'login_prompt')]
-
-        #for (n,s) in login_form_seq:
-            #login_form.add_formfield(str(n), str(s))
-
-        ## set curl options
-        #self.crl.setopt(pycurl.URL, login_url)
-        #self.crl.setopt(pycurl.HTTPPOST, login_form) # form options
-
-        #response = cStringIO.StringIO()
-        #self.crl.setopt(pycurl.WRITEFUNCTION, response.write)
-
-        #self.crl.perform()
-
-        #err = None
-        #login_re = re.compile(r'<B><FONT COLOR=#FF0000>Error:(.*)</FONT></B>')
-        #for line in response.getvalue().splitlines():
-            #self.output.write(line)
-            #m = login_re.search(line)
-            #if m:
-                #err = (m.group(1)[:-7] if m.group(1).endswith(' [ec=1]') else m.group(1))
-
-        #response.close()
-
-        #self.crl.setopt(pycurl.WRITEFUNCTION, self.output.write)
-
-        #if self.verbose:
-            #self.output.write(str((self.crl.getinfo(pycurl.HTTP_CODE),
-                                   #self.crl.getinfo(pycurl.EFFECTIVE_URL))))
-                                   
                                    
         req = urllib2.Request(login_url, 
                               data = urlencode(login_form_seq))
-        # Is that even a POST?
         f = urllib2.urlopen(req)
         self.loginToken = f.info()['Set-Cookie']
-        #self.output.write(f.read()) # Formatting?
         # I suppose in this case precise disposition of the output is less important.
         
         
@@ -272,24 +240,18 @@ class mascot(object):
     def get_date(self, mascot_id):
         """
         Returns search date string corresponding to mascot ID
+        
+        BE CAREFUL- since the Mascot search log takes a few minutes to
+        update, this is likely to fail when called against newly searched
+        data.
         """
 
         if not self.logged_in:
-            return 0
+            raise IOError, "Not logged in to Mascot server.  (Call .login() first!)"
 
         mascot_id = re.sub(r'^0+', '', str(mascot_id), count=1)
 
         date_url = self.server + r'/x-cgi/ms-review.exe?'
-
-        #self.crl.setopt(pycurl.URL,
-                        #date_url + urlencode([('CalledFromForm', '1'),
-                                              ##('s0', '1'), # Turns on the correct filter?
-                                              #('f0', mascot_id)]))
-
-        #response = cStringIO.StringIO()
-        #self.crl.setopt(pycurl.WRITEFUNCTION, response.write)
-
-        #self.crl.perform()
         
         req = urllib2.Request(date_url + urlencode([('CalledFromForm', '1'),
                                                     ('f0', mascot_id)]))
@@ -301,12 +263,6 @@ class mascot(object):
 
         date_re = re.compile(r'.+/data/(\d+)/F%s.+' % mascot_id.zfill(6))
 
-        #for line in response.getvalue().splitlines():
-            #m = date_re.match(line)
-            #if m:
-                #return m.group(1)
-        #else:
-            #return 0
         matches = []
         #for line in response.getvalue().splitlines():
         for line in f.read().splitlines():
@@ -318,13 +274,8 @@ class mascot(object):
         if matches:
             return matches[-1].group(1)
         else:
-            return 0 # Probably should just raise an exception.        
-
-    #def download_dat(self, chosen_folder, mascot_id, date = None):
-        #outputFile = os.path.join(chosen_folder, "F%s.dat" % str(mascot_id).zfill(6))
+            raise RuntimeError, "Search not found in date lookup."
         
-        #return self.download_file(mascot_id, filetype = 'MascotDAT',
-                                  #save_file = outputFile, date = date)
         
     def download_dat(self, chosen_folder, mascot_id, date=None):
         mascot_id = str(mascot_id).zfill(6)
@@ -344,16 +295,6 @@ class mascot(object):
                     'DateDir': date,
                     'ResJob': dat_file}
         # Adding a Percolator parameter here breaks things!
-
-        #self.crl.setopt(pycurl.HTTPGET, True)
-        #self.crl.setopt(pycurl.URL, dat_url + urlencode(dat_dict.items()))
-
-        #f = open(dat_path, 'w')
-
-        #self.crl.setopt(pycurl.WRITEFUNCTION, f.write)
-        #self.crl.perform()
-
-        #f.close()
         
         req = urllib2.Request(dat_url + urlencode(dat_dict))
         req.add_header("Cookie", self.loginToken)
@@ -1538,10 +1479,10 @@ class MascotDatFile(object):
         msres_flags = (ms.ms_mascotresults.MSRES_MAXHITS_OVERRIDES_MINPROB
                        | ms.ms_mascotresults.MSRES_GROUP_PROTEINS)
 
-        if self.args['show_sub_set']:
+        if self.args.get('show_sub_set', default_show_sub_set):
             msres_flags = msres_flags | ms.ms_mascotresults.MSRES_SHOW_SUBSETS
 
-        if self.args['bold_red']:
+        if self.args.get('bold_red', default_bold_red):
             msres_flags = msres_flags | ms.ms_mascotresults.MSRES_REQUIRE_BOLD_RED
             
         if decoyMode:
@@ -1557,9 +1498,9 @@ class MascotDatFile(object):
         self.pep_summary = ms.ms_peptidesummary(self.res_file,
                                                 msres_flags,
                                                 0.05,
-                                                self.args['max_hits'],
+                                                self.args.get('max_hits', default_max_hits),
                                                 '',
-                                                self.args['ion_cutoff'],
+                                                self.args.get('ion_cutoff', default_ion_cutoff),
                                                 0,
                                                 '',
                                                 mspepsumFlags)
@@ -1666,16 +1607,16 @@ class MascotDatFile(object):
         mascot_header.append([' ', ' '])
 
         mascot_header.append(['Significance threshold', 0.05])
-        mascot_header.append(['Max. number of hits', self.args['max_hits']])
+        mascot_header.append(['Max. number of hits', self.args.get('max_hits', default_max_hits)])
         mascot_header.append(['Use MudPIT protein scoring', 0])
-        mascot_header.append(['Ions score cut-off', self.args['ion_cutoff']])
-        mascot_header.append(['Include same-set proteins', int(self.args['show_same_set'])])
-        mascot_header.append(['Include sub-set proteins', int(self.args['show_sub_set'])])
+        mascot_header.append(['Ions score cut-off', self.args.get('ion_cutoff', default_ion_cutoff)])
+        mascot_header.append(['Include same-set proteins', int(self.args.get('show_same_set', default_show_same_set))])
+        mascot_header.append(['Include sub-set proteins', int(self.args.get('show_sub_set', default_show_sub_set))])
         mascot_header.append(['Include unassigned', int(self.args.get('unassigned_queries', False))])
-        mascot_header.append(['Require bold red', int(self.args['bold_red'])])
+        mascot_header.append(['Require bold red', int(self.args.get('bold_red', default_bold_red))])
 
-        mascot_header.append([' ', ' '])
-        mascot_header.append(['Mascot Decoy Search', 'True' if self.params.getDECOY() else 'False'])
+        #mascot_header.append([' ', ' '])
+        #mascot_header.append(['Mascot Decoy Search', 'True' if self.params.getDECOY() else 'False'])
         
         return mascot_header
 
@@ -1723,18 +1664,14 @@ class MascotDatFile(object):
         else:
             prot_desc = self.pep_summary.getProteinDescription(prot_acc)
             prot_mass = round(self.pep_summary.getProteinMass(prot_acc))
-
+            prot_db = ''
+            
         prot_matches = prot.getNumDisplayPeptides()
         prot_score = round(prot.getScore())
-        #prot_count = len(set(self.pep_summary.getPeptide(prot.getPeptideQuery(j), prot.getPeptideP(j)).getPeptideStr()
-                             #for j in range(1, prot.getNumPeptides()+1)))
 
-        if self.res_file.getMascotVer() >= '2.3':
-            return [prot_hit_num, prot_db, prot_acc, prot_desc,
-                    prot_mass, prot_matches, prot_score]
-        else:
-            return [prot_hit_num, prot_acc, prot_desc,
-                    prot_mass, prot_matches, prot_score]
+
+        return [prot_hit_num, prot_db, prot_acc, prot_desc,
+                prot_mass, prot_matches, prot_score]
 
 
 
@@ -1784,8 +1721,9 @@ class MascotDatFile(object):
             pep_miss = pep.getMissedCleavages()
             pep_scan_title = unquote(self.res_file.getQuerySectionValueStr(pep_query, "Title"))
             
-            pep_quant = pep.getComponentStr()
+            #pep_quant = pep.getComponentStr() # Not currently used.
 
+            # Sequence corresponds to mzReport.default_columns.
             yield (prot_info
                    + [pep_seq,
                       pep_var_mod,
@@ -1801,8 +1739,7 @@ class MascotDatFile(object):
                       pep_res_after,
                       pep_miss,
                       pep_scan_title,
-                      pep_query,
-                      pep_quant])
+                      pep_query])
 
     def protein_report(self):
         for prot_hit_num in range(1, self.pep_summary.getNumberOfHits() + 1):
@@ -1810,14 +1747,14 @@ class MascotDatFile(object):
 
             yield self.output_protein(prot)
 
-            if self.args['show_same_set']:
+            if self.args.get('show_same_set', default_show_same_set):
                 i = 1
                 while self.pep_summary.getNextSimilarProtein(prot_hit_num, i):
                     prot = self.pep_summary.getNextSimilarProtein(prot_hit_num, i)
                     yield self.output_protein(prot)
                     i += 1
 
-            if self.args['show_sub_set']:
+            if self.args.get('show_sub_set', default_show_sub_set):
                 i = 1
                 while self.pep_summary.getNextSubsetProtein(prot_hit_num, i):
                     prot = self.pep_summary.getNextSubsetProtein(prot_hit_num, i)
@@ -1831,7 +1768,7 @@ class MascotDatFile(object):
             for pep in self.output_peptides(prot):
                 yield pep
 
-            if self.args['show_same_set']:
+            if self.args.get('show_same_set', default_show_same_set):
                 i = 1
                 while self.pep_summary.getNextSimilarProtein(prot_hit_num, i):
                     prot = self.pep_summary.getNextSimilarProtein(prot_hit_num, i)
@@ -1839,7 +1776,7 @@ class MascotDatFile(object):
                         yield pep
                     i += 1
 
-            if self.args['show_sub_set']:
+            if self.args.get('show_sub_set', default_show_sub_set):
                 i = 1
                 while self.pep_summary.getNextSubsetProtein(prot_hit_num, i):
                     prot = self.pep_summary.getNextSubsetProtein(prot_hit_num, i)
@@ -1857,10 +1794,6 @@ class MascotDatFile(object):
         
         return self.params.getDECOY()
         
-                      
-
-def mascot_ms2(whatever):
-    raise NotImplementedError, 'Sorry, no one used this, as far as I know.  You could go into the Hg history for it.'
 
 
 

@@ -32,22 +32,15 @@ class MascotReport:
             self.password = password
             #set to False to leave dat file in place for further queries
             self.cleanup = cleanup
+            self.mascot.login(login, password)
         else:
             self.mascot = interface.mascot()
             self.cleanup = cleanup
             print "Note: No server specified, Mascot-independent mode."
 
-    def login_mascot(self, login=None, password=None):
-        logger_message(20,'Checking Mascot Login and Password')
-        if not login:
-            login = self.login
-        if not password:
-            password = self.password
-
-        if not (login and password):
-            return 'No login or password specified.'
-
-        return self.mascot.login(login, password)
+    def login_mascot(self, *args, **kwargs):
+        print "Deprecated function login_mascot called."
+        pass
 
     def mascot_header(self, report_file, mascot_header):
         '''Adds a Mascot Header page to a report (XLS or MZD)'''
@@ -260,16 +253,16 @@ class MascotReport:
 
             prot_rep.close()
 
-    def get_report(self, mascot_id, date=None, chosen_folder=None, 
-                   local_dat_file = None, mascotIDInResultName = False, **kwargs):
-        return self.get_reports(mascot_ids=[mascot_id], dates=[date] if date else None,
-                                chosen_folder=chosen_folder,
-                                combined_file=False, 
-                                local_dat_files = [local_dat_file] if local_dat_file else None,
-                                mascotIDInResultName = mascotIDInResultName,
-                                **kwargs)[0]
+    #def get_report(self, mascot_id, date=None, chosen_folder=None, 
+                   #local_dat_file = None, mascotIDInResultName = False, **kwargs):
+        #return self.get_reports(mascot_ids=[mascot_id], dates=[date] if date else None,
+                                #chosen_folder=chosen_folder,
+                                #combined_file=False, 
+                                #local_dat_files = [local_dat_file] if local_dat_file else None,
+                                #mascotIDInResultName = mascotIDInResultName,
+                                #**kwargs)[0]
 
-    def get_reports(self, mascot_ids, dates=None,
+    def legacy_get_reports(self, mascot_ids, dates=None,
                     chosen_folder=None, combined_file=False, rank_one=False,
                     protein_report=False,
                     mascot_options=None,
@@ -661,7 +654,8 @@ class MascotReport:
         header_sheet = dat_interface.mascot_header()
         data_sheet = []
         for values in dat_interface.peptide_report():
-            row = mzReport.ReportEntry(report_columns, values)
+            row = mzReport.ReportEntry(mzReport.default_columns,
+                                       values)
             
             if rank_one and row['Peptide Rank'] != 1:
                 continue
@@ -685,30 +679,37 @@ class MascotReport:
         return header_sheet, data_sheet
         
     
-    def updated_get_reports(self, mascot_ids, 
-                            outputfile = None,
-                            ext = None,
-                            **report_kwargs):
+    def get_reports(self, mascot_ids,
+                    dates,
+                    outputfile = None,
+                    ext = None,
+                    **report_kwargs):
         
         if outputfile and ext:
-            outputfile += '.' + ext
+            if not outputfile.lower().endswith(ext):
+                outputfile += '.' + ext
         
         report_columns = mzReport.default_columns
-        if float(self.mascot.version) >= 2.3:
+        if float(self.mascot.version) >= 2.3 and 'Protein Database' not in report_columns:
             report_columns.insert(1, 'Protein Database')        
-        if len(mascot_ids) > 1:
-            report_columns.insert(0, 'File')
+            
+        if dates:
+            assert len(dates) == len(mascot_ids), "Mismatched date list provided."
+            mascot_searches = zip(mascot_ids, dates)
+        else:
+            mascot_searches = [(x, None) for x in mascot_ids]
             
         reports = []
-        for mascot_id in mascot_ids:
+        for mascot_id, date in mascot_searches:
             header, psms = self.retrieve_report_data(mascot_id, report_columns,
+                                                     date,
                                                      **report_kwargs)
             datafilename = header[7][1] or mascot_id
             reports.append((mascot_id, datafilename, header, psms))
         
         if not outputfile:
             outputfile = reports[0][1] + '.' + ext
-        print "BAR"
+            
         if len(mascot_ids) == 1:
             mascot_id, datafilename, header, psms = reports[0]
             if not outputfile:
@@ -727,6 +728,7 @@ class MascotReport:
             output.close()
         
         else:
+            #report_columns.insert(0, 'File')
             if not outputfile:
                 raise IOError("Combined report file name must be specified.")
             
@@ -744,7 +746,7 @@ class MascotReport:
                 extension = outputfile.split('.')[-1]
                 print "Omitting header tables due to %s format." % extension
             
-            output = mzReport.writer(outputfile, columns = report_columns,
+            output = mzReport.writer(outputfile, columns = ['File'] + report_columns,
                                      sheet_name = 'Data')
             for datafilepath, _, psms in reports:
                 datafilename = os.path.basename(datafilepath)
@@ -755,6 +757,7 @@ class MascotReport:
             output.close()
 
 
+        return outputfile
 
 
 
@@ -786,144 +789,3 @@ def runPercolator(datfile, mascotPercolatorPath):
 
 
 
-def retrieveMascotReport(mascot_ids = None,
-                         dat_file_list = None,
-                         chosen_folder = myData,
-                         mascot_server = settings.mascot_server,
-                         mascot_version = settings.mascot_version,
-                         combined_file = False,
-                         rank_one = False,
-                         max_hits = 1000,
-                         ion_cutoff = 20,
-                         bold_red = True,
-                         show_query_data = True,
-                         show_same_set = False,
-                         show_sub_set = False,
-                         protein_report = False,
-                         quant = False,
-                         ext = '.xlsx',
-                         login_name = None,
-                         password = None,
-                         keep_dat = False,
-                         pep2gene = None):
-    """    
-    Retrieves a search results from Mascot and performs several optional
-    post-processing and annotation steps.
-
-    Note that if the requested output format (ext) is '.mzid' (mzIdentML), then 
-    most of the optional arguments are nonfunctional (and the Mascot server 
-    version must be >= 2.4.)
-
-    Parameters:
-
-    mascot_ids - A list of the Mascot search IDs that will be retreived.  (Should be
-    left blank if dat_file_list is given.)
-
-    dat_file_list - A list of paths to locally-located .DAT files. (Should be left blank
-    if mascot_ids is given.)
-
-    chosen_folder - Local directory path that the result files will be placed into.
-
-    mascot_server - Address of the Mascot server containing the search results
-    to be retrieved.
-
-    mascot_version - Version number of the Mascot server; necessary due to small
-    differences in the CGI protocol between versions.
-
-    combined_file - If true, returns all search results in one file.  (CONFIRM?)
-
-    rank_one - If true, search results will only contain first-rank peptides.
-
-    max_hits - Maximum number of search hits per result file.
-
-    ion_cutoff - (ASK?)
-
-    bold_red - (ASK?)
-
-    show_query_data - (ASK?)
-
-    show_same_set - (ASK?)
-
-    protein_report - (ASK?)
-
-    quant - (ASK?)
-
-    ext - Result file type; can be one of: .csv, .xls, .xlsx, .mzd, mzid . 
-    (.xls and .xlsx require Microsoft Excel to be installed.)
-
-    login_name - Username on the target Mascot server; required if security is
-    enabled on the server.
-
-    password - Password corresponding to given username.
-
-    keep_dat - If true, the Mascot .DAT file is downloaded and not removed after
-    processing.
-
-    pep2gene - The path of a Pep2Gene database created by the Pep2Gene
-    Utility, or None. If a database is provided, the Pep2Gene algorithm is
-    used to annotate search result data with the genes corresponding to each
-    peptide match.
-    """
-    import sys
-    if max_hits > sys.maxint:
-        print "Warning: max_hits must be of type int (for msparser.)"
-        print "Reducing max_hits from %s to maximum int size (%s) ." % (max_hits, sys.maxint)
-        max_hits = sys.maxint
-
-    if mascot_ids and dat_file_list:
-        raise NotImplementedError, ("Reports from server-located and local "
-                                    "searches must be processed separately.")
-    
-
-    if mascot_ids:
-        mascot_reporter = MascotReport(mascot_server,
-                                       mascot_version,
-                                       login_name,
-                                       password,
-                                       cleanup = False)
-        
-        if any([':' in mid for mid in mascot_ids]):
-            dates = [mid.split(':')[1] if ':' in mid else None
-                     for mid in mascot_ids]
-            mascot_ids = [mid.split(':')[0] for mid in mascot_ids]
-        else:
-            dates = None
-    else:
-        mascot_reporter = MascotReport("No server",
-                                       mascot_version)
-
-    #Check Login
-    if not login_name and password:
-        mascot_reporter.mascot.logged_in = True
-    else:
-        if mascot_ids:
-            check_login = mascot_reporter.login_mascot()
-            if check_login == 'error':
-                raise IOError, ("Could not log in to Mascot; check your Mascot settings "
-                                "and username/password, if applicable.")
-
-    ret_vals = mascot_reporter.get_reports(mascot_ids = mascot_ids,
-                                           dates = dates,
-                                           local_dat_files = dat_file_list,
-                                           chosen_folder = chosen_folder,
-                                           combined_file = combined_file,
-                                           rank_one = rank_one,
-                                           max_hits = max_hits,
-                                           ion_cutoff = ion_cutoff,
-                                           bold_red = bold_red,
-                                           show_query_data = show_query_data,
-                                           show_same_set = show_same_set,
-                                           show_sub_set = show_sub_set,
-                                           protein_report = protein_report,
-                                           quant = quant,
-                                           ext = ext,
-                                           mascotIDInResultName = True
-                                           )
-
-    if pep2gene:
-        p2gDB = pep2gene
-        import multiplierz.mzTools.pep2gene as p2g
-        for filename in ret_vals:
-            p2g.add_gene_ids(filename, p2gDB, inPlace = True)
-            
-    return ret_vals

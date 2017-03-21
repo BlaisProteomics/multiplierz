@@ -25,17 +25,35 @@ extractor_name = 'MultiplierzMGF'
 
 
 
-def standard_title_write(filename, mz, scan, **info):
+def standard_title_write(filename, mz = None, scan = None, **info):
     """
     Stores relevant spectral information in a string that can be used as a conveniently
     informative spectrum title, which facilitates downstream processing.
     """
+
+    if isinstance(filename, dict):
+        # Can just give an info dict, if e.g. the script has a dict from
+        # standard_title_parse and wants to write back modified version.
+        info = filename.copy()
+        filename = info['file']
+        mz = info['mz']
+        scan = info['scan']
+        del info['file']
+        del info['mz']
+        del info['scan']
+    else:
+        assert filename and mz and scan, ("Arguments must either be a dict or "
+                                          "include filename, scan, and mz values.")
     
     #title = os.path.basename(filename) + '|%s' % extractorName
     title = '%s|%s|SCAN:%s|MZ:%s' % (os.path.basename(filename), extractor_name,
                                      scan, mz)
     
     for field, value in sorted(info.items()):
+        if any(x.isupper() for x in field):
+            assert field.lower() not in info, ("Title data should not be case "
+                                               "sensitive. (%s <-> %s)") % (field, field.lower())
+            
         try:
             assert '|' not in field and ':' not in field, "| and : cannot appear in field strings.  E.g. %s" % field
         except TypeError:
@@ -365,6 +383,11 @@ def extract(datafile, outputfile = None, default_charge = 2, centroid = True,
 
     if not outputfile:
         outputfile = datafile + '.mgf'
+        
+    if os.path.exists(outputfile):
+        assert outputfile.lower().endswith('mgf'), ("Overwriting a non-MGF file %s with "
+                                                    "the MGF extractor is probably a mistake."
+                                                    % outputfile)
     
     writer = MGF_Writer(outputfile)    
     
@@ -414,8 +437,8 @@ def extract(datafile, outputfile = None, default_charge = 2, centroid = True,
                      [126.127726, 127.124761, 127.131081, 128.128116, 128.134436,
                       129.131471, 129.137790, 130.134825, 130.141145, 131.138180])
         
-        assert label_tolerance < 0.01, ("label_tolerance must be lower "
-                                        "than %f for 10-plex experiments!" % label_tolerance)
+        assert label_tolerance < 0.005, ("label_tolerance must be lower "
+                                         "than 0.005 for 10-plex experiments!" % label_tolerance)
     else:
         raise NotImplementedError, ("Labels of type %s not recognized.\n"
                                     "Should be one of [4,6,8,10] or None.")
@@ -431,7 +454,7 @@ def extract(datafile, outputfile = None, default_charge = 2, centroid = True,
             if abs(nearpt[0] - mz) < label_tolerance:
                 scan_values[str(label)] = '%.3f' % nearpt[1]
             else:
-                scan_values[str(label)] = '0'
+                scan_values[str(label)] = '0' # Report noise value?
                     
         return scan_values
     
@@ -457,7 +480,8 @@ def extract(datafile, outputfile = None, default_charge = 2, centroid = True,
                     except NotImplementedError:
                         lastMS1 = centroid(data.scan(lastMS1ScanName))      
                         
-                envelopes = peak_pick(lastMS1, tolerance = 0.01, min_peaks = 2)[0]
+                envelopes = peak_pick(lastMS1, tolerance = 0.01, min_peaks = 2,
+                                      enforce_isotopic_ratios=False)[0]
                 return sum([[(x[0][0], c) for x in xs]
                             for c, xs in envelopes.items()], [])
             
@@ -531,8 +555,9 @@ def extract(datafile, outputfile = None, default_charge = 2, centroid = True,
         
     writer.close
     
-    print "Precursor inconsistencies: %s/%s" % (inconsistent_precursors,
-                                                scans_written)
+    if inconsistent_precursors:
+        print "Precursor inconsistencies: %s/%s" % (inconsistent_precursors,
+                                                    scans_written)
 
     return outputfile
     
@@ -582,5 +607,5 @@ if __name__ == '__main__':
     print "TEST MODE"
     #extract(r'C:\Users\Max\Desktop\Projects\rcprot_testing\2015-09-15-K562-10ng_1E5-TARG_50ms-mft_25-UFILL-1.raw',
             #r'C:\Users\Max\Desktop\Projects\rcprot_testing\2015-09-15-K562-10ng_1E5-TARG_50ms-mft_25-UFILL-1.raw.newExtractor.mgf')
-    extract(r'\\rc-data1\blaise\ms_data_share\Max\SRPK1\2017-02-27-SRPK1-01.raw',
-            r'\\rc-data1\blaise\ms_data_share\Max\SRPK1\2017-02-27-SRPK1-01.raw.mgf')
+    extract(r'\\rc-data1\blaise\ms_data_share\Max\CDK14\2017-03-01-CDK14-FMF-1.raw',
+            r'\\rc-data1\blaise\ms_data_share\Max\CDK14\2017-03-01-CDK14-FMF-1.raw.newtest.mgf')

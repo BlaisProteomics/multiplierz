@@ -274,31 +274,3 @@ class FeatureInterface(object):
             self.conection.close()
             
 
-
-#if __name__ == '__main__':
-    #import cPickle
-    #import os
-    #path = '\\\\dragon\DragonShare\Max\Histone_Data'
-    #featureData = cPickle.load(open(os.path.join(path, '2014-06-03-HistonePropionylation_pST.raw.featurePickle'), 'r'))
-    #data = mzFile(os.path.join(path, '2014-06-03-HistonePropionylation_pST.raw'))
-    
-    #scanToF, scanFToPeaks, featureToMS2 = getScanFeatureDicts(data, featureData)
-    #featureToPSMs = featureToPSM(os.path.join(path, '2014-06-03-HistonePropionylation_pST_RECAL_Combined_CID-HCD.SILAC_annotated.xlsx'),
-                                 #featureData)
-    
-    #print "Done."
-    
-#if __name__ == '__main__':
-    #foo = r'\\glu2\pipeline\dataStopover\20120626_PAD-20120626-Run1_UHRF1-Xtin.raw.3.featurePickle'
-    #bar = pickle.load(open(foo))
-    ##save_feature_database(bar, foo + '.features', overwrite = True)
-    #features = FeatureInterface(foo + '.features')
-    #baz = features[3]
-    #qux = features.mz_range(500, 510)
-    #bang = features.scan_range(1000, 1020)
-    #print "Done."
-    
-if __name__ == '__main__':
-    foo = pickle.load(open(r'\\rc-data1\blaise\ms_data_share\Max\spectrometerData\2015-10-13-RIME-VDR-1AB.raw.IsoFeaturePickle.featurePickle_Iso', 'r'))
-    save_feature_database(foo, r'\\rc-data1\blaise\ms_data_share\Max\spectrometerData\2015-10-13-RIME-VDR-1AB.raw.featuredb')
-    

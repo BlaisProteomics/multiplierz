@@ -9,8 +9,6 @@ import os
 
 
 
-
-
 #if not os.path.exists(SettingsFile):
     #newfile = open(SettingsFile, 'w')
     #for line in defaultSettingsFile.split('\n'):

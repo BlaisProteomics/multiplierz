@@ -18,13 +18,13 @@
 
 
 __author__ = 'Jignesh Parikh, James Webber, William Max Alexander'
-__version__ = '1.1.0'
+__version__ = '2.0.0'
 
 __all__ = ['mzAPI', 'mzTools', 'mzReport',
            'myHome', 'myData', 'logger_message', 'SettingsFile']
 
 import logging
-import os
+import os, sys
 
 
 
@@ -54,36 +54,6 @@ def _get_home():
         return path
     else:
         raise RuntimeError('No home environment variable found')
-
-
-#class mzLogger(object):
-    #'''A class for the multiplierz logger.'''
-
-    #def __init__(self, name, fmt, level=30):
-        #self._logger = logging.getLogger(name)
-        #logger_handler = logging.StreamHandler()
-        #logger_handler.setFormatter(logging.Formatter(fmt))
-        #self._logger.addHandler(logger_handler)
-        #self._logger.setLevel(level)
-
-    #def __call__(self, level=30, message=''):
-        #"""Sets a new logger message at a specified level
-
-        #Logger messages are displayed in a console if they have a higher level than the current logger level.
-
-        #Example:
-        #If current logger level = 30, any message greater than 30 will be displayed
-        #>>> settings.logger_level = 30
-        #>>> logger_message(40, 'This message will be displayed because the message level of 40 > 30')
-        #"""
-        #self._logger.log(level, str(message))
-
-    #def set_level(self, level):
-        #self._logger.setLevel(level)
-
-
-## can be called as a function, e.g. multiplierz.logger_message(30, 'Message at level 30')
-#logger_message = mzLogger('multiplierz', '%(message)s')
 
 
 # these directories should be cross-platform:
@@ -222,8 +192,19 @@ def initialSettings():
 def deployUnimod():
     import shutil
     unimodFile = os.path.join(os.path.dirname(__file__), 'unimod.sqlite')
-    shutil.copy(unimodFile, os.path.join(myData, 'unimod.sqlite'))    
-    # Download from unimod site?
+    if not os.path.exists(unimodFile):
+        unimodFile = None
+        basedir = os.path.dirname(sys.executable)
+        for files, subdirs, path in os.walk(basedir):
+            if 'unimod.sqlite' in files:
+                unimodFile = os.path.join(path, 'unimod.sqlite')
+                break
+            
+    if not unimodFile:
+        print "WARNING: No unimod.sqlite found in %s (%s)" % (basedir, sys.executable)    
+    else:
+        shutil.copy(unimodFile, os.path.join(myData, 'unimod.sqlite'))    
+    
 
 def initialMods():
     DefaultModificationFile = """

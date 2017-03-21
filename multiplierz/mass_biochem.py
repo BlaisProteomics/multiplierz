@@ -49,65 +49,43 @@ except IOError:
 
 
 # From Unimod.
-AW = {'13C': 13.00335483,
-      '15N': 15.00010897,
-      '18O': 17.9991603,
-      '2H': 2.014101779,
-      'Ag': 106.905092,
-      'As': 74.9215942,
-      'Au': 196.966543,
-      'B': 11.0093055,
-      'Br': 78.9183361,
-      'C': 12.0,
-      'Ca': 39.9625906,
-      'Cd': 113.903357,
-      'Cl': 34.96885272,
-      'Co': 58.9331976,
-      'Cr': 51.9405098,
-      'Cu': 62.9295989,
-      'F': 18.99840322,
-      'Fe': 55.9349393,
-      'H': 1.007825035,
-      'Hg': 201.970617,
-      'I': 126.904473,
-      'K': 38.9637074,
-      'Li': 7.016003,
-      'Mg': 23.9850423,
-      'Mn': 54.9380471,
-      'Mo': 97.9054073,
-      'N': 14.003074,
-      'Na': 22.9897677,
-      'Ni': 57.9353462,
-      'O': 15.99491463,
-      'P': 30.973762,
-      'Pd': 105.903478,
-      'S': 31.9720707,
-      'Se': 79.9165196,
-      'Zn': 63.9291448,
-      'e': 0.000549}
-amino_acids = {'-': 0.0,
-               'A': 71.037114,
-               'C': 103.009185,
-               'C-term': 17.00274,
-               'D': 115.026943,
-               'E': 129.042593,
-               'F': 147.068414,
-               'G': 57.021464,
-               'H': 137.058912,
-               'I': 113.084064,
-               'K': 128.094963,
-               'L': 113.084064,
-               'M': 131.040485,
-               'N': 114.042927,
-               'N-term': 1.007825,
-               'P': 97.052764,
-               'Q': 128.058578,
-               'R': 156.101111,
-               'S': 87.032028,
-               'T': 101.047679,
-               'V': 99.068414,
-               'W': 186.079313,
-               'Y': 163.063329}
+AtomicMass = {'13C': 13.00335483,
+              '15N': 15.00010897,
+              '18O': 17.9991603,
+              '2H': 2.014101779,
+              'Ag': 106.905092,
+              'As': 74.9215942,
+              'Au': 196.966543,
+              'B': 11.0093055,
+              'Br': 78.9183361,
+              'C': 12.0,
+              'Ca': 39.9625906,
+              'Cd': 113.903357,
+              'Cl': 34.96885272,
+              'Co': 58.9331976,
+              'Cr': 51.9405098,
+              'Cu': 62.9295989,
+              'F': 18.99840322,
+              'Fe': 55.9349393,
+              'H': 1.007825035,
+              'Hg': 201.970617,
+              'I': 126.904473,
+              'K': 38.9637074,
+              'Li': 7.016003,
+              'Mg': 23.9850423,
+              'Mn': 54.9380471,
+              'Mo': 97.9054073,
+              'N': 14.003074,
+              'Na': 22.9897677,
+              'Ni': 57.9353462,
+              'O': 15.99491463,
+              'P': 30.973762,
+              'Pd': 105.903478,
+              'S': 31.9720707,
+              'Se': 79.9165196,
+              'Zn': 63.9291448,
+              'e': 0.000549}
+AW = AtomicMass # For legacy reasons.
 
 # dictionary of modification shorthand
 mod_dictionary = {'p': 'Phospho',
@@ -192,6 +170,7 @@ AminoAcidMasses = {'A': (71.03711, 71.0788),
                    'W': (186.07931, 186.2132),
                    'Y': (163.06333, 163.176)}
 
+# These all include a bound H2O.
 AminoAcidFormulas = {'A': {'C': 3, 'H': 7, 'N': 1, 'O': 2},
                      'C': {'C': 3, 'H': 7, 'N': 1, 'O': 2, 'S': 1},
                      'D': {'C': 4, 'H': 7, 'N': 1, 'O': 4},
@@ -355,7 +334,7 @@ def digest(protein, enzyme="Trypsin", missed_cleavages=0):
 
     #Enzyme Specificities
     # list of enzymes
-    enzSpec = enzymeSpecification
+    enzSpec = EnzymeSpecification
 
     digest_array = []
 
@@ -462,7 +441,10 @@ def fragment_legacy(peptide, ions=('b', 'b++', 'y', 'y++'), labels=True):
     double = polarity * 2
 
     # amino acid masses
-    masses = amino_acids.copy()
+    masses = dict([(k, v[0]) for k, v in AminoAcidMasses])
+    masses['-'] = 0.0
+    masses['C-term'] = 17.00274
+    masses['N-term'] = 1.007825
 
     min_internal_mass = 0.0
     max_internal_mass = 700.0
@@ -856,7 +838,8 @@ def n15_label(pepFormula, modFormula, spMass):
     return pepFormula, modFormula, spMass
 
 SpecialModifications = {'N15-Labelled' : n15_label}    
-    
+mascotVarModPattern = re.compile(r'[A-Z][0-9]{,3}: .*')
+
 def peptide_mass(peptide, modifications = None):
     if not modifications: # Due to that odd Python default-argument quirk.
         modifications = []
@@ -874,25 +857,43 @@ def peptide_mass(peptide, modifications = None):
     pepFormula['H'] -= aaChainLinks * 2
     pepFormula['O'] -= aaChainLinks
     
+    specialMass = 0
     modFormula = defaultdict(int)
     modOps = []
     for mod in modifications:
-        if mod in SpecialModifications:
+        if mod in SpecialModifications: # Mod as entry in SpecialModifications
             modOps.append(SpecialModifications[mod])
+        elif isinstance(mod, basestring) and mascotVarModPattern.match(mod):
+            # Mod as Mascot variable mod substring.
+            submod = mod.split()[1]
+            assert submod in ModificationFormulae, ("Could not recognize variable "
+                                                    "modfication %s" % mod)
+            for aa, num in ModificationFormulae[submod].items():
+                modFormula[aa] += num
         elif mod in ModificationFormulae:
+            # Mod as plain mod name.
             for aa, num in ModificationFormulae[mod].items():
                 modFormula[aa] += num
         elif formula_form.match(mod):
+            # Mod as written-out chemical formula.
             moddict = parse_chemical_formula(mod)
             for aa, num in moddict:
                 modFormula[aa] += num
         elif isinstance(mod, dict):
+            # Mod as chemical formula dict.
             for aa, num in mod:
                 modFormula[aa] += num
+        elif isinstance(mod, float):
+            # Mod as plain mass
+            specialMass += mod
         else:
-            raise IOError, "Unrecognized modification type: %s" % str(mod)
+            try:
+                # Mod as mass but in string format.
+                specialMass += float(mod)
+            except ValueError:
+                raise IOError, "Unrecognized modification type: %s" % str(mod)
     
-    specialMass = 0
+    
     for op in modOps:
         pepFormula, modFormula, specialMass = op(pepFormula, modFormula, specialMass)
     
@@ -998,7 +999,8 @@ def fragment(peptide, mods = [], charges = [1],
     
     # Replicate sequences for multiply-charged states.
     for chg in charges:
-        assert isinstance(chg, int) or isinstance(chg, float)
+        assert isinstance(chg, int) or (isinstance(chg, float) and chg == int(chg))
+        chg = int(chg)
         
         if chg == 1:
             continue
@@ -1158,7 +1160,7 @@ def generate_labels(scan, peptide, ions, charge=None, tolerance=0.6, **settings)
                      for e,c in zip(matched_exp,matched_calc))
 
 
-def mz(peptide, charge=1):
+def legacy_mz(peptide, charge=1):
     """Returns the mz for an amino acid sequence.
 
     Takes a peptide sequence (including possible mods) and returns the mz
@@ -1173,8 +1175,11 @@ def mz(peptide, charge=1):
 
     sequence, mods, vm_masses, neutral_loss = mz_pep_decode(peptide)
 
-    masses = amino_acids.copy()
-
+    masses = dict([(k, v[0]) for k, v in AminoAcidMasses])
+    masses['-'] = 0.0
+    masses['C-term'] = 17.00274
+    masses['N-term'] = 1.007825
+    
     # randomly choose AAs for 'Z' and 'B'
     # Is this a good idea? Makes the mz function nondeterministic.
     masses['Z'] = masses[['E','Q'][randint(0,1)]]
@@ -1194,7 +1199,7 @@ def mz(peptide, charge=1):
     return total_mass
 
 
-def mw(peptide):
+def legacy_mw(peptide):
     """Returns the monoisotopic mass for an amino acid sequence.
 
     Calls mz(), with charge = 0
@@ -1208,7 +1213,7 @@ def mw(peptide):
 mascotVarModPattern = re.compile(r'[A-Z][0-9]{,3}: .*')
 mascotFixModPattern = re.compile(r'.* \(.*\)')
 
-def updated_mw(peptide, mods = []):        
+def mw(peptide, mods = []):        
     pepmass = sum([AminoAcidMasses[x][0] for x in peptide])
     
     
@@ -1257,8 +1262,8 @@ def updated_mw(peptide, mods = []):
     return pepmass + modmass + H2Omass
 
 
-def updated_mz(peptide, mods, charge):
-    mass = updated_mw(peptide, mods)
+def mz(peptide, mods, charge):
+    mass = peptide_mass(peptide, mods)
     return ((mass + (protonMass * charge)) / charge)
 
 
@@ -1489,7 +1494,33 @@ def mz_pep_decode_new(peptide):
     return pure_peptide, modsets, modmasses
         
         
-                
+
+
+def formulaForMass(mass, tolerance, components = ('C', 'H', 'N', 'O', 'P', 'S')):
+    assert all(c in AW for c in components), "Not all component masses available."
+    
+    return map(dict, iter_formulaForMass(mass, tolerance, list(components)))
+
+def iter_formulaForMass(mass, tolerance, components):
+    if mass < tolerance:
+        return [defaultdict(int)]
+    elif not components:
+        return []
+    
+    results = []
+    atom, other_comp = components[0], components[1:]
+    if mass + tolerance >= AW[atom]:
+        submass = mass - AW[atom]
+        subresults = iter_formulaForMass(submass, tolerance, components)
+        for subr in subresults:
+            subr[atom] += 1
+        results += subresults
+    
+    results += iter_formulaForMass(mass, tolerance, other_comp)
+    
+    return results
+    
+    
     
 
 def peptideForMass(mass, length, tolerance, pieces = None,

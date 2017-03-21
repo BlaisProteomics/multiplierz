@@ -1,8 +1,8 @@
 from collections import defaultdict
+from multiplierz.internalAlgorithms import insert_tag
 
 
-
-def calculate_FDR(reportFile, outputFile = None, threshold = 0.01,
+def calculate_FDR(reportfile, outputfile = None, threshold = 0.01,
                   decoyString = 'rev_', includeStatisticsSheet = True,
                   includeDuplicates = True, separateDuplicateSheet = True,
                   includeFailedSheet = True, includeReverseSheet = True,
@@ -15,11 +15,14 @@ def calculate_FDR(reportFile, outputFile = None, threshold = 0.01,
     All entries in the decoy (reverse) database must have accessions that begin with
     some uniform prefix; by default, "rev_" (so that gi|198292342|X7823_EXTRA becomes
     rev_gi|198292342|X7823_EXTRA.)
+    
+    outputfile may be safely specified to be the same as the input file, in
+    order to overwrite the original file.
     """
 
     from multiplierz.mzReport import reader, writer
 
-    reportReader = reader(reportFile)
+    reportReader = reader(reportfile)
     reportRows = list(reportReader)
     columns = reportReader.columns + ['FDR']
     reportReader.close()
@@ -91,33 +94,34 @@ def calculate_FDR(reportFile, outputFile = None, threshold = 0.01,
         failedRows = [x for x in failedRows if x['Peptide Score'] <= lowPass]
         passedRows += recovered
 
-    if not outputFile: outputFile = reportFile        
+    if not outputfile: 
+        outputfile = insert_tag(reportfile, 'FDR_filtered')
 
     percentage = round(threshold * 100)
 
     if includeFailedSheet:
-        failedOutput = writer(outputFile, columns = columns,
+        failedOutput = writer(outputfile, columns = columns,
                               sheet_name = "Under %s%% FDR" % percentage)
         for row in failedRows:
             failedOutput.write(row)
         failedOutput.close()
 
     if separateDuplicateSheet:
-        duplicateOutput = writer(outputFile, columns = columns,
+        duplicateOutput = writer(outputfile, columns = columns,
                                  sheet_name = "Duplicate Rows")
         for row in duplicateRows:
             duplicateOutput.write(row)
         duplicateOutput.close()
 
     if includeReverseSheet:
-        reverseOutput = writer(outputFile, columns = columns,
+        reverseOutput = writer(outputfile, columns = columns,
                                sheet_name = 'Reverse Hits')
         for row in reverseRows:
             reverseOutput.write(row)
         reverseOutput.close()
 
     if includeStatisticsSheet:
-        statOutput = writer(outputFile, columns = ['FDR Calculation Statistics', '--------------'],
+        statOutput = writer(outputfile, columns = ['FDR Calculation Statistics', '--------------'],
                             sheet_name = "FDR Statistics")
         statOutput.write(['', ''])
         statOutput.write(['Total Spectra', str(len(reportRows))])
@@ -128,26 +132,26 @@ def calculate_FDR(reportFile, outputFile = None, threshold = 0.01,
         statOutput.write(['Number of Duplicates', str(duplicates)])
         statOutput.close()
 
-    passedOutput = writer(outputFile, columns = columns, sheet_name = "Data")
+    passedOutput = writer(outputfile, columns = columns, sheet_name = "Data")
     for row in passedRows:
         passedOutput.write(row)
     passedOutput.close()   
 
-    return outputFile
+    return outputfile
 
-def combine_accessions(reportFile, outputFile = None):
+def combine_accessions(reportfile, outputfile = None):
     """
     Given a Mascot-style PSM report, this combines all protein hypotheses for a given
     MS2 spectrum into a single PSM.
     
-    The output is written into path specified in outputFile, or overwriting the original
-    input file if no value for outputFile is given.
+    outputfile may be safely specified to be the same as the input file, in
+    order to overwrite the original file.
     """
     
     
     from multiplierz.mzReport import reader, writer
     
-    report = reader(reportFile)
+    report = reader(reportfile)
 
     molecules = defaultdict(list)
     for row in report:
@@ -165,12 +169,12 @@ def combine_accessions(reportFile, outputFile = None):
         newRow['Protein Redundancy'] = len(rows)
         outputData.append(newRow)
     
-    if outputFile:
-        output = writer(outputFile, columns = report.columns + ['Protein Masses', 
-                                                                'Protein Redundancy'])
-    else:
-        output = writer(reportFile, columns = report.columns + ['Protein Masses', 
-                                                                'Protein Redundancy'])
+    
+    if not outputfile:
+        outputfile = insert_tag(reportfile, 'combined_accessions')
+    
+    output = writer(outputfile, columns = report.columns + ['Protein Masses', 
+                                                            'Protein Redundancy'])
     report.close()
     for row in outputData:
         output.write(row)
@@ -178,7 +182,7 @@ def combine_accessions(reportFile, outputFile = None):
     
     
     
-    return outputFile if outputFile else reportFile
+    return outputfile if outputfile else reportfile
 
 
 
@@ -196,10 +200,6 @@ def fractionation_plot(fractions, outputfile = None, fig_size = None, **kwargs):
     import matplotlib.pyplot as pyt
     pyt.cla()
     
-    if fig_size:
-        fig = pyt.gcf()
-        fig.set_size_inches(*fig_size)
-    
     fractions = [(float(o), float(s), f) for o, s, f in fractions]
     
     organics = sorted(set(zip(*fractions)[0]))
@@ -207,6 +207,23 @@ def fractionation_plot(fractions, outputfile = None, fig_size = None, **kwargs):
     
     orgCoords = dict([(o, i) for i, o in enumerate(organics, start = 1)])
     saltCoords = dict([(s, i) for i, s in enumerate(salts, start = 1)])
+    
+    
+    if fig_size:
+        fig = pyt.gcf()
+        fig.set_size_inches(*fig_size)
+    elif len(orgCoords) > 8 or len(saltCoords) > 8:
+        fig = pyt.gcf()
+        cursize = fig.get_size_inches()
+        newsize = [cursize[0], cursize[1]]
+        if len(orgCoords) > 8:
+            cursize[0] = max(cursize[0], len(orgCoords) * 0.9)
+        if len(saltCoords) > 8:
+            cursize[1] = max(cursize[1], len(saltCoords) * 0.9)
+        fig.set_size_inches(*cursize)
+        
+        
+        
     
     scatterPts = []
     for organic, salt, psms in fractions:
@@ -231,7 +248,14 @@ def fractionation_plot(fractions, outputfile = None, fig_size = None, **kwargs):
         
     orgRange = max(orgCoords.values()) - min(orgCoords.values())
     saltRange = max(saltCoords.values()) - min(saltCoords.values())
+    orgMargin = orgRange / 15.0
+    saltMargin = saltRange / 15.0
     overallRange = min(orgRange, saltRange)
+        
+    ax = pyt.axes()
+    ax.set_xlim(min(orgCoords.values()) - orgMargin, max(orgCoords.values()) + orgMargin)
+    ax.set_ylim(min(saltCoords.values()) - saltMargin, max(saltCoords.values()) + saltMargin)
+    
         
     #def count_to_size(counts):
         #counts / 
