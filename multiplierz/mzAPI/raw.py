@@ -458,6 +458,9 @@ class mzFile(mzAPImzFile):
             raise IOError, "Could not get scan from retention time."
         return the_scan.value
 
+    def scan_for_time(self, time):
+        return self.scanForTime(time)
+
     def timeForScan(self,the_scan):
         the_time = c_double()
         retval = self.source.RTFromScanNum(c_long(the_scan),byref(the_time))
@@ -467,6 +470,8 @@ class mzFile(mzAPImzFile):
             raise IOError, "Could not get retention time for scan."
         return the_time.value
 
+    def time_for_scan(self, scan):
+        return self.timeForScan(scan)
 
     def scan_range(self):
         start = c_long()
