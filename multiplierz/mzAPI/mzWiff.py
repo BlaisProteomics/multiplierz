@@ -87,6 +87,7 @@ class mzFile_implicit_numbering(mzAPImzFile):
             else:
                 scan = int(scan)
                 
+
         cycle, experiment = self.make_explicit[scan]
         return self.data.scan(cycle, experiment = experiment, sample = self.sample,
                               **kwargs)

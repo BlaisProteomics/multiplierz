@@ -5,4 +5,4 @@ recursive-include multiplierz *.dll *.pdb *.tlb *.xml *.bat *.config *.sqlite
 
 include multiplierz\COPYING
 include multiplierz\COPYING.LESSER
-include MSFileReader_x86_x64_v3.0SP3.exe
+#include multiplierz\_msparser.pyd
