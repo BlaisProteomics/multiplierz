@@ -135,6 +135,7 @@ class XLSXReader(XLSheetReader):
             yield ReportEntry(self.columns, values, self.autotypecast)
     
     def close(self):
+        self.wb._archive.close() # I have bad words for the openpyxl writers.
         try:
             del self.wb
             del self.sheet
