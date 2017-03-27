@@ -245,24 +245,29 @@ def retrieveMascotReport(mascot_ids = None,
             if check_login == 'error':
                 raise IOError, ("Could not log in to Mascot; check your Mascot settings "
                                 "and username/password, if applicable.")
-
-    ret_vals = mascot_reporter.get_reports(mascot_searches = mascot_ids,
-                                           dates = dates,
-                                           local_dat_files = dat_file_list,
-                                           chosen_folder = chosen_folder,
-                                           combined_file = combined_file,
-                                           rank_one = rank_one,
-                                           max_hits = max_hits,
-                                           ion_cutoff = ion_cutoff,
-                                           bold_red = bold_red,
-                                           show_query_data = show_query_data,
-                                           show_same_set = show_same_set,
-                                           show_sub_set = show_sub_set,
-                                           protein_report = protein_report,
-                                           quant = quant,
-                                           ext = ext,
-                                           mascotIDInResultName = True
-                                           )
+    
+    # Currently always processing requests sequentially/separately;
+    # get_reports for more than one report at once generates a file
+    # combined by sheets.
+    ret_vals = []
+    for mascot_id in mascot_ids:
+        ret_vals += mascot_reporter.get_reports(mascot_ids = [mascot_id],
+                                                dates = dates,
+                                                local_dat_files = dat_file_list,
+                                                chosen_folder = chosen_folder,
+                                                combined_file = combined_file,
+                                                rank_one = rank_one,
+                                                max_hits = max_hits,
+                                                ion_cutoff = ion_cutoff,
+                                                bold_red = bold_red,
+                                                show_query_data = show_query_data,
+                                                show_same_set = show_same_set,
+                                                show_sub_set = show_sub_set,
+                                                protein_report = protein_report,
+                                                quant = quant,
+                                                ext = ext,
+                                                mascotIDInResultName = True
+                                                )
 
     if pep2gene:
         p2gDB = pep2gene

@@ -215,8 +215,11 @@ class mascot(object):
         req = urllib2.Request(login_url, 
                               data = urlencode(login_form_seq))
         f = urllib2.urlopen(req)
-        self.loginToken = f.info()['Set-Cookie']
-        # I suppose in this case precise disposition of the output is less important.
+        try:
+            self.loginToken = f.info()['Set-Cookie']
+            # I suppose in this case precise disposition of the output is less important.
+        except KeyError:
+            raise RuntimeError, 'Login was not successful; check your username and password.'
         
         
         err = None

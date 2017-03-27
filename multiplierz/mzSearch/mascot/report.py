@@ -680,7 +680,7 @@ class MascotReport:
         
     
     def get_reports(self, mascot_ids,
-                    dates,
+                    dates = None,
                     outputfile = None,
                     ext = None,
                     **report_kwargs):
@@ -708,7 +708,7 @@ class MascotReport:
             reports.append((mascot_id, datafilename, header, psms))
         
         if not outputfile:
-            outputfile = reports[0][1] + '.' + ext
+            outputfile = '.'.join([reports[0][1], ext.strip('.')])
             
         if len(mascot_ids) == 1:
             mascot_id, datafilename, header, psms = reports[0]
@@ -735,10 +735,10 @@ class MascotReport:
             if (outputfile.lower().endswith('xls') or
                 outputfile.lower().endswith('xlsx') or
                 outputfile.lower().endswith('mzd')):            
-                for datafilepath, header, _ in reports:
+                for m_id, datafilepath, header, _ in reports:
                     datafilename = os.path.basename(datafilepath)
-                    output = writer(outputfile, columns = header[0],
-                                    sheet_name = '%s Mascot Header' % datafilenam)
+                    output = mzReport.writer(outputfile, columns = header[0],
+                                    sheet_name = '%s Mascot Header' % datafilename)
                     for line in header[1:]:
                         output.write(line)
                     output.close()
@@ -748,7 +748,7 @@ class MascotReport:
             
             output = mzReport.writer(outputfile, columns = ['File'] + report_columns,
                                      sheet_name = 'Data')
-            for datafilepath, _, psms in reports:
+            for _, datafilepath, _, psms in reports:
                 datafilename = os.path.basename(datafilepath)
                 for psm in psms:
                     psm['File'] = datafilename
