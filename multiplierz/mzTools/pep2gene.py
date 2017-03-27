@@ -83,7 +83,9 @@ def create_fasta_index(fasta_file, outputfile, labelParser = (lambda x: x),
         def labelParser(label):
             parsed = parser.search(label)
             if not parsed:
-                raise IOError, "Could not parse FASTA label: %s" % label
+                raise RuntimeError, (("Could not parse FASTA label %s "
+                                      "with provided regular expression %s") % 
+                                     (label, parser.pattern))
             return parsed.group(0)  
     
     prevtime = time.clock()

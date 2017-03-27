@@ -143,12 +143,15 @@ def write_fasta(fasta, save_file, write_mode='w'):
 
 
 
-def partial_database(fasta, output, search):
+def partial_database(fasta, output = None, search = ''):
     """
     Creates a new fasta database by copying each entry from the original where
     the entry header contains either the string search, or any string in the list
     search.
     """
+
+    if not output:
+        output = fasta + 'partial_database.fasta'
 
     if isinstance(search, basestring):
         search = [search]
@@ -163,6 +166,8 @@ def partial_database(fasta, output, search):
             out.write(sequence + '\n')
 
     out.close()
+    
+    return output
 
 
 def reverse_database(fasta, outputFile = None, include_forward = False):
@@ -199,6 +204,7 @@ def reverse_database(fasta, outputFile = None, include_forward = False):
 
     output.close()	
     
+    return outputFile
     
     
     
@@ -215,12 +221,17 @@ def combine(fasta_files, output):
         fastaFile.close()
     outputFile.close()
     
+    return output
+    
 def pseudo_reverse(fasta, output, enzyme = 'Trypsin', tag = 'rev_', include_forward = False):
     """
     Creates a psuedo-reverse database, in which each individual fragment sequence
     specified by the given enzyme is reversed.  The cleavage sites themselves are
     preserved and not reversed.
     """
+    
+    if not output:
+        output = fasta + '.pseudo_reversed.fasta'
     
     fastaFile = parse_to_generator(fasta)
     outputFile = Writer(output)
@@ -243,7 +254,7 @@ def pseudo_reverse(fasta, output, enzyme = 'Trypsin', tag = 'rev_', include_forw
     
     outputFile.close()
 
-
+    return output
 
 
 

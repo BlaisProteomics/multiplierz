@@ -124,7 +124,7 @@ ModificationFormulae = {'Phospho':{'H':1, 'O':3, 'P':1},
                         }
 
 
-enzymeSpecification = {'Arg-C':          '[R][A-Z]',
+EnzymeSpecification = {'Arg-C':          '[R][A-Z]',
                        'Asp-N':          '[A-Z][D]',
                        'Bromelain':      '[KAY][A-Z]',
                        'CNBr_HSer':      '[M][A-Z]',
@@ -441,7 +441,7 @@ def fragment_legacy(peptide, ions=('b', 'b++', 'y', 'y++'), labels=True):
     double = polarity * 2
 
     # amino acid masses
-    masses = dict([(k, v[0]) for k, v in AminoAcidMasses])
+    masses = dict([(k, v[0]) for k, v in AminoAcidMasses.items()])
     masses['-'] = 0.0
     masses['C-term'] = 17.00274
     masses['N-term'] = 1.007825
