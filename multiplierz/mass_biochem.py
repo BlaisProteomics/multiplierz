@@ -1563,7 +1563,7 @@ def peptideForMass(mass, length, tolerance, pieces = None,
             strResults += [(''.join(x), mass) for x in set(permutations(resstr))]
             
     
-    return strResults
+    return sorted(strResults)
 
 
             
