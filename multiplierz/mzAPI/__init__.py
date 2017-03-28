@@ -237,10 +237,10 @@ class mzFile(object):
             mzURL.mzFile.__init__(self, data_file, **kwargs)
         elif data_file.lower().endswith('.wiff'):
             import mzWiff
-            if kwargs.get('compatible_mode', False) == True:
+            if kwargs.get('implicit_mode', False) == True:
                 self.__class__ = mzWiff.mzFile_implicit_numbering
                 mzWiff.mzFile_implicit_numbering.__init__(self, data_file, **kwargs)
-            elif kwargs.get('compatible_mode', True) == False:
+            elif kwargs.get('implicit_mode', True) == False:
                 self.__class__ = mzWiff.mzFile.explicit_numbering
                 mzWiff.mzFile_explicit_numbering.__init__(self, data_file, **kwargs)
             else:
