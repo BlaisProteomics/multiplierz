@@ -28,19 +28,6 @@ __all__ = ['SILAC2Plex', 'SILAC3Plex']
 peakFindTolPPM = 10
 XICTol = 0.008    
     
-    
-#def spectrumDescriptionToMZ(description):
-    #try:
-        #return float(description.split('-|')[0].split('-')[-1])
-    #except ValueError:
-        #return float(description.split("|")[1])
-
-#def spectrumDescriptionToScanNumber(description):
-    #num = int(description.split('.')[1])
-    #if num == 50:
-        #raise Exception, description
-    #return num
-    
 
 def spectrumDescriptionToMZ(description):
     try:
@@ -1724,134 +1711,13 @@ def silac_associated_mzs(psms, heavyK, heavyR, mediumK = None, mediumR = None, r
             
             
         
-    
 
 
-def SILAC2Plex(datafile, resultFiles, heavyTags = None, **constants):
-    """
-    Run SILAC analysis for a duplex SILAC experiment.
-    
-    Light tags are assumed to be no modification; heavyTags should be a tuple of strings specifying
-    the R and K modifications as represented in the PSM file, respectively.
-    
-    Also accepts arguments "scanRegex" and "mzRegex" which should be regular expressions which
-    extract the scan and mz, respectively, from a Spectrum Description.
-    
-    For example, the default settings correspond to the call:
-    SILAC2Plex(dataFile, [psmFile1, psmFile2], heavyTags = ('Label:13C(6)15N(4)', 'Label:13C(6)15N(2)'), 
-               mzRegex = '(?<=[-])[0-9]+[/.][0-9]*(?=[-])',
-               scanRegex = '([0-9]+)(?=\.\1)')
-    """        
-    
-    global heavyR, heavyK, allTags
-    global heavyShifts
-    
-    heavyK, heavyR = heavyTags
-    allTags = [heavyR, heavyK]
-    
-    heavyShifts = {'K' : unimod.get_mod_delta(heavyK),
-                   'R' : unimod.get_mod_delta(heavyR)}     
-    
-    if constants:
-        setGlobals(constants)
-    if 'whitelist_psms' in constants and constants['whitelist_psms']:
-        psms = sum([list(reader(x)) for x in resultFiles], [])
-        mzs = silac_associated_mzs(psms, heavyK = heavyK, heavyR = heavyR)
-        constants['whitelist_psms'] = mzs
-        
-    
 
-    featureFile = detectFeatures(datafile, **constants)     
-    #featureList = FeatureInterface(featureFile)
-    featureList = FeatureMemo(featureFile)
-    
-    ms2toms1, _ = getMS1Lookup(datafile)
-    class idLookup():
-        def __getitem__(self, thing):
-            return thing
-    absMS1Lookup = idLookup()    
-    
-    for resultFile in resultFiles:
-        print "Annotating %s with SILAC feature statistics..." % os.path.basename(resultFile)
-        
-        resultFile = os.path.abspath(resultFile)  
-        results = fetchData(resultFile)   
-        resultIndex = indexTable(results, 'Spectrum Description')  
-        taggedPSMs = findDoublesAdapter(resultIndex)
-        
-        ratios = getDoubleRatios(mzFile(datafile), resultIndex, featureList, ms2toms1, taggedPSMs)
-        
-        #ratios = getRatioXICsDouble(datafile, ratios)
-          
-        outputfile = '.'.join(resultFile.split('.')[:-1] + ['SILAC_annotated', 'xlsx'])        
-        
-        readerFile = reader(resultFile)
-        
-        print "Writing %s" % outputfile
-        writeDuplexSILAC(resultIndex, ratios, readerFile.columns, outputfile)
-    
-    print "Done."
-        
-def SILAC3Plex(datafile, resultFiles, mediumTags = None, heavyTags = None, **constants):
-    """
-    Run SILAC analysis for a triplex SILAC experiment.
-    
-    Light tags are assumed to be no modification; mediumTags and heavyTags should be a tuples
-    of strings for the R and K peptide modifications.  Also accepts arguments "scanRegex" and
-    "mzRegex" which should be regular expressions which extract the scan and mz, respectively,
-    from a Spectrum Description.
-    
-    For example, the default settings correspond to the call:
-    SILAC3Plex(dataFile, [psmFile1, psmFile2], mediumTags = ('Label:13C(6)', 'Label:2H(4)'),
-               heavyTags = ('Label:13C(6)15N(4)', 'Label:13C(6)15N(2)'), 
-               mzRegex = '(?<=[-])[0-9]+[/.][0-9]*(?=[-])',
-               scanRegex = '([0-9]+)(?=\.\1)')
-    """    
-    
-    global heavyR, heavyK, mediumR, mediumK, allTags
-    global mediumShifts, heavyShifts
-    
-    heavyK, heavyR = heavyTags
-    mediumK, mediumR = mediumTags
-    allTags = [heavyR, heavyK, mediumR, mediumK]
-    
-    mediumShifts = {'K' : unimod.get_mod_delta(mediumK),
-                    'R' : unimod.get_mod_delta(mediumR)}
-    heavyShifts = {'K' : unimod.get_mod_delta(heavyK),
-                   'R' : unimod.get_mod_delta(heavyR)}    
-    
-    if constants:
-        setGlobals(constants)
-    
-    ms2toms1, absMS1Lookup = getMS1Lookup(datafile)
 
-    print "Detecting Features."
-    featureFileName = detectFeatures(datafile, **constants)
-    featureList = FeatureMemo(featureFileName)
-
-    for resultFile in resultFiles:
-        print "Annotating %s ." % resultFile
-        resultFile = os.path.abspath(resultFile)  
-        results = fetchData(resultFile)   
-        resultIndex = indexTable(results, 'Spectrum Description')  
-        taggedPSMs = findTriplesAdapter(resultIndex)
-        print "Got %s triples." % len(taggedPSMs)
-        
-        ratios = getTripleRatios(resultIndex, featureList, ms2toms1, taggedPSMs)
-        
-        ratios = getRatioXICsTriple(datafile, ratios)
-          
-        outputfile = '.'.join(resultFile.split('.')[:-1] + ['SILAC_annotated', 'xlsx'])        
-        
-        readerFile = reader(resultFile)
-        print "Writing %s ." % outputfile
-        writeTriplexSILAC(resultIndex, ratios, readerFile.columns, outputfile)    
-    
-    print "Done."
     
     
-    
-def SILAC2Plex_multiRAW(datafiles, resultfiles, heavyTags, **constants):
+def SILAC2Plex(datafiles, resultfiles, heavyTags, **constants):
     global heavyR, heavyK, allTags
     global heavyShifts
     
@@ -1955,7 +1821,7 @@ def SILAC2Plex_multiRAW(datafiles, resultfiles, heavyTags, **constants):
     
     
     
-def SILAC3Plex_multiRAW(datafiles, resultfiles, mediumTags, heavyTags, **constants):
+def SILAC3Plex(datafiles, resultfiles, mediumTags, heavyTags, **constants):
     global heavyR, heavyK, mediumR, mediumK, allTags
     global mediumShifts, heavyShifts
     
@@ -2235,67 +2101,3 @@ def writeCombinedDuplexSILAC(resultIndex_byfile, results_byfile, ratios_byfile, 
     
     return outputFile
     
-    
-#if __name__ == '__main__':
-    #datafile = r'C:\Users\Max\Desktop\SpectrometerData\2015-06-02-RIME-2-1.raw'
-    #resultfile = r'2015-06-02-RIME-2-1_RECAL_Combined_CID-HCD.xls',
-    ##featurefile    
-    #SILAC3Plex(datafile, resultFiles)
-    
-#if __name__ == '__main__':
-    #print "TEST MODE"
-    #datafile = r'\\dragon\DragonShare\Max\SILACAnalysis\Brown\2015-10-13-RIME\2015-10-13-RIME-VDR-1AB.raw'
-    #resultfile = r'\\dragon\DragonShare\Max\SILACAnalysis\Brown\2015-10-13-RIME\2015-10-13-RIME-VDR-1AB.Combined_CID-HCD.xlsx',
-    #featurefile = r'\\dragon\DragonShare\Max\SILACAnalysis\Brown\2015-10-13-RIME\2015-10-13-RIME-VDR-1AB.raw.IsoFeaturePickle.featurePickle_Iso'
-    #SILAC2Plex_ISO(datafile, resultfile, featurefile, ['Label:13C(6)15N(2)', 'Label:13C(6)15N(4)'])
-    
-    #datafile = r'\\dragon\DragonShare\Max\SILACAnalysis\Brown\2015-10-13-RIME\2015-10-13-RIME-VDR-1CD.raw'
-    #resultfile = r'\\dragon\DragonShare\Max\SILACAnalysis\Brown\2015-10-13-RIME\2015-10-13-RIME-VDR-1CD.Combined_CID-HCD.xlsx',
-    #featurefile = r'\\dragon\DragonShare\Max\SILACAnalysis\Brown\2015-10-13-RIME\2015-10-13-RIME-VDR-1CD.raw.IsoFeaturePickle.featurePickle_Iso'
-    #SILAC2Plex_ISO(datafile, resultfile, featurefile, ['Label:13C(6)15N(2)', 'Label:13C(6)15N(4)'])    
-    
-#if __name__ == '__main__':
-    #print "TEST MODE."
-
-    #datafile = r'\\Bala\bala_share\featureDetectionProject\Multiplierz Error Issues File\newTest\2014-10-03-CDK7-Stoich-30.raw'
-    #resultFile = r'\\Bala\bala_share\featureDetectionProject\Multiplierz Error Issues File\newTest\Combined_CID-HCD 30.xlsx'
-    
-    #if PLEXITY == 2:
-        #print "2-plex."
-        #SILAC2Plex(datafile, [resultFile])
-    #else:
-        #print "3-plex."
-        #SILAC3Plex(datafile, [resultFile])
-    
-    
-    
-    
-#if __name__ == '__main__':
-    #print "2-PLEX SIMPLE MODE"
-    #import sys
-    #datafile = sys.argv[1]
-    #resultfiles = sys.argv[2:]
-    #SILAC2Plex(datafile, resultfiles, ['Label:13C(6)15N(2)', 'Label:13C(6)15N(4)'])
-    
-#if __name__ == '__main__':
-    #SILAC2Plex(u'\\\\dragon\\DragonShare\\Max\\SILACAnalysis\\Brown\\2015-09-18-RIME\\2015-09-18-VDR-RIME-2CD.raw',
-               #[u'\\\\dragon\\DragonShare\\Max\\SILACAnalysis\\Brown\\2015-09-18-RIME\\2015-09-18-VDR-RIME-2CD_HCD_RECAL.mgf.xlsx'],
-               #[u'Label:13C(6)15N(2)', u'Label:13C(6)15N(4)'],
-               #**{'featureTolerance': 0.02, 'signalNoiseThreshold': 25})
-               
-
-if __name__ == '__main__':
-    #from multiplierz.mzGUI_standalone import file_chooser
-    #datafile = file_chooser("Choose RAW File")
-    #resultfile = file_chooser("Choose result file")
-    
-    #SILAC3Plex_multiRAW([datafile],
-                        #[resultfile],
-                        #['Label:13C(6)', 'Label:2H(4)'],
-                        #[r'Label:13C(6)15N(2)', r'Label:13C(6)15N(4)'],
-                        #tolerance = 20)
-    SILAC3Plex_multiRAW([u'\\\\rc-data1\\blaise\\ms_data_share\\Max\\2014-08-25-Brown-PCAinsol-1_3plexSILACtestData.raw'],
-                        [u'\\\\rc-data1\\blaise\\ms_data_share\\Max\\2014-08-25-Brown-PCAinsol-1.HCD_FTMS.xls'],
-                        ['Label:13C(6)', 'Label:2H(4)'],
-                        ['Label:13C(6)15N(2)', 'Label:13C(6)15N(4)'],
-                        tolerance = 20)
