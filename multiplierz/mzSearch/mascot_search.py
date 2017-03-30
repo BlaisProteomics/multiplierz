@@ -251,23 +251,24 @@ def retrieveMascotReport(mascot_ids = None,
     # combined by sheets.
     ret_vals = []
     for mascot_id in mascot_ids:
-        ret_vals += mascot_reporter.get_reports(mascot_ids = [mascot_id],
-                                                dates = dates,
-                                                local_dat_files = dat_file_list,
-                                                chosen_folder = chosen_folder,
-                                                combined_file = combined_file,
-                                                rank_one = rank_one,
-                                                max_hits = max_hits,
-                                                ion_cutoff = ion_cutoff,
-                                                bold_red = bold_red,
-                                                show_query_data = show_query_data,
-                                                show_same_set = show_same_set,
-                                                show_sub_set = show_sub_set,
-                                                protein_report = protein_report,
-                                                quant = quant,
-                                                ext = ext,
-                                                mascotIDInResultName = True
-                                                )
+        ret_vals.append(mascot_reporter.get_reports(mascot_ids = [mascot_id],
+                                                    dates = dates,
+                                                    local_dat_files = dat_file_list,
+                                                    chosen_folder = chosen_folder,
+                                                    combined_file = combined_file,
+                                                    rank_one = rank_one,
+                                                    max_hits = max_hits,
+                                                    ion_cutoff = ion_cutoff,
+                                                    bold_red = bold_red,
+                                                    show_query_data = show_query_data,
+                                                    show_same_set = show_same_set,
+                                                    show_sub_set = show_sub_set,
+                                                    protein_report = protein_report,
+                                                    quant = quant,
+                                                    ext = ext,
+                                                    mascotIDInResultName = True
+                                                    )
+                        )
 
     if pep2gene:
         p2gDB = pep2gene
