@@ -1230,11 +1230,14 @@ class FieldParser(dict):
         self.current_field = None
         self.selected = {}
         self['MODS'] = []
+        self['ALLMODS'] = []
         self.regexes = [re.compile(r'SELECT (?:.* )?NAME="(\w+)"', re.I),
                         re.compile(r'OPTION>(.+)</OPTION', re.I),
                         re.compile(r'OPTION SELECTED>(.+)</OPTION', re.I),
                         re.compile(r'</SELECT>', re.I),
-                        re.compile(r'(?<!all)mods\[\d+\] = [\'"](.+)[\'"];', re.I)]
+                        re.compile(r'(?<!all)[M,m]ods\[\d+\] = [\',"](.+)[\',"];', re.I),
+                        re.compile(r'allMods\[\d+\] = [\',"](.+)[\',"];')]
+        
 
     def __call__(self,s):
         '''The __call__ method stores the string in an internal buffer, and also
@@ -1260,7 +1263,12 @@ class FieldParser(dict):
         like a list of options'''
         if not self.current_field:
             m0 = self.regexes[0].search(s) # search for beginning of new param list
-            if m0:
+            if self.version < '2.3' and 'hiddenMods' in s:
+                try:
+                    self['ALLMODS'].append(unescape(s.split('"')[1]))            
+                except IndexError:
+                    pass
+            elif m0:
                 if m0.group(1) not in ('MODS', 'IT_MODS') or self.version < '2.3':
                     self.current_field = m0.group(1)
                     self[self.current_field] = []
@@ -1268,6 +1276,10 @@ class FieldParser(dict):
                 m4 = self.regexes[4].search(s) # search for Mascot 2.3-style mod
                 if m4:
                     self['MODS'].append(unescape(m4.group(1)))
+                elif self.regexes[5].search(s): # Mods not in the 'hidden' list.
+                    self['ALLMODS'].append(unescape(self.regexes[5].search(s).group(1)))
+                else:
+                    pass #NotAllMods
         else:
             m1 = self.regexes[1].search(s) # search for an option
             m2 = self.regexes[2].search(s) # search for the default option
