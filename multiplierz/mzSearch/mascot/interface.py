@@ -1560,7 +1560,7 @@ class MascotDatFile(object):
                               time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(self.res_file.getDate()))])
         mascot_header.append(['User', self.params.getUSERNAME()])
         mascot_header.append(['Email', self.params.getUSEREMAIL()])
-        mascot_header.append(['Report URI', os.path.abspath(self.dat_file_path)])
+        mascot_header.append(['Report Data', os.path.basename(self.dat_file_path)])
 
         mascot_header.append(['Peak list data path', self.getFILENAME_correctly()])
         mascot_header.append(['Peak list format', self.params.getFORMAT()])
@@ -1621,9 +1621,8 @@ class MascotDatFile(object):
         mascot_header.append(['Format parameters', '-' * 50])
         mascot_header.append([' ', ' '])
 
-        mascot_header.append(['Significance threshold', 0.05])
+        #mascot_header.append(['Significance threshold', 0.05])
         mascot_header.append(['Max. number of hits', self.args.get('max_hits', default_max_hits)])
-        mascot_header.append(['Use MudPIT protein scoring', 0])
         mascot_header.append(['Ions score cut-off', self.args.get('ion_cutoff', default_ion_cutoff)])
         mascot_header.append(['Include same-set proteins', int(self.args.get('show_same_set', default_show_same_set))])
         mascot_header.append(['Include sub-set proteins', int(self.args.get('show_sub_set', default_show_sub_set))])

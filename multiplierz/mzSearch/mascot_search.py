@@ -141,8 +141,6 @@ def retrieveMascotReport(mascot_ids = None,
                          show_query_data = True,
                          show_same_set = False,
                          show_sub_set = False,
-                         protein_report = False,
-                         quant = False,
                          ext = '.xlsx',
                          login_name = None,
                          password = None,
@@ -181,17 +179,16 @@ def retrieveMascotReport(mascot_ids = None,
 
     max_hits - Maximum number of search hits per result file.
 
-    ion_cutoff - (ASK?)
+    ion_cutoff - The minimum peptide score, computed from the number of matching
+    ions to the peptide match, allowed for a PSM to be in the report.
 
-    bold_red - (ASK?)
+    show_query_data - Include a header sheet (for applicable formats) describing
+    the search parameters.
 
-    show_query_data - (ASK?)
-
-    show_same_set - (ASK?)
-
-    protein_report - (ASK?)
-
-    quant - (ASK?)
+    show_same_set - Show all overlapping protein assignments for a given peptide; this is
+    recommended for e.g., later FDR processing.
+    
+    show_sub_set - Show protein assignments that are dominated by other assignments.
 
     ext - Result file type; can be one of: .csv, .xls, .xlsx, .mzd, mzid . 
     (.xls and .xlsx require Microsoft Excel to be installed.)
