@@ -11,15 +11,6 @@ __author__ = 'William Max Alexander'
 
 debug = True
 
-# The underlying Clearcore library uses cycle, experiment and sample numbers
-# as indices, thus they're zero-indexed, while the ABSCIEX data extractor and
-# other tools present these as one-indexed (biologist-friendly I guess?).
-# For lack of a less kludgy solution I'm declaring that each of these should
-# be decremented by one whenever they appear in a call to the COM object.
-
-# And incremented when they arrive from the same?
-
-
 
 # DEV NOTE: Attempts to reconcile access to the ABSCIEX idea of how MS works
 # with the abstract RAW-esque way that it works keep hitting difficulties. It
@@ -29,14 +20,12 @@ debug = True
 # and the other which demands sample/experiment specifications rigorously
 # (making no attempt to push those under the rug, as the current
 # implementation does.)
-
-# DEV NOTE: _explicit_numbering will not keep track of "current" sample and
+# _explicit_numbering will not keep track of "current" sample and
 # experiment numbers at all, and require each to be set explicitly on each
 # relevant call.  _implicit_numbering will derive what sample and experiment
 # to access at each call.  The underlying COM object does what it can to 
 # avoid unnecessary sample/experiment switching, but that will be left out
 # of mzFile-level code for the time being.
-
 # _explicit_numbering also has decrement-to-zero-indexed duty.
 
 
@@ -56,11 +45,11 @@ class mzFile_implicit_numbering(mzAPImzFile):
     samples, change the .sample attribute appropriately.
     
     Scans in a WIFF file are indexed according to time, and scans from
-    experiment 0 are assumed to be MS1-level scans.  All other experiments
-    are assumed to be MS2-level scans.  So, scan number 1 will generally be an
-    MS1 scan, scans 2-<number of experiments-minus-2> will be MS2 scans, and so
-    on.  .scan_info() will return information on which particular scans are on
-    what level throughout the file.
+    experiment 0 are assumed to be MS1-level scans. All other experiments are
+    assumed to be MS2-level scans. So, scan number 1 will generally be an MS1
+    scan, scans 2-N will be MS2 scans, and so on. .scan_info() will return
+    information on which particular scans are on what level throughout the
+    file.
     
     In order to access scans by experiment and sample number explicitly, initialize
     mzFile with the 'experiment_numbering' argument set to True.
