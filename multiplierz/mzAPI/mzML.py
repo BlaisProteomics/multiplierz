@@ -113,26 +113,3 @@ class mzFile(multiplierz.mzAPI.mzFile):
             self.cursor.execute('SELECT data FROM chromato WHERE ind=0 AND startmz=0 AND stopmz=0 AND startrt=0 AND stopmz=0')
             return demarshal(self.cursor.fetchone()[0])[1]
         
-        
-    
-    
-if __name__ == '__main__':
-    import time
-    loadstart = time.clock()
-    foo = mzFile(r'C:\Users\Max\Desktop\SpectrometerData\112608_HCD_CE_K562_35.mzML')
-    print "Loaded %s" % (time.clock() - loadstart)
-    
-    xicstart = time.clock()
-    bar = foo.xic()
-    print "XIC %s" % (time.clock() - xicstart)
-    
-    infostart = time.clock()
-    bar = foo.scan_info()
-    print "INFO %s" % (time.clock() - infostart)
-    
-    for scan in [100, 200, 300, 400, 500]:
-        scanstart = time.clock()
-        bar = foo.scan(scan)
-        print "Scan %s" % (time.clock() - scanstart)
-    
-    print "FOO"
