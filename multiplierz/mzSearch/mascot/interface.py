@@ -64,8 +64,8 @@ from multiplierz.settings import settings
 
 default_max_hits = 999999
 default_ion_cutoff = 8
-default_show_same_set = False
-default_show_sub_set = False
+default_show_same_set = True
+default_show_sub_set = True
 default_bold_red = False
 
 

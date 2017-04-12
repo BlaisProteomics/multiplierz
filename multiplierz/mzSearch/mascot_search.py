@@ -173,9 +173,12 @@ def retrieveMascotReport(mascot_ids = None,
     mascot_version - Version number of the Mascot server; necessary due to small
     differences in the CGI protocol between versions.
 
-    combined_file - If true, returns all search results in one file.  (CONFIRM?)
+    combined_file - If true, returns all search results in one file.
 
     rank_one - If true, search results will only contain first-rank peptides.
+    
+    bold_red - If true, protein assignments will be restricted to confidently-indicated
+    proteins (see Mascot website for precise definition.)
 
     max_hits - Maximum number of search hits per result file.
 

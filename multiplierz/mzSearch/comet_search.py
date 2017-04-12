@@ -16,7 +16,7 @@ import csv
 __all__ = ['CometSearch']
 
 
-parameterPreamble = ['# comet_version 2015.01 rev. 2\n',
+parameterPreamble = ['# comet_version 2016.01 rev. 2\n',
                      '# Comet MS/MS search engine parameters file.\n',
                      "# Everything following the '#' symbol is treated as a comment.\n"]
 
@@ -174,17 +174,17 @@ defaultParameters = {'activation_method': 'ALL',
                      'variable_mod09': '0.0 X 0 3 -1 0 0'}
 
 # This needs '[COMET ENZYME INFO]' placed in front of it in the param file.
-defaultEnzymes = ['0.  No_enzyme              0      -           -',
-                  '1.  Trypsin                1      KR          P',
-                  '2.  Trypsin/P              1      KR          -',
-                  '3.  Lys_C                  1      K           P',
-                  '4.  Lys_N                  0      K           -',
-                  '5.  Arg_C                  1      R           P',
-                  '6.  Asp_N                  0      D           -',
-                  '7.  CNBr                   1      M           -',
-                  '8.  Glu_C                  1      DE          P',
-                  '9.  PepsinA                1      FL          P',
-                  '10. Chymotrypsin           1      FWYL        P']
+defaultEnzymes = {'0.': {'active': 0, 'name': 'No_enzyme', 'p': '-', 'specificity': '-'},
+                  '1': {'active': 1, 'name': 'Trypsin', 'p': 'P', 'specificity': 'KR'},
+                  '2': {'active': 1, 'name': 'Trypsin/P', 'p': '-', 'specificity': 'KR'},
+                  '3': {'active': 1, 'name': 'Lys_C', 'p': 'P', 'specificity': 'K'},
+                  '4': {'active': 0, 'name': 'Lys_N', 'p': '-', 'specificity': 'K'},
+                  '5': {'active': 1, 'name': 'Arg_C', 'p': 'P', 'specificity': 'R'},
+                  '6': {'active': 0, 'name': 'Asp_N', 'p': '-', 'specificity': 'D'},
+                  '7': {'active': 1, 'name': 'CNBr', 'p': '-', 'specificity': 'M'},
+                  '8': {'active': 1, 'name': 'Glu_C', 'p': 'P', 'specificity': 'DE'},
+                  '9': {'active': 1, 'name': 'PepsinA', 'p': 'P', 'specificity': 'FL'},
+                  '10': {'active': 1, 'name': 'Chymotrypsin', 'p': 'P', 'specificity': 'FWYL'}}
 
 
 def readVarmods():
@@ -730,7 +730,7 @@ def bestType(value):
     except ValueError:
         return str(value)
     
-class CometSearch(object):
+class CometSearch(dict):
     """
     Represents a comet parameters file, so that they can be manipulated via
     Python commands easily, and executes a Comet search using said parameters.
@@ -761,7 +761,7 @@ class CometSearch(object):
         
         self.file_name = file_name
         self.fields = []
-        self.enzymes = []
+        self.enzymes = {}
         self.varmods = []
         
         # Parameters for the run itself, used by run_comet_search().
@@ -791,7 +791,7 @@ class CometSearch(object):
                                           'specificity' : specificity,
                                           'p' : p
                                           }
-                                self.enzymes.append(enzyme)
+                                self.enzymes[num.strip('.')] = enzyme
                     
                     if field[:12] == 'variable_mod' :
                         words = value.split()
@@ -815,14 +815,14 @@ class CometSearch(object):
                         self.varmods.append(varmod)
                     else:
                         self.fields.append(field.strip())
-                        self.__dict__[field.strip()] = bestType(value.strip())
+                        self[field.strip()] = bestType(value.strip())
                         
 
                         
         else:
             #self.update(defaultParameters)
             for field, value in defaultParameters.items():
-                self.__dict__[field] = value
+                self[field] = value
                 self.fields.append(field)
             self.enzymes = defaultEnzymes
             # self.varmods = defaultVarmods
@@ -841,7 +841,7 @@ class CometSearch(object):
                 parfile.write(line)
                 
             for field in self.fields:
-                value = self.__dict__[field]
+                value = self[field]
                 parfile.write('%s = %s\n' % (field, value))
             
             for num, mod in enumerate(self.varmods, start = 1):
@@ -860,6 +860,8 @@ class CometSearch(object):
     def run_search(self, data_file):
         #assert self.enzyme_selection != None, "Must specify enzyme selection (attribute .enzyme_selection)!" 
         
+        self['output_txtfile'] = '1'
+        
         ext = data_file.split('.')[-1]
         if ext.lower() in ['raw', 'wiff', 'd', 'mzml']:
             from multiplierz.mgf import extract
@@ -875,7 +877,7 @@ class CometSearch(object):
         self.write(parfile)
         
         try:
-            expectedResultFile = ms2_file[:-3] + 'pep.xml'
+            expectedResultFile = ms2_file[:-3] + 'pep.txt'
             
             print('Initiating Comet search...')
             result = call([cometPath, '-P' + parfile, ms2_file])
@@ -884,20 +886,19 @@ class CometSearch(object):
             
             os.remove(parfile)
             
-            csvResultFile = expectedResultFile[:-3] + 'csv'
-            process_file(expectedResultFile)
-            assert os.path.exists(csvResultFile)    
+            #csvResultFile = expectedResultFile[:-3] + 'csv'
+            #process_file(expectedResultFile)
+            #assert os.path.exists(csvResultFile)    
             
-            return csvResultFile
+            return expectedResultFile
         
-        except Exception as err:
+        finally:
             os.remove(parfile)
-            raise err
         
     
 if __name__ == '__main__':
     print 'TEST MODE'
-    foo = CometSearch(r'C:\Users\Max\Downloads\comet_binaries_2015012\comet.params.new')
+    foo = CometSearch(r'C:\Users\Max\Downloads\comet_binaries_2016012(1)\comet_binaries_2016012\comet.params.new')
     foo.database_name = r'C:\Users\Max\Desktop\Dev\coverageThings\HUMAN.fasta'
     result = foo.run_search(r'C:\Users\Max\Desktop\SpectrometerData\2014-07-23-Mito-ISD-SDS.CID_ITMS.mgf')
     print "FOO"
