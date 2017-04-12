@@ -489,7 +489,8 @@ def alerts(message='multiplierz', title='multiplierz', method='popup'):
         fh.close()
 
 
-def file_chooser(title='Choose a file:', mode='r', wildcard='*'):
+def file_chooser(title='Choose a file:', default_path = None, default_file = None,
+                 mode='r', wildcard='*'):
     """Provides a file chooser dialog and returns the file path(s) when the file(s) is selected.
     mode option provides file dialog type: read single, read multiple, or save single.
     mode = 'r' creates an 'Open' file dialog for single file read.
@@ -510,11 +511,13 @@ def file_chooser(title='Choose a file:', mode='r', wildcard='*'):
               'w': wx.FD_SAVE|wx.FD_OVERWRITE_PROMPT }[mode]
 
     try:
-        file_chooser = wx.FileDialog(None, title, wildcard=wildcard, style=style)
+        file_chooser = wx.FileDialog(None, title, wildcard=wildcard, style=style,
+                                     defaultDir = default_path, defaultFile = default_file)
     except:
         app = mzApp()
         app.launch()
-        file_chooser = wx.FileDialog(None, title, wildcard=wildcard, style=style)
+        file_chooser = wx.FileDialog(None, title, wildcard=wildcard, style=style,
+                                     defaultDir = default_path, defaultFile = default_file)
 
 
     file_name = None
