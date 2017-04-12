@@ -107,6 +107,18 @@ class UnimodDatabase(object):
         self.cur.execute(command)
         return [x[0] for x in self.cur.fetchall()]    
     
+    def site_form_mod_names(self):
+        command = """SELECT name, spec FROM mods"""
+        self.cur.execute(command)
+        specmoddata = self.cur.fetchall()
+        modnames = []
+        for name, data in specmoddata:
+            sites = demarshal(data)
+            for modlist in sites.values():
+                sitespecstr = ''.join(zip(*modlist)[0])
+                modnames.append('%s (%s)' % (name, sitespecstr))
+        return modnames
+    
     def get_pycomet_lookup(self):
         mods = self.get_all_mod_names()
         lookup = {}
@@ -126,25 +138,3 @@ class UnimodDatabase(object):
             
     
     
-if __name__ == '__main__':
-    unimodfile = r'C:\Users\Max\Desktop\Dev\standaloneLibrary\multiplierz\unimod.sqlite'
-    mod = UnimodDatabase(unimodfile)
-    
-    from multiplierz.old_unimod import UnimodDatabase as oldmodcls
-    oldmod = oldmodcls(r'C:\Users\Max\Desktop\Projects\unimod.xml')
-    
-    foo = mod.get_all_mod_names()
-    #assert sorted(foo) == sorted(oldmod.get_all_mod_names())
-    for thing in foo:
-        #thing = foo[i]
-        if (thing == u'4,4"-dianilino-1,1"-binaphthyl-5,5"-disulfonic acid' or
-            thing == u'propyl-1,2-dideoxy-2"-methyl-alpha-D-glucopyranoso-[2,1-d]-Delta2"-thiazoline' or
-            thing == u'dimethyl 3,3"-dithiobispropionimidate'):
-            continue
-        assert mod.get_mod_delta(thing) == oldmod.get_mod_delta(thing)
-        #assert mod.get_mod_specificities(thing) == oldmod.get_mod_specificities(thing)
-        spec = mod.get_mod_specificities(thing).values()[0][0][0]
-        assert mod.get_mod_neutral_loss(thing, spec) == oldmod.get_mod_neutral_loss(thing, spec)
-        assert mod.get_mod_composition(thing) == oldmod.get_mod_composition(thing)
-    
-    print "Done."  
