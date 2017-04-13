@@ -174,7 +174,7 @@ defaultParameters = {'activation_method': 'ALL',
                      'variable_mod09': '0.0 X 0 3 -1 0 0'}
 
 # This needs '[COMET ENZYME INFO]' placed in front of it in the param file.
-defaultEnzymes = {'0.': {'active': 0, 'name': 'No_enzyme', 'p': '-', 'specificity': '-'},
+defaultEnzymes = {'0': {'active': 0, 'name': 'No_enzyme', 'p': '-', 'specificity': '-'},
                   '1': {'active': 1, 'name': 'Trypsin', 'p': 'P', 'specificity': 'KR'},
                   '2': {'active': 1, 'name': 'Trypsin/P', 'p': '-', 'specificity': 'KR'},
                   '3': {'active': 1, 'name': 'Lys_C', 'p': 'P', 'specificity': 'K'},
@@ -851,7 +851,7 @@ class CometSearch(dict):
                                                                               mod['required']))
                 
             parfile.write('[COMET_ENZYME_INFO]\n')
-            for num, enz in enumerate(self.enzymes):
+            for num, enz in self.enzymes.items():
                 parfile.write('%s.\t%s\t%s\t%s\t%s\n' % (num, enz['name'], enz['active'],
                                                          enz['specificity'], enz['p']))
             
@@ -877,15 +877,12 @@ class CometSearch(dict):
         self.write(parfile)
         
         try:
-            expectedResultFile = ms2_file[:-3] + 'pep.txt'
+            expectedResultFile = ms2_file[:-3] + 'txt'
             
             print('Initiating Comet search...')
             result = call([cometPath, '-P' + parfile, ms2_file])
             print('Comet search completed with return value %s' % result)    
             assert os.path.exists(expectedResultFile), "Comet failed to produce expected result file."
-            
-            os.remove(parfile)
-            
             #csvResultFile = expectedResultFile[:-3] + 'csv'
             #process_file(expectedResultFile)
             #assert os.path.exists(csvResultFile)    
