@@ -479,7 +479,7 @@ def alerts(message='multiplierz', title='multiplierz', method='popup'):
     if method == 'popup':
         try:
             wx.MessageBox(message, title)
-        except:
+        except wx._core.PyNoAppError:
             app = mzApp()
             app.launch()
             wx.MessageBox(message, title)
@@ -489,7 +489,7 @@ def alerts(message='multiplierz', title='multiplierz', method='popup'):
         fh.close()
 
 
-def file_chooser(title='Choose a file:', default_path = None, default_file = None,
+def file_chooser(title='Choose a file:', default_path = '', default_file = '',
                  mode='r', wildcard='*'):
     """Provides a file chooser dialog and returns the file path(s) when the file(s) is selected.
     mode option provides file dialog type: read single, read multiple, or save single.
@@ -513,7 +513,7 @@ def file_chooser(title='Choose a file:', default_path = None, default_file = Non
     try:
         file_chooser = wx.FileDialog(None, title, wildcard=wildcard, style=style,
                                      defaultDir = default_path, defaultFile = default_file)
-    except:
+    except wx._core.PyNoAppError:
         app = mzApp()
         app.launch()
         file_chooser = wx.FileDialog(None, title, wildcard=wildcard, style=style,
@@ -571,7 +571,7 @@ def report_chooser(parent=None, title=None, mode='r', **kwargs):
 
     try:
         file_dialog = wx.FileDialog(parent, title, wildcard=wildcard, style=style, **kwargs)
-    except:
+    except wx._core.PyNoAppError as err:
         app = mzApp()
         app.launch()
         file_dialog = wx.FileDialog(None, title, wildcard=wildcard, style=style, **kwargs)
@@ -686,7 +686,7 @@ def text_input(prompt='', value='', title=''):
 
     try:
         dlg = wx.TextEntryDialog(None, message=prompt, caption=title, defaultValue=value)
-    except:
+    except wx._core.PyNoAppError:
         app = mzApp()
         app.launch()
         dlg = wx.TextEntryDialog(None, message=prompt, caption=title, defaultValue=value)
@@ -705,7 +705,7 @@ def text_input(prompt='', value='', title=''):
 def directory_chooser(parent = None, title = None):
     try:
         dialog = wx.DirDialog()
-    except:
+    except wx._core.PyNoAppError:
         app = mzApp()
         app.launch()
         dialog = wx.DirDialog()
