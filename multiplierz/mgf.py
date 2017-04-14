@@ -238,6 +238,7 @@ def write_mgf(entries, outputName, header = []):
         output.write('END IONS\n')
 
     output.close()
+    return outputName
     
 class MGF_Writer(object):
     def __init__(self, outputfile, header = []):
