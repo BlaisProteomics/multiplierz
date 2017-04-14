@@ -411,24 +411,14 @@ class TandemSearch(dict):
         self['output']['path hashing'] = 'no' # Required to be able to retrieve output.
         expectedOutput = self['output']['path']
         
-        #assert os.path.exists(parametersFile)
         parametersFile = self.write()
         
         result = call([xtandemExe, parametersFile])
         assert not result, "XTandem failed with error code %s" % result
         
-        #expectedOutput = os.path.join(os.path.dirname(xtandemExe),
-                                      #parametersFile + '-output.xml')
-        #expectedOutput = os.path.join(os.getcwd(), 'output.xml')
         assert os.path.exists(expectedOutput), "Output file not found!"
         
-        #peptideReport = mzIdentML(expectedOutput).peptideSummary()
         format_XML(expectedOutput, outputfile)
-        
-        #output = writer(outputfile, columns = peptideReport[0].keys()) # Put an ordering somewhere?
-        #for row in peptideReport:
-            #output.write(row)
-        #output.close()
         
         return outputfile
         

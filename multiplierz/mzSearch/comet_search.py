@@ -3,6 +3,7 @@ import re
 import time
 import multiplierz.unimod as unimod
 from multiplierz import myData
+from multiplierz.mzReport import writer
 from subprocess import call
 from collections import defaultdict
 from multiplierz.mgf import parse_mgf, extractor_name, standard_title_parse
@@ -220,7 +221,7 @@ toStandardPSMConversions = {'assumed_charge':'Charge',
                             'peptide':'Peptide Sequence',
                             'peptide_next_aa':'Following Residue',
                             'peptide_prev_aa':'Preceding Residue',
-                            'precursor_neutral_mass':'Experimental mz', # But its actually not the mz, is it?
+                            'precursor_neutral_mass':'Experimental mass', # Not 'Experimental mz'.
                             'protein':'Accession Number',
                             'spectrum':'Spectrum Description',
                             # Thats all the easily Mascot-equivalents.  Here's the rest:
@@ -256,195 +257,10 @@ def convertCometOutputToMascot(cometcsv):
     psms.close()
     output.close()
     
-
-
-
-
-def renderFixedModSettings(fixmodstrs):
-    fixSettings = defaultdict(float)
-    fixSettings['add_C_cysteine'] = 0.0
-    for fixstr in fixmodstrs:
-        value = modLookup[fixstr]
-        if not isinstance(value, dict):
-            value = float(value)
-            specificities = list(fixstr.split('(')[1].split(')')[0])
-            for aa in specificities:
-                aminoStr = fixModTypes[aa]
-                fixSettings[aminoStr] += value
-        
-        else:
-            for aminoStr, mass in value.items():
-                fixSettings[aminoStr] += float(mass)
-    
-    return dict(fixSettings)
-
-def renderVarModSettings(varmodstrs):
-    varSettings = {'variable_mod01': '0.0 X 0 3 -1 0 0'}
-    modBase = 'variable_mod0'
-    
-    for index, varstr in enumerate(varmodstrs, start = 1):
-        field = modBase + str(index)
-        value = modLookup[varstr]
-        
-        if not isinstance(value, dict):
-            value = float(value)
-            specificities = varstr.split('(')[1].split(')')[0]
-            
-            varValue = "%.4f %s 0 3 -1 0 0" % (value, specificities)
-            varSettings[field] = varValue
-        
-        else:
-            aas = ''
-            for aminoStr, mass in value.items():
-                aas += fixedModTypesBackward[aminoStr]
-            varValue = "%.4f %s 0 3 -1 0 0" % (float(mass), aas)
-            varSettings[field] = varValue
-    
-    return dict(varSettings)
-            
-            
-            
-            
-parameterSequence = None
-
-def readParameters(parameterFile):
-    global parameterSequence
-    parameterSequence = []
-    
-    pars = {}
-    with open(parameterFile) as parameters:
-        for line in parameters:
-            if '#' in line:
-                commentFrom = line.index('#')
-                line = line[:commentFrom]
-            line = line.strip()
-            try:
-                field, value = [x.strip() for x in line.split('=')]
-                pars[field] = value
-                parameterSequence.append(field)
-            except ValueError:
-                pass
-    
-    return pars
-
-def writeParameters(parameters, parameterFile, enzyme):
-    with open(parameterFile, 'w') as parOut:
-        for line in parameterPreamble:
-            parOut.write(line)
-            
-        #for field, value in sorted(parameters.items()):
-        for field in parameterSequence:
-            value = parameters[field]
-            parOut.write('%s = %s\n' % (field, value))
-            
-        parOut.write('[COMET_ENZYME_INFO]\n')
-        enzymeProperties = enzymeDict[enzyme]
-        parOut.write('0.\t%s\t%s\t%s\t%s\n' % tuple([enzyme] + enzymeProperties))
-
-
-def perform_comet_search(ms2file, database, fixed_mods=None, var_mods=None,
-                         fdr="-PYes", enzyme = 'Trypsin', missed_cleavages='2',
-                         prectol='10', precunit='ppm', fragbintol='1.0005',
-                         fragbinoffset='0.4', **kwargs):
-    # kwargs may contain: runType, parent, NumThreads, NumSpectra, ExpDim, fdrSort
-    
-    assert os.path.exists(ms2file), "Input %s not found!" % ms2file
-    assert os.path.exists(database), "Database %s not found!" % database
-    
-    parentGUI = kwargs.get('parent', None)
-    if parentGUI:
-        parentGUI.post_message("Parsing MS2 spectra. " + parentGUI.make_time(time.localtime()))
-        parentGUI.post_message(ms2file)         
-    
-    try:
-        performSearch, saveParameters = kwargs['runType']
-    except KeyError:
-        performSearch, saveParameters = True, False 
-    if not (performSearch or saveParameters):
-        print "Neither 'Perform Search' nor 'Save Parameter File' selected.  Aborting."
-        return    
-    
-    baseParameterFile = os.path.join(os.path.dirname(cometPath), 'comet.params.new')
-    if not os.path.exists(baseParameterFile):
-        os.chdir(os.path.dirname(cometPath))
-        call([cometPath, '-p'])
-        assert os.path.exists(baseParameterFile)
-        os.chdir(myData)
-    
-    parameters = readParameters(baseParameterFile)
-    
-    parameters['database_name'] = database
-    parameters['search_enzyme_number'] = '0' # COMET_ENZYME_INFO constructed accordingly.
-    parameters['allowed_missed_cleavage'] = missed_cleavages
-    parameters['peptide_mass_tolerance'] = prectol
-    parameters['peptide_mass_units'] = unitsDict[precunit]
-    parameters['fragment_bin_tol'] = fragbintol
-    parameters['fragment_bin_offset'] = fragbinoffset
-    parameters['num_threads'] = kwargs['NumThreads']
-    parameters['spectrum_batch_size'] = kwargs['NumSpectra']
-    
-    exp = kwargs['ExpDim'] == '1D'
-    fdrSort = kwargs['fdrSort']
-    
-    
-    # Remove once pyComet.py is fixed.
-    if fixed_mods[:4] == '-FM=':
-        fixed_mods = fixed_mods[4:]
-    if var_mods[:4] == '-VM=':
-        var_mods = var_mods[4:]     
-        
-    fixed_mod_list = [x.strip() for x in fixed_mods.split(',') if x]
-    var_mod_list = [x.strip() for x in var_mods.split(',') if x]
-    
-    fixedModFields = renderFixedModSettings(fixed_mod_list)
-    varModFields = renderVarModSettings(var_mod_list)
-    
-    parameters.update(fixedModFields)
-    parameters.update(varModFields)
-    
-    writtenParameters = ms2file + '.comet.params'
-    writeParameters(parameters, writtenParameters, enzyme)
-    
-    if performSearch:
-        print('Initiating Comet search...')
-        result = call([cometPath, '-P' + writtenParameters, ms2file])
-        print('Comet search completed with return value %s' % result)
-        
-        expectedResultFile = ms2file[:-3] + 'pep.xml'
-        assert os.path.exists(expectedResultFile)
-    
-        print('Processing XML...')
-        #csvResultFile = convertToSpreadsheet(expectedResultFile)
-        csvResultFile = expectedResultFile[:-3] + 'csv'
-        process_file(expectedResultFile)
-        assert os.path.exists(csvResultFile)
-        
-        if fdr:
-            #csvResultFile = cometFDR(csvResultFile)
-            fdrCSVFile = csvResultFile[:-4] + '.fdr.csv'
-            calc_fdr(csvResultFile, fdr_filter = 0.01,
-                                       sort_column=fdrSort,
-                                       rev_txt=kwargs['RevDbId'])
-            assert os.path.exists(fdrCSVFile)
-            try:
-                os.remove(csvResultFile)
-            except (WindowsError, IOError) as err:
-                print err
-            os.rename(fdrCSVFile, csvResultFile)
-            
-        
-        os.remove(expectedResultFile)
-        print "Result file written to %s" % csvResultFile
-    
-    if not saveParameters:
-        os.remove(writtenParameters)
-        
-    print "Done!"
     
     
     
-    
-def perform_comet_search2(ms2file, database, fixed_mods = None, var_mods = None):
+def perform_comet_search(ms2file, database, fixed_mods = None, var_mods = None):
     assert os.path.exists(ms2file), "Input %s not found!" % ms2file
     assert os.path.exists(database), "Database %s not found!" % database
     
@@ -564,156 +380,64 @@ def mgf_to_ms2(mgfFile, outputfile = None):
         
         
         
-        
-        
-        
-        
-        
-        
-def calc_fdr(filename, fdr_filter = None, sort_column='expect', rev_txt='rev_gi'):
-    '''
+def format_report(reportfile, outputfile = None):
+    """
+    Renders a native Comet output .txt file into an mzReport-compatible and
+    prettier .xlsx format.
     
-    Calculates fdr for COMET Search data
+    (Native .txt output is noncompatible mostly due to a space instead of 
+    underscore in the 'modified peptide' column; hopefully that will be fixed
+    soon.)
+    """
     
-    INPUT: COMET output as csv (generated by process_file.py)
+    columns = []
+    rows = []
+    report = open(reportfile, 'r')
     
-    If fdr filter is given a value, rows containing reverse hits or that have an fdr > the given value
-    are not written to the result file.
+    headeritems = report.next().split('\t')
+    header = {'Program':headeritems[0],
+              'Data':headeritems[1],
+              'Search Run Time':headeritems[2],
+              'Database':headeritems[3].strip()}
+    columnline = report.next()
     
-    OUTPUT: csv file
+    # Fix for presumed bug; omit if this column title is changed in later Comet versions.
+    columnline = columnline.replace('peptide\tmodifications', 'peptide_modifications')
     
-    '''
-    sort_reverse=False
-    if sort_column in ['xcorr']:
-        sort_reverse=True
-    rdr = csv.reader(open(filename, 'r'))
-    data = []
-    headers = None
-    counter = 0
-    print "Reading file in memory..."
-    for row in rdr:
-        if counter:
-            data.append(row)    
-            data[counter-1][headers.index(sort_column)] = float(data[counter-1][headers.index(sort_column)])                   
-        else:
-            headers = [x.strip() for x in row] + ['fdr']
-        counter += 1
-        
-    print "Sorting..."
-    
-    data.sort(key=lambda t:t[headers.index(sort_column)], reverse=sort_reverse)
-    
-    fwd = 0
-    rev = 0
-    
-    print "Calc fdr..."
-    for i, member in enumerate(data):
-        if member[headers.index('protein')].find(rev_txt) == -1:
-            fwd += 1
-        else:
-            rev += 1
+    def tryNum(thing):
         try:
-            fdr = float(rev)/float(fwd)
-        except:
-            fdr = 'NA'
-        data[i].append(fdr)
+            return int(thing)
+        except ValueError:
+            try:
+                return float(thing)
+            except ValueError:
+                return thing
     
-    print "Writing..."
-    wtr = csv.writer(open(filename[:-4] + '.fdr.csv', 'wb'), delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
-    wtr.writerow(headers)
-    for row in data:
-        if not fdr_filter:
-            wtr.writerow(row)
-        else:
-            if row[headers.index('fdr')] < fdr_filter and row[headers.index('protein')].find(rev_txt) == -1:
-                wtr.writerow(row)
-    del wtr
-    del rdr
-    del data
-            
-
-def process_file(filename, first_rank_only=True):
-    '''
+    columns = [toStandardPSMConversions.get(x, x) for x in columnline.strip().split('\t')]
+    for line in report:
+        values = [tryNum(x.strip()) for x in line.split('\t')]
+        row = dict(zip(columns, values))
+        rows.append(row)
     
-    GENERATES A CSV File from a pepxml file
+    report.close()
+    if not outputfile:
+        outputfile = '.'.join(reportfile.split('.')[:-1] + ['xlsx'])
+    headerwriter = writer(outputfile, columns = ['Program', 'Data',
+                                                 'Search Run Time', 'Database'],
+                                      sheet_name = 'Comet_Header')
+    headerwriter.write(header)
+    headerwriter.close()
+    mainwriter = writer(outputfile, columns = columns, sheet_name = 'Data')
+    for row in rows:
+        mainwriter.write(row)
+    mainwriter.close()
     
-    USAGE:
-    
-    filename = r'C:\Data\COMET\2012-08-23-Enolase-100fmol_1_RECAL.pep.xml'
-    
-    process_file(filename)
-    
-    '''    
-    tree = ET.parse(filename)
-    root = tree.getroot()
-    for child in root:
-        for s in child.findall('.'): # {http://regis-web.systemsbiology.net/pepXML}spectrum_query
-            a = s.getchildren()
-    hit_list = []
-    master_keys = []
-    for member in a:
-        if member.tag == '{http://regis-web.systemsbiology.net/pepXML}spectrum_query':
-            query_data = {}
-            x = member.getchildren()
-            stuff = member.attrib
-            query_data.update(stuff)
-            for query in x:
-                    z = query.getchildren() # this is search_hit
-                    for y in z: # y = search_hit
-                        hit_data = {}
-                        for key in y.attrib.keys():
-                            hit_data[key]=y.attrib[key] 
-                        u = y.getchildren()
-                        score_dict = {}
-                        for i in u:
-                            if 'name' in i.keys():
-                                try:
-                                    score_dict[i.attrib['name']]=i.attrib['value']
-                                except:
-                                    pass
-                            else:
-                                score_dict.update(i.attrib)
-                            
-                        #CONSTRUCT "HIT"
-                        hit_dict = {}
-                        hit_dict.update(query_data)
-                        hit_dict.update(hit_data)
-                        hit_dict.update(score_dict)
-                        if 'xcorr' in hit_dict.keys():
-                            hit_list.append(hit_dict)
-                            if len(hit_dict.keys()) > len(master_keys):
-                                master_keys = hit_dict.keys()
-    wtr = csv.writer(open(filename[:-4] + '.csv', 'wb'), delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
-    x = master_keys
-    x.sort()
-    #print x
-    wtr.writerow(x)
-    for row in hit_list:
-        proceed = False
-        if first_rank_only:
-            if row['hit_rank'] == '1':
-                proceed = True
-        else:
-            proceed = True
-        if proceed:
-            elem = []
-            x = master_keys
-            x.sort()
-            for key in x:
-                if key in row.keys():
-                    elem.append(row[key])
-                else:
-                    elem.append('')
-            wtr.writerow(elem)
-    del wtr
-    del hit_list
-    del master_keys
-    del root
-    del tree
+    return outputfile
     
     
     
-    
+        
+     
     
     
     
@@ -857,7 +581,7 @@ class CometSearch(dict):
             
 
         
-    def run_search(self, data_file):
+    def run_search(self, data_file, output_xlsx = True):
         #assert self.enzyme_selection != None, "Must specify enzyme selection (attribute .enzyme_selection)!" 
         
         self['output_txtfile'] = '1'
@@ -883,11 +607,13 @@ class CometSearch(dict):
             result = call([cometPath, '-P' + parfile, ms2_file])
             print('Comet search completed with return value %s' % result)    
             assert os.path.exists(expectedResultFile), "Comet failed to produce expected result file."
-            #csvResultFile = expectedResultFile[:-3] + 'csv'
-            #process_file(expectedResultFile)
-            #assert os.path.exists(csvResultFile)    
             
-            return expectedResultFile
+            if output_xlsx:
+                outputfile = format_report(expectedResultFile)
+            else:
+                outputfile = expectedResultFile
+            
+            return outputfile
         
         finally:
             os.remove(parfile)
