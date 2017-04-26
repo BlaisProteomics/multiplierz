@@ -1,4 +1,4 @@
-# multiplierz
+# Multiplierz
 The Multiplierz Proteomics Library
 
 
