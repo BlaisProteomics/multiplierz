@@ -6,6 +6,7 @@ Mutiplierz is a Python software library and associated GUI desktop environment f
 
 See [the wiki for installation instructions and documentation](https://github.com/MaxAlex/multiplierz/wiki/Installation).
 
+The mzDesktop GUI application can be found at [our Sourceforge page](https://sourceforge.net/projects/multiplierz/).
 
 ***
 
