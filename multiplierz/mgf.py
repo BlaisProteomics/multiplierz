@@ -1,6 +1,6 @@
 import multiplierz.mzAPI.raw
 from multiplierz.mzAPI import mzFile
-from multiplierz import protonMass, __version__
+from multiplierz import protonMass, __version__, vprint
 import os
 from numpy import average, std
 
@@ -142,7 +142,7 @@ def parse_mgf(mgffile, labelType = (lambda x: x), header = False, rawStrings = F
         elif 'SEARCH=' in line or 'MASS=' in line:
             continue
         else:
-            print "Unexpected line: %s" % line
+            vprint("Unexpected line: %s" % line)
 
     return data    
 
@@ -203,7 +203,7 @@ def parse_to_generator(mgffile, labelType = (lambda x: x), header = False, rawSt
         elif 'SEARCH=' in line or 'MASS=' in line:
             continue
         else:
-            print "Unexpected line: %s" % line  
+            vprint("Unexpected line: %s" % line)
 
 
 
@@ -557,8 +557,8 @@ def extract(datafile, outputfile = None, default_charge = 2, centroid = True,
     writer.close
     
     if inconsistent_precursors:
-        print "Precursor inconsistencies: %s/%s" % (inconsistent_precursors,
-                                                    scans_written)
+        vprint("Precursor inconsistencies: %s/%s" % (inconsistent_precursors,
+                                                     scans_written))
 
     return outputfile
     
@@ -601,12 +601,3 @@ def apply_spectral_process(mgfFile, functions, outputFile = None):
 
 
         
-    
-
-
-if __name__ == '__main__':
-    print "TEST MODE"
-    #extract(r'C:\Users\Max\Desktop\Projects\rcprot_testing\2015-09-15-K562-10ng_1E5-TARG_50ms-mft_25-UFILL-1.raw',
-            #r'C:\Users\Max\Desktop\Projects\rcprot_testing\2015-09-15-K562-10ng_1E5-TARG_50ms-mft_25-UFILL-1.raw.newExtractor.mgf')
-    extract(r'\\rc-data1\blaise\ms_data_share\Max\CDK14\2017-03-01-CDK14-FMF-1.raw',
-            r'\\rc-data1\blaise\ms_data_share\Max\CDK14\2017-03-01-CDK14-FMF-1.raw.newtest.mgf')

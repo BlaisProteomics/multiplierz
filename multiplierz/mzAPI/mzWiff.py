@@ -130,6 +130,9 @@ class mzFile_implicit_numbering(mzAPImzFile):
     
     def headers(self):
         return self.data.scan_info()
+    
+    def close(self):
+        self.data.close()
         
 
 class mzFile_explicit_numbering(mzAPImzFile):
@@ -386,4 +389,7 @@ class mzFile_explicit_numbering(mzAPImzFile):
     def headers(self, *etc):
         self._headers = self.scan_info()
         return self._headers
-        
+    
+    def close(self):
+        # No close function in the COM object yet.  Should there be one?
+        pass

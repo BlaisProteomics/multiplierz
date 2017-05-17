@@ -59,7 +59,7 @@ def async_mzFile_internal(datafile, size_cap, input, output):
             call = next((x for x in commands if x[0] == 'call'), None)
             if call:
                 commands.remove(call)
-                #print "Recieved command: %s" % (call,)
+
                 _, method, argkwarg = call
                 callhash = arghash(method, argkwarg)
                 if callhash in cache:
@@ -82,7 +82,6 @@ def async_mzFile_internal(datafile, size_cap, input, output):
                 returnval = getattr(data, method)(*args, **kwargs)
                 cache[callhash] = returnval
         
-        #print "Async_mzFile exiting!"
         return
     except Exception as err:
         import traceback
@@ -170,8 +169,7 @@ class async_mzFile(object):
 if __name__ == '__main__':
     from multiplierz.mzAPI.mzMemo import async_mzFile
     from time import clock, sleep
-    foo = async_mzFile(r'C:\Users\Max\Desktop\SpectrometerData\112608_HCD_CE_K562_35.RAW')
-    #bar = foo.scan(1000)   
+    foo = async_mzFile('example_file.raw')
     start = clock()
     foo.preorder('xic', 0, 999999)
     print clock() - start
@@ -181,7 +179,4 @@ if __name__ == '__main__':
     bar = foo.xic(0, 999999)
     print clock() - start
     
-    #print bar
     foo.close()
-    
-    print "FOO"

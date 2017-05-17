@@ -4,6 +4,7 @@ import xlwt # Older Excel support (.xls files), writing only
 import os
 from numbers import Number
 
+from multiplierz import vprint
 from multiplierz.mzReport import ReportReader, ReportWriter, ReportEntry, default_columns
 
 
@@ -29,7 +30,8 @@ def get_sheet_names(filename):
 
 
 class XLSheetReader(ReportReader):
-    def __init__(self, file_name, sheet_name = None, classic_mode = False, autotypecast = True):
+    def __init__(self, file_name, sheet_name = None,
+                 classic_mode = False, autotypecast = True, **etc):
         if classic_mode:
             import mzSpreadsheetClassic
             self.__class__ = mzSpreadsheetClassic.XLSheetReader
@@ -63,7 +65,8 @@ class XLSheetReader(ReportReader):
     
 class XLSheetWriter(ReportWriter):
     def __init__(self, file_name, sheet_name = 'Data',
-                 columns = None, default_columns = False, classic_mode = False):
+                 columns = None, default_columns = False,
+                 classic_mode = False, **etc):
      
         
         if columns:
@@ -113,7 +116,7 @@ class XLSXReader(XLSheetReader):
         else:
             sheetname = self.wb.get_sheet_names()[0]
             if len(self.wb.get_sheet_names()) > 1:
-                print "Worksheet not specified; defaulting to %s" % sheetname
+                vprint("Worksheet not specified; defaulting to %s" % sheetname)
             self.sheet = self.wb[sheetname]
         
         self.all_sheets = self.wb.get_sheet_names()
@@ -140,7 +143,7 @@ class XLSXReader(XLSheetReader):
             del self.wb
             del self.sheet
         except AttributeError:
-            print "WARNING: Close called multiple times. (XLSXReader.)"
+            vprint("WARNING: Close called multiple times. (XLSXReader.)")
         
         
 class XLSXWriter(XLSheetReader):
@@ -185,7 +188,6 @@ class XLSXWriter(XLSheetReader):
             try:
                 row = [row[x] for x in self.columns]
             except KeyError as err:
-                print (sorted(row.keys()), '\n', sorted(self.columns))
                 raise err
         
         for index, value in enumerate(row, start = 1):
@@ -201,15 +203,15 @@ class XLSXWriter(XLSheetReader):
     def close(self):
         try:
             self.wb.save(self.file_name)
-            print "Closed %s (Sheet %s)" % (self.file_name, self.sheet_name)
+            vprint("Closed %s (Sheet %s)" % (self.file_name, self.sheet_name))
         except IOError as err: 
             # Goodness knows how much data has been lost the grabby
             # lock Excel puts on open files, so we try to at least save
             # things somewhere.
-            print "Overwrite failed..."
+            vprint("Overwrite failed...")
             self.wb.save(self.file_name[:-5] + '.OVERWRITE.xlsx')
-            print "Closed %s (Sheet %s)" % (self.file_name[:-5] + '.OVERWRITE.xlsx',
-                                            self.sheet_name)
+            vprint("Closed %s (Sheet %s)" % (self.file_name[:-5] + '.OVERWRITE.xlsx',
+                                                self.sheet_name))
         
         
         
@@ -266,12 +268,12 @@ class XLSWriter(XLSheetWriter):
             flptr = open(self.file_name, 'w+b')
             self.wb.save(flptr)
             flptr.close()
-            print "Closed %s (Sheet %s)" % (self.file_name, self.sheet_name)
+            vprint("Closed %s (Sheet %s)" % (self.file_name, self.sheet_name))
         except IOError as err:
             self.wb.save(self.file_name[:-4] + '.~OVERWRITE.xls')
-            print "Couldn't overwrite %s" % self.sheet_name
-            print "Closed %s (Sheet %s)" % (self.file_name[:-4] + '.~OVERWRITE.xls',
-                                            self.sheet_name)
+            vprint("Couldn't overwrite %s" % self.sheet_name)
+            vprint("Closed %s (Sheet %s)" % (self.file_name[:-4] + '.~OVERWRITE.xls',
+                                             self.sheet_name))
 
         
 class XLSReader(XLSheetWriter):
@@ -287,7 +289,7 @@ class XLSReader(XLSheetWriter):
             self.sheet = self.wb.sheet_by_name('Data')
         else:
             sheetname = self.wb.sheet_names()[0]
-            print "Warning:  Worksheet name not specified; defaulting to %s" % sheetname
+            vprint("Warning:  Worksheet name not specified; defaulting to %s" % sheetname)
             self.sheet = self.wb.sheet_by_name(sheetname)
             
         self.all_sheets = self.wb.sheet_names()[0]

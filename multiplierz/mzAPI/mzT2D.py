@@ -1,3 +1,4 @@
+from multiplierz import vprint
 import multiplierz.mzAPI
 #from comtypes.client import CreateObject
 from win32com.client import Dispatch
@@ -34,7 +35,7 @@ class mzFile(multiplierz.mzAPI.mzFile):
             level = 1
             precursor = '-'
         else:
-            print "Unparsable T2D file name; MS level and precursor mass unavailable."
+            vprint("Unparsable T2D file name; MS level and precursor mass unavailable.")
             level = -1
         
         mzrange = float(descwords[-3].strip('(')), float(descwords[-1].strip(')'))

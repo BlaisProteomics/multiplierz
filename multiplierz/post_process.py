@@ -61,6 +61,7 @@ def calculate_FDR(reportfile, outputfile = None, threshold = 0.01,
         #if decoyString in row['Accession Number'].lower():
         # Turns out that produced awful results, since high-scoring peptides
         # could just happen to be duplicated in the reverse database.
+        # So instead:
         if all([decoyString in x.lower() for x in row['Accession Number'].split(';')]):
             reverses += 1
             if forwards:
@@ -69,7 +70,7 @@ def calculate_FDR(reportfile, outputfile = None, threshold = 0.01,
                 fdr = 100
             row['FDR'] = fdr      
 
-            if int(row['Peptide Score']) > highRev:
+            if float(row['Peptide Score']) > highRev:
                 highRev = int(row['Peptide Score'])
 
             seenSpectra[specDesc] = fdr
@@ -196,7 +197,7 @@ def fractionation_plot(fractions, outputfile = None, fig_size = None, **kwargs):
     plot where each fraction is represented as an appropriately scaled point
     (according to PSM count) in organic/salt space.
     """
-    from multiplierz.mzReport import reader, writer
+    from multiplierz.mzReport import reader
     import matplotlib.pyplot as pyt
     pyt.cla()
     
@@ -288,7 +289,7 @@ def fractionation_plot(fractions, outputfile = None, fig_size = None, **kwargs):
     #print pyt.xlim(), pyt.ylim()
     pyt.cla()
     
-from multiplierz.mzReport import reader, writer
+from multiplierz.mzReport import reader
 import matplotlib.pyplot as pyt    
 
 def multimode_fractionation_plot(mode_fractions, outputfile = None,

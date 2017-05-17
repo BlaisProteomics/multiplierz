@@ -2,7 +2,7 @@ from multiplierz.mzAPI import mzFile
 from multiplierz.mzReport import reader
 from collections import defaultdict
 from multiplierz.internalAlgorithms import ProximityIndexedSequence
-
+from multiplierz import vprint
 
 import cPickle as pickle
 import sqlite3
@@ -154,7 +154,7 @@ def save_feature_database(features, outputfile, overwrite = False):
     createTable = "CREATE TABLE features(ind int, mz real, startscan int, endscan int, data text)"
     cur.execute(createTable)
 
-    print "Created table."
+    vprint("Created table.")
     for index, feature in enumerate(features):
         mz = feature.mz
         startscan, endscan = feature.scanrange
@@ -164,16 +164,15 @@ def save_feature_database(features, outputfile, overwrite = False):
         cur.execute(addFeature)
     
         if index % 100 == 0:
-            #print "Committing %s..." % index
             conn.commit()
     
-    print "Indexing..."
+    vprint("Indexing...")
     createIndex = "CREATE INDEX mzindex ON features(mz, startscan)"
     cur.execute(createIndex)  
-    print "Analyzing..."
+    vprint("Analyzing...")
     cur.execute("ANALYZE")
     
-    print "Final SQLite commit..."
+    vprint("Final SQLite commit...")
     conn.commit()
     
     conn.close()
@@ -209,7 +208,7 @@ class FeatureInterface(object):
         self.filename = filename
         assert os.path.exists(filename)
         if filename.lower().endswith('featurepickle'):
-            print "OLDSTYLE MODE"
+            vprint("Legacy mode enabled.")
             self.data = pickle.load(open(filename))
             self.mode = 'pickle'
         else:

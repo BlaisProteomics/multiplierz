@@ -334,8 +334,3 @@ def format_XML(xTandem_file, save_file, rev_mods=None, db_regex=None):
 
     report.close()
 
-
-if __name__ == '__main__':
-    format_XML(r'\\rc-data1\blaise\ms_data_share\Max\CDK\xtandemAnalysis\2015-07-07-CDK12-RT-Org-1.TARGET_SCANS.DEISO-REDUCED.ION_FILTERED.mgf.xml',
-               r'\\rc-data1\blaise\ms_data_share\Max\CDK\xtandemAnalysis\testresultformatted.xlsx')
-    

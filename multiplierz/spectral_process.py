@@ -227,7 +227,7 @@ def deisotope_reduce_scan(spectrum, *peak_pick_args, **peak_pick_kwargs):
             peaks.append((mass, ints))
     return peaks
 
-def deisotope_scan(spectrum, *peak_pick_args):
+def deisotope_scan(spectrum, *args, **kwargs):
     """
     Deisotopes the given mass spectrum, but leaves isotopically pure peaks
     in place.  This will often improve search score (due to unscored
@@ -236,7 +236,7 @@ def deisotope_scan(spectrum, *peak_pick_args):
     For best results, the scan mass tolerance should be below 0.01 Daltons.
     """
      
-    chargeEnvelopes, peaks = peak_pick(spectrum, *peak_pick_args)
+    chargeEnvelopes, peaks = peak_pick(spectrum, *args, **kwargs)
     for charge, envelopes in chargeEnvelopes.items():
         for envelope in envelopes:
             peaks.append(envelope[0])

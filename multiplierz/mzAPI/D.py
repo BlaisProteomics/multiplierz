@@ -1,13 +1,13 @@
 from comtypes.client import CreateObject, GetModule
 
-from multiplierz import myHome
+from multiplierz import myHome, vprint
 from multiplierz.mzAPI import mzFile as baseFile
 from multiplierz.mzAPI import mzScan
 
 import os, sys
 from math import floor, ceil
 
-print sys.executable
+vprint(sys.executable)
 if os.path.basename(sys.executable) == 'mzDesktop.exe':
     agilentDir = os.path.join(os.path.dirname(sys.executable),
                               'interface_modules', 'agilentdlls')
@@ -141,7 +141,7 @@ class mzFile(baseFile):
     
         ionization = self.source.MSScanFileInformation.IonModes
         if not ionization:
-            print "Could not determine separation/ionization; defaulting to GCMS."
+            vprint("Could not determine separation/ionization; defaulting to GCMS.")
             separator = 'GC'
         elif ionization & (4|2): # Bitwise OR and AND.
             separator = 'GC'

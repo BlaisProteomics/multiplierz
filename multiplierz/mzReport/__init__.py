@@ -374,6 +374,8 @@ def writer(report_file, columns=None, default_columns=False, delayed_write = Fal
                                  columns=columns,
                                  default_columns=default_columns,
                                  **kwargs)
+    elif file_type == 'mzid':
+        raise NotImplementedError('mzIdentML file writing is not supported.')
     else:
         raise IOError("File appears to be an invalid type: '.%s' writing is not supported" % file_type)
 

@@ -423,11 +423,3 @@ class TandemSearch(dict):
         return outputfile
         
     
-    
-    
-if __name__ == '__main__':
-    print 'TEST MODE'
-    foo = TandemSearch(r'\\rc-data1\blaise\ms_data_share\Max\CDK\xtandemAnalysis\fullXTandemSearch\xtandem_cysteiome_search.xml')
-    foo.fasta_files = [r'\\rc-data1\blaise\ms_data_share\Databases\Marto_Lab.fasta']
-    out = foo.run_search(r'\\rc-data1\blaise\ms_data_share\Max\CDK\xtandemAnalysis\fullXTandemSearch\CDK7 Analysis\2016-05-18-BSA-CDK7-12.HCD_FTMS.DEISO.mgf')
-    print "FOO"

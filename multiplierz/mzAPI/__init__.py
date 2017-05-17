@@ -220,10 +220,11 @@ class mzFile(object):
         import platform
         bitness = platform.architecture()[0]
         if bitness != '64bit':
-            if '32' in bitness:
+            if '32bit' in bitness:
                 raise Exception, "mzAPI does not support 32-bit Python!"
             else:
-                print "WARNING- System architecture string %s not recognized.  Is this 64-bit Windows Python?" % bitness
+                print ("WARNING- System architecture string %s not "
+                      "recognized.  Is this 64-bit Windows Python?") % bitness
         
         #if data_file.lower().endswith('.lnk') or os.path.islink(data_file):
             #data_file = follow_link(data_file)
@@ -241,7 +242,7 @@ class mzFile(object):
                 self.__class__ = mzWiff.mzFile_implicit_numbering
                 mzWiff.mzFile_implicit_numbering.__init__(self, data_file, **kwargs)
             elif kwargs.get('implicit_mode', True) == False:
-                self.__class__ = mzWiff.mzFile.explicit_numbering
+                self.__class__ = mzWiff.mzFile_explicit_numbering
                 mzWiff.mzFile_explicit_numbering.__init__(self, data_file, **kwargs)
             else:
                 import warnings

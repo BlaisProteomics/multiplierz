@@ -31,12 +31,4 @@ class mzIdentMLReader(ReportReader):
         
         
 
-#foo = mzIdentMLReader("c:/Users/Max/Desktop/Projects/F008292.mzid")
-#for thing in foo:
-    #print thing
-#foo.close()
-    
-    
-        
-    
     
