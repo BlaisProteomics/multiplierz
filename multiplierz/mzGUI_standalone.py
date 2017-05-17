@@ -530,7 +530,7 @@ def file_chooser(title='Choose a file:', default_path = '', default_file = '',
 
     return file_name
 
-def report_chooser(parent=None, title=None, mode='r', **kwargs):
+def report_chooser(title=None, mode='r', parent = None, **kwargs):
     '''A specialized file_chooser function for multiplierz files. Otherwise,
     works just like file_chooser.
 
@@ -547,6 +547,11 @@ def report_chooser(parent=None, title=None, mode='r', **kwargs):
 
     **kwargs can include any additional options to pass to the FileDialog constructor,
     such as defaultDir (default directory).'''
+
+    # For legacy reasons, these are often misplaced in scripts.
+    # But they're both necessarily typed differently, so its sortable.
+    if isinstance(parent, basestring) and not isinstance(title, basestring):
+        title, parent = parent, title
 
     wildcard = ("Worksheets (*.xls; *.xlsx)|*.xls; *.xlsx|"
                 "Comma-separated Values (*.csv)|*.csv|"
