@@ -120,8 +120,7 @@ ModificationFormulae = {'Phospho':{'H':1, 'O':3, 'P':1},
                         'iTRAQ8plex' : {'H':24, 'C':7, '13C':7, 'N':3, '15N':1, 'O':3},
                         'TMT6plex': {'H':24, 'C':7, '13C':7, 'N':3, '15N':1}, 
                         'Label:13C(6)': {'13C':6, 'C':-6},
-                        'Label:13C(6):15N(4)':{'13C':6, 'C':-6, '15N':4, 'N':-4},
-                        }
+                        'Label:13C(6)15N(4)':{'13C':6, 'C':-6, '15N':4, 'N':-4}}
 
 
 EnzymeSpecification = {'Arg-C':          '[R][A-Z]',
@@ -148,7 +147,8 @@ EnzymeSpecification = {'Arg-C':          '[R][A-Z]',
                        'Trypsin':        '[KR][^P]'
                        }
 
-
+# Values are (monisotopic mass, average mass)
+# Courtesy of ExPASy: http://education.expasy.org/student_projects/isotopident/htdocs/aa-list.html
 AminoAcidMasses = {'A': (71.03711, 71.0788),
                    'C': (103.00919, 103.1388),
                    'D': (115.02694, 115.0886),
@@ -191,40 +191,9 @@ AminoAcidFormulas = {'A': {'C': 3, 'H': 7, 'N': 1, 'O': 2},
                      'V': {'C': 5, 'H': 11, 'N': 1, 'O': 2},
                      'W': {'C': 11, 'H': 12, 'N': 2, 'O': 2},
                      'Y': {'C': 9, 'H': 11, 'N': 1, 'O': 3}}
-                     
-#AminoAcidFormulas =  {'A': {'C': 3, 'H': 5, 'N': 1, 'O': 1},
-                      #'C': {'C': 3, 'H': 5, 'N': 1, 'O': 1, 'S': 1},
-                      #'D': {'C': 4, 'H': 5, 'N': 1, 'O': 3},
-                      #'E': {'C': 5, 'H': 7, 'N': 1, 'O': 3},
-                      #'F': {'C': 9, 'H': 9, 'N': 1, 'O': 1},
-                      #'G': {'C': 2, 'H': 3, 'N': 1, 'O': 1},
-                      #'H': {'C': 6, 'H': 7, 'N': 3, 'O': 1},
-                      #'I': {'C': 6, 'H': 11, 'N': 1, 'O': 1},
-                      #'K': {'C': 6, 'H': 12, 'N': 2, 'O': 1},
-                      #'L': {'C': 6, 'H': 11, 'N': 1, 'O': 1},
-                      #'M': {'C': 5, 'H': 9, 'N': 1, 'O': 1, 'S': 1},
-                      #'N': {'C': 4, 'H': 6, 'N': 2, 'O': 2},
-                      #'P': {'C': 5, 'H': 7, 'N': 1, 'O': 1},
-                      #'Q': {'C': 5, 'H': 8, 'N': 2, 'O': 2},
-                      #'R': {'C': 6, 'H': 12, 'N': 4, 'O': 1},
-                      #'S': {'C': 3, 'H': 5, 'N': 1, 'O': 2},
-                      #'T': {'C': 4, 'H': 7, 'N': 1, 'O': 2},
-                      #'V': {'C': 5, 'H': 9, 'N': 1, 'O': 1},
-                      #'W': {'C': 11, 'H': 10, 'N': 2, 'O': 1},
-                      #'Y': {'C': 9, 'H': 9, 'N': 1, 'O': 2}}        
-
-#ElementalMasses = {'C' : 12.0,
-                   #'13C': 13.00335483,
-                   #'H' : 1.0079, 
-                   #'N' : 14.003,
-                   #'O' : 15.9949,
-                   #'P' : 30.9738,
-                   #'15N' : 15.0001}
-
 
 H2Omass = 18.010565
-# Values are (monisotopic mass, average mass)
-# Courtesy of ExPASy: http://education.expasy.org/student_projects/isotopident/htdocs/aa-list.html
+
 
 
 formula_form = re.compile('([A-Z][0-9]*)*$')
@@ -243,11 +212,14 @@ def parse_chemical_formula(formstring):
     while i < len(formstring):
         x = formstring[i]
         if x.isalpha():
-            y = formstring[i+1]
-            if y.isdigit():
-                formdict[x] = int(y)
-                i += 1
-            else:
+            try:
+                y = formstring[i+1]
+                if y.isdigit():
+                    formdict[x] = int(y)
+                    i += 1
+                else:
+                    formdict[x] = 1                    
+            except IndexError:
                 formdict[x] = 1
             i += 1
         else:
@@ -819,17 +791,6 @@ def fragment_legacy(peptide, ions=('b', 'b++', 'y', 'y++'), labels=True):
     else:
         return calc_masses, label_dict
 
-
-
-#def fragment_legacy_wrapper(peptide, ions=('b', 'b++', 'y', 'y++')):
-    # Assume labels==True
-    # This won't work for the GUI fragment call!
-    
-    
-
-#def massForPeptide(peptide):
-    #assert peptide.isUpper(), "Must be a pure amino-acid string."
-    #return sum([AminoAcidMasses[x][0] for x in peptide])
     
     
 def n15_label(pepFormula, modFormula, spMass):
@@ -839,6 +800,7 @@ def n15_label(pepFormula, modFormula, spMass):
 
 SpecialModifications = {'N15-Labelled' : n15_label}    
 mascotVarModPattern = re.compile(r'[A-Z][0-9]{,3}: .*')
+mascotFixModPattern = re.compile(r'.* \(.*\)')
 
 def peptide_mass(peptide, modifications = None):
     if not modifications: # Due to that odd Python default-argument quirk.
@@ -865,24 +827,40 @@ def peptide_mass(peptide, modifications = None):
             modOps.append(SpecialModifications[mod])
         elif isinstance(mod, basestring) and mascotVarModPattern.match(mod):
             # Mod as Mascot variable mod substring.
+            # Presumably this is being given once per modification, e.g.
+            # 'S1: Phospho; S12: Phospho'.
             submod = mod.split()[1]
             assert submod in ModificationFormulae, ("Could not recognize variable "
                                                     "modfication %s" % mod)
-            for aa, num in ModificationFormulae[submod].items():
-                modFormula[aa] += num
+            for atom, num in ModificationFormulae[submod].items():
+                modFormula[atom] += num
+        elif isinstance(mod, basestring) and mascotFixModPattern.match(mod):
+            # Mod as Mascot fixed mod substring.
+            # This is taken as being given once for however many instances
+            # of the site may be present (which may be none.)
+            submod, sites = mod.split()
+            assert submod in ModificationFormulae, ("Could not recognize variable "
+                                                    "modfication %s" % mod)
+            sites = sites.strip('()')
+            instances = 0
+            for site in sites:
+                instances += peptide.count(site)
+            if instances:
+                for atom, num in ModificationFormulae[submod].items():
+                    modFormula[atom] += num * instances
         elif mod in ModificationFormulae:
             # Mod as plain mod name.
-            for aa, num in ModificationFormulae[mod].items():
-                modFormula[aa] += num
+            for atom, num in ModificationFormulae[mod].items():
+                modFormula[atom] += num
         elif formula_form.match(mod):
             # Mod as written-out chemical formula.
             moddict = parse_chemical_formula(mod)
-            for aa, num in moddict:
-                modFormula[aa] += num
+            for atom, num in moddict:
+                modFormula[atom] += num
         elif isinstance(mod, dict):
             # Mod as chemical formula dict.
-            for aa, num in mod:
-                modFormula[aa] += num
+            for atom, num in mod:
+                modFormula[atom] += num
         elif isinstance(mod, float):
             # Mod as plain mass
             specialMass += mod
@@ -908,8 +886,17 @@ def peptide_mass(peptide, modifications = None):
     return mass
     
     
-    
-    
+mw = peptide_mass # Legacy.
+
+def peptide_mz(peptide, mods, charge):
+    mass = peptide_mass(peptide, mods)
+    return ((mass + (protonMass * charge)) / charge)   
+
+mz = peptide_mz # Legacy.
+
+
+
+
 
 def _placeCharge(ion, chg): # Assume single-charge to start.
     mass = ion - protonMass
@@ -999,7 +986,6 @@ def fragment(peptide, mods = [], charges = [1],
     
     # Replicate sequences for multiply-charged states.
     for chg in charges:
-        assert isinstance(chg, int) or (isinstance(chg, float) and chg == int(chg))
         chg = int(chg)
         
         if chg == 1:
@@ -1210,61 +1196,57 @@ def legacy_mw(peptide):
 
 
 
-mascotVarModPattern = re.compile(r'[A-Z][0-9]{,3}: .*')
-mascotFixModPattern = re.compile(r'.* \(.*\)')
+#mascotVarModPattern = re.compile(r'[A-Z][0-9]{,3}: .*')
+#mascotFixModPattern = re.compile(r'.* \(.*\)')
 
-def mw(peptide, mods = []):        
-    pepmass = sum([AminoAcidMasses[x][0] for x in peptide])
+#def mw(peptide, mods = []):        
+    #pepmass = sum([AminoAcidMasses[x][0] for x in peptide])
     
     
-    if isinstance(mods, basestring):
-        mods = mods.split('; ')
+    #if isinstance(mods, basestring):
+        #mods = mods.split('; ')
         
-    modmass = 0
-    for mod in mods:
-        if not mod:
-            continue
-        elif isinstance(mod, float):
-            # Assumed to be present.
-            modmass += mod
-        elif mascotVarModPattern.match(mod):
-            # Given var mods are assumed to be present.
-            modstr = mod.split(' ')[1]
-            #modmass += mod_masses.get(modstr, float(modstr))
-            try:
-                modmass += mod_masses[modstr]
-            except KeyError:
-                modmass += float(modstr)
-        elif mascotFixModPattern.match(mod):
-            site = mod.split('(')[1].split(')')[0]
-            modstr = mod.split(' ')[0]
-            if site in peptide:
-                try:
-                    modmass += mod_masses[modstr] * peptide.count(site)
-                except KeyError:
-                    modmass += float(modstr) * peptide.count(site)
-            elif site in ['N-term', 'C-term']:
-                try:
-                    modmass += mod_masses[modstr]
-                except KeyError:
-                    modmass += float(modstr)
-        else:
-            raise ValueError, "Modification string '%s' is not in a valid format." % mod
+    #modmass = 0
+    #for mod in mods:
+        #if not mod:
+            #continue
+        #elif isinstance(mod, float):
+            ## Assumed to be present.
+            #modmass += mod
+        #elif mascotVarModPattern.match(mod):
+            ## Given var mods are assumed to be present.
+            #modstr = mod.split(' ')[1]
+            ##modmass += mod_masses.get(modstr, float(modstr))
+            #try:
+                #modmass += mod_masses[modstr]
+            #except KeyError:
+                #modmass += float(modstr)
+        #elif mascotFixModPattern.match(mod):
+            #site = mod.split('(')[1].split(')')[0]
+            #modstr = mod.split(' ')[0]
+            #if site in peptide:
+                #try:
+                    #modmass += mod_masses[modstr] * peptide.count(site)
+                #except KeyError:
+                    #modmass += float(modstr) * peptide.count(site)
+            #elif site in ['N-term', 'C-term']:
+                #try:
+                    #modmass += mod_masses[modstr]
+                #except KeyError:
+                    #modmass += float(modstr)
+        #else:
+            #raise ValueError, "Modification string '%s' is not in a valid format." % mod
         
-    #endMass = 0
-    ##if not any(['N-term' in x for x in mods]):
-    #endMass += ElementalMasses['H']
-    ##if not any(['C-term' in x for x in mods]):
-    #endMass += ElementalMasses['O'] + ElementalMasses['H']
-    # There's a ~0.004 Da difference in bound H + HO 
-    # to the raw elemental masses, and it matters.  Chemistry!
+    ##endMass = 0
+    ###if not any(['N-term' in x for x in mods]):
+    ##endMass += ElementalMasses['H']
+    ###if not any(['C-term' in x for x in mods]):
+    ##endMass += ElementalMasses['O'] + ElementalMasses['H']
+    ## There's a ~0.004 Da difference in bound H + HO 
+    ## to the raw elemental masses, and it matters.  Chemistry!
     
-    return pepmass + modmass + H2Omass
+    #return pepmass + modmass + H2Omass
 
-
-def mz(peptide, mods, charge):
-    mass = peptide_mass(peptide, mods)
-    return ((mass + (protonMass * charge)) / charge)
 
 
 
@@ -1644,40 +1626,4 @@ def findIonsInData(datafile, targetIons, tolerance = 0.01,
         return output
     else:
         return output, ['Scan Number'] + ["%s Int" % x for x in targetIons] + ['Total Int']
-    
-    
-
-#if __name__ == '__main__':
-    #foo = peptideForMass(500, 3, 0.5)
-    ##bar = peptideForMass_imp(500, 3, 0.5, unique_sets = False)
-    
-    #print "FOO"
-    
-
-#if __name__ == '__main__':
-    #foo = 'PEPT[Label:13C(6)15N(4)]RIDE'
-    #print mz(foo)
-    ##foo = fragment('PEPTIDE', ions = ['b', 'y'])
-    ##bar = updated_fragment('PEPTIDE')
-    ##assert [round(x, 4) for x in foo[0]] == [round(x, 4) for x in bar['b'] + bar['y']]
-    
-    
-    ##print "FOO"
-    
-#if __name__ == '__main__':
-    #from multiplierz.mzReport import reader
-    #fixmods = 'Carbamidomethyl (C),TMT6plex (K),TMT6plex (N-term)'.split(',')
-    #foo = reader(r'\\rc-data1\blaise\ms_data_share\Max\20150430_XFZ-20150330-pST_FDR.xlsx')
-    #i = 0
-    #for psm in foo:
-        #peptide, mods, charge = psm['Peptide Sequence'], psm['Variable Modifications'], psm['Charge']
-        #psmmass, psmmz = psm['Predicted mr'], psm['Experimental mz']
-        
-        #mods = mods.split('; ')
-        
-        #assert abs(psmmass - updated_mw(peptide, mods + fixmods)) < 0.00001 * len(peptide)
-        ##assert abs(psmmz - updated_mz(peptide, mods + fixmods, charge)) < 0.01
-        #i += 1
-        
-    #print "Done!"
     
