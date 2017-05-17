@@ -1,7 +1,7 @@
 from multiplierz.mzTools.featureDetector import detectFeatures, Feature
 from multiplierz.mzAPI import mzFile
 from multiplierz.mzReport import reader, writer, mzSpreadsheet
-from multiplierz import myData
+from multiplierz import myData, vprint
 from collections import defaultdict
 import cPickle as pickle
 import matplotlib.pyplot as pyt
@@ -58,8 +58,6 @@ heavyR = None
 heavyK = None
 mediumR = None
 mediumK = None
-
-
 
 
 def unzip(thing, default = 2): 
@@ -125,7 +123,9 @@ def findDoubles(data):
         sequence = psm['Peptide Sequence']
         mods = unsilacMods(psm['Variable Modifications'])
         
-        pepMods[sequence, mods, charge].add(psm['Spectrum Description'])
+        # Only peptides that can be SILAC labelled (have K or R) are included in the analysis.
+        if 'K' in sequence or 'R' in sequence:
+            pepMods[sequence, mods, charge].add(psm['Spectrum Description'])
 
     doubles = []
     for cosilacSpecDescs in pepMods.values():
@@ -137,11 +137,14 @@ def findDoubles(data):
         assert len(lights) + len(heavies) == len(cosilacPSMs)
         
         # Filtering irrelevant label mods; essentially for testing with medium-as-
-        possiblelabels = ['Label:13C(6)15N(2)', 'Label:13C(6)15N(4)',
-                          'Label:2H(4)', 'Label:13C(6)']
+
         lights = [x for x in lights if 
-                  not any([label in x['Variable Modifications'] for label in possiblelabels])]
+                  not any([label in x['Variable Modifications'] for label in allTags])]
         
+        # Incompletely labelled peptides are not counted in the analysis.
+        heavies = [x for x in heavies if
+                   len([m for m in x['Variable Modifications'].split(';') if any([p in m for p in allTags])])
+                   == x['Peptide Sequence'].count('K') + x['Peptide Sequence'].count('R')]
         
         doubles.append(([psm['Spectrum Description'] for psm in lights],
                         [psm['Spectrum Description'] for psm in heavies]))
@@ -176,7 +179,9 @@ def findTriples(data):
         sequence = psm['Peptide Sequence']
         mods = unsilacMods(psm['Variable Modifications'])
         
-        pepMods[sequence, mods, charge].add(psm['Spectrum Description'])
+        # Filtering out unlabelable peptides.
+        if 'K' in sequence or 'R' in sequence:
+            pepMods[sequence, mods, charge].add(psm['Spectrum Description'])
         
     triples = []
     for cosilacSpecDescs in pepMods.values():
@@ -197,6 +202,14 @@ def findTriples(data):
             
             if (medRMods or medKMods) and (heavyKMods or heavyRMods):
                 raise Exception
+            
+            # Filtering out incompletely labelled peptides.
+            seq = psm['Peptide Sequence']
+            if (medRMods and len(medRMods) != seq.count('R') or
+                medKMods and len(medKMods) != seq.count('K') or
+                heavyRMods and len(heavyRMods) != seq.count('R') or
+                heavyKMods and len(heavyKMods) != seq.count('K')):
+                continue
             
             if medRMods or medKMods: mediums.append(psm)
             elif heavyKMods or heavyRMods: heavies.append(psm)
@@ -1559,7 +1572,7 @@ def setGlobals(constants):
         global peakFindTolPPM
         peakFindTolPPM = constants['tolerance']
         if peakFindTolPPM < 1:
-            print "\n\n\nWARNING- tolerance value for SILAC analysis should now be in PPM!\n\n\n"
+            print "\n\n\nWARNING- tolerance value for SILAC analysis should be in PPM!\n\n\n"
         XICTol = 0.0008 * peakFindTolPPM # "Typical" Da tolernace for PPM.
         
         
@@ -1721,9 +1734,18 @@ def SILAC2Plex(datafiles, resultfiles, heavyTags, **constants):
     global heavyR, heavyK, allTags
     global heavyShifts
     
-    heavyK, heavyR = heavyTags
-    allTags = [heavyR, heavyK]
+    if isinstance(datafiles, basestring):
+        datafiles = [datafiles]
+    if isinstance(resultfiles, basestring):
+        resultfiles = [resultfiles]
     
+    if isinstance(heavyTags, list):
+        heavyK, heavyR = heavyTags
+    elif isinstance(heavyTags, dict):
+        assert set(heavyTags.keys()) == set(['K', 'R']), 'Only K and R labelling supported.'
+        heavyK = heavyTags['K']
+        heavyR = heavyTags['R']
+    allTags = [heavyR, heavyK]
     heavyShifts = {'K' : unimod.get_mod_delta(heavyK),
                    'R' : unimod.get_mod_delta(heavyR)}     
     
@@ -1772,8 +1794,11 @@ def SILAC2Plex(datafiles, resultfiles, heavyTags, **constants):
                 assert len(datafiles) == 1
                 datafile = datafiles[0]
             else:
+                # Will fail if datafile base name and PSM file base name don't match.
+                # Used to use 'in' instead of equality, but this lead to problems
+                # for, e.g., 'some_fractionated_run_1' vs 'some_fractionated_run_12'.
                 datafile = [x for x in datafiles if
-                            os.path.basename(partialResultFile).split('.')[0] in x][0]            
+                            os.path.basename(partialResultFile).split('.')[0] == os.path.basename(x).split('.')[0]][0] 
                 
             resultToData[partialResultFile] = datafile
         combinedResults += psms
@@ -1802,7 +1827,7 @@ def SILAC2Plex(datafiles, resultfiles, heavyTags, **constants):
             resultIndex[desc] = psm
         
         taggedPSMs = findDoublesAdapter(resultIndex)
-        print "Got %s doubles." % len(taggedPSMs)
+        vprint("Got %s doubles." % len(taggedPSMs))
         
         ratios = getDoubleRatios(data, resultIndex, featureMemo_byfile[datafilebase],
                                  ms2toms1_byfile[datafilebase], taggedPSMs)
@@ -1825,8 +1850,21 @@ def SILAC3Plex(datafiles, resultfiles, mediumTags, heavyTags, **constants):
     global heavyR, heavyK, mediumR, mediumK, allTags
     global mediumShifts, heavyShifts
     
-    heavyK, heavyR  = heavyTags
-    mediumK, mediumR = mediumTags
+    if isinstance(datafiles, basestring):
+        datafiles = [datafiles]
+    if isinstance(resultfiles, basestring):
+        resultfiles = [resultfiles]    
+    
+    if isinstance(heavyTags, list):
+        heavyK, heavyR = heavyTags
+        mediumK, mediumR = mediumTags
+    elif isinstance(heavyTags, dict):
+        assert set(heavyTags.keys()) == set(['K', 'R']), 'Only K and R labelling supported.'
+        assert set(mediumTags.keys()) == set(['K', 'R']), 'Only K and R labelling supported.'
+        heavyK = heavyTags['K']
+        heavyR = heavyTags['R']
+        mediumK = mediumTags['K']
+        mediumR = mediumTags['R']
     allTags = [heavyR, heavyK, mediumR, mediumK]
     
     mediumShifts = {'K' : unimod.get_mod_delta(mediumK),
@@ -1890,7 +1928,7 @@ def SILAC3Plex(datafiles, resultfiles, mediumTags, heavyTags, **constants):
             resultIndex[desc] = psm
         
         taggedPSMs = findTriplesAdapter(resultIndex)
-        print "Got %s triples." % len(taggedPSMs)
+        vprint("Got %s triples." % len(taggedPSMs))
         
         ratios = getTripleRatios(data, resultIndex, featureMemo_byfile[datafilebase],
                                  ms2toms1_byfile[datafilebase], taggedPSMs)
