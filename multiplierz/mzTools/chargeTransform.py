@@ -1600,28 +1600,28 @@ def chargeTransform(inputFile,
     process on the zero-charge spectrum.  Enter 0 or None for no smoothing.
     """
     
-    ouputFile = os.path.abspath(outputFile)
+    outputFile = os.path.abspath(outputFile)
     
     assert not (segmentMode and (not outputFile)), "Cannot return segment-mode analysis as a Figure object!"
     
     if not segmentMode:
         spectrum = findESIPeaks(inputFile)
         if outputFile:
-            chargeDeconvolution(spectrum, outputFile, (mzRangeStart, mzRangeEnd), (massRangeStart, massRangeEnd),
-                                speciesCount, removalArea, minimumPeaks, peakIterations,
-                                zcLabelCount, zoomLabelCount, (recalSlope, recalIntercept),
-                                smoothWidth)
+            return chargeDeconvolution(spectrum, outputFile, (mzRangeStart, mzRangeEnd), (massRangeStart, massRangeEnd),
+                                       speciesCount, removalArea, minimumPeaks, peakIterations,
+                                       zcLabelCount, zoomLabelCount, (recalSlope, recalIntercept),
+                                       smoothWidth)
         else:
-            chargeDeconvolution(spectrum, None, (mzRangeStart, mzRangeEnd), (massRangeStart, massRangeEnd),
-                                speciesCount, removalArea, minimumPeaks, peakIterations,
-                                zcLabelCount, zoomLabelCount, (recalSlope, recalIntercept),
-                                smoothWidth,
-                                returnFigure = True)            
+            return chargeDeconvolution(spectrum, None, (mzRangeStart, mzRangeEnd), (massRangeStart, massRangeEnd),
+                                       speciesCount, removalArea, minimumPeaks, peakIterations,
+                                       zcLabelCount, zoomLabelCount, (recalSlope, recalIntercept),
+                                       smoothWidth,
+                                       returnFigure = True)            
     else:
-        chargeDecWholeRunMode(inputFile, outputFile, (mzRangeStart, mzRangeEnd), (massRangeStart, massRangeEnd),
-                              speciesCount, removalArea, minimumPeaks, peakIterations,
-                              segmentTime, segmentStart, consolidate,
-                              zcLabelCount, zoomLabelCount, (recalSlope, recalIntercept))
+        return chargeDecWholeRunMode(inputFile, outputFile, (mzRangeStart, mzRangeEnd), (massRangeStart, massRangeEnd),
+                                     speciesCount, removalArea, minimumPeaks, peakIterations,
+                                     segmentTime, segmentStart, consolidate,
+                                     zcLabelCount, zoomLabelCount, (recalSlope, recalIntercept))
     
         
  
