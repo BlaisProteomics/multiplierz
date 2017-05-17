@@ -4,25 +4,12 @@ import re
 __all__ = ['isotopicDistribution', 'chartDistribution']
 
 
-#iso = {"H":[99.9885, 0.0184],
-       ##"C":[12.0, 13.003355, 14.003242],
-       ##"N":[14.003074, 15.000109],
-       ##"O":[15.994915, 16.999132, 17.999160],
-       #"C":[98.93, 1.07],
-       #"N":[99.632, 0.0368],
-       #"O":[99.757, 0.038, 0.205],
-       #"P":[100.0],
-       #"S":[94.93, 0.76, 4.29, 0.02]}
-       
 iso = {"H":[99.99, 0.015],
        "C":[98.90, 1.10],
        "N":[99.63, 0.37],
        "O":[99.76, 0.038, 0.2],
        "P":[100.0],
        "S":[95.02, 0.75, 4.21]}
-# Currently I suspect this will potentially produce incorrect results
-# if given an element with non-continguous isotopic numbers.
-
 
 def isotopicDistribution(recipe, precision = 0.000001):
     """
@@ -121,10 +108,6 @@ def renderFormula(inputString):
 
 
 
-
-
-
-
 def chartDistribution(distribution, outputfile = None):
     """
     Convenience function for displaying a matplotlib chart of an isotopic distribution
@@ -146,32 +129,28 @@ def chartDistribution(distribution, outputfile = None):
     
     if outputfile:
         pyt.savefig(outputfile)
-            
-#if __name__ == '__main__':
-    ##foo = isotopicDistribution({"C":1185, "H":1850, "O":339, "S":18})
-    ##foo = isotopicDistribution({"C":8004, "H":8010})
-    #foo = isotopicDistribution({"C":10, "H":10, "N":10, "O":10, "P":10, "S":10})
-    #print foo
-    #chartDistribution(foo)
-    ##import matplotlib.pyplot as pyt
-    ##from matplotlib.pyplot import bar
-    ##bar(range(0, len(foo)), foo)
-    ##pyt.show()
-                    
-if __name__ == '__main__':
-    foo = [80.06875648238584,
-           100.0,
-           73.99506363375666,
-           40.39292113500972,
-           17.835552983896687,
-           6.684603116292037,
-           2.1920398478975667,
-           0.642126618887493,
-           0.170600369170067,
-           0.04158236528654822,
-           0.009378521262736552,
-           0.0019703240698694053,
-           0.00038009052429008165,
-           5.7813824351264385e-05,
-           7.31156339508015e-06]    
-    chartDistribution(foo, outputfile = r'\\rc-data1.dfci.harvard.edu\blaise\martolab\Marto Lab Manuscripts\mzDesktop_2015\Figures\Figure-IsoDist\distribution.svg')
+
+
+def forPeptide(peptide_string):
+    formula = renderFormula(peptide_string)
+    return isotopicDistribution(formula)
+
+def forFormula(formula_string):
+    formdict = {}
+    i = 0
+    while i < len(formula_string):
+        x = formula_string[i]
+        if x.isalpha():
+            try:
+                y = formula_string[i+1]
+                if y.isdigit():
+                    formdict[x] = int(y)
+                    i += 1
+                else:
+                    formdict[x] = 1                    
+            except IndexError:
+                formdict[x] = 1
+            i += 1
+        else:
+            raise NotImplementedError, "Unable to parse chemical formula %s" % formula_string      
+    return isotopicDistribution(formdict)
