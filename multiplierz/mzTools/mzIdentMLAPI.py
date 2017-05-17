@@ -55,9 +55,9 @@ def renderModificationString(modList):
     for pos, name, res in modList:
         if res == None:
             if (pos == '0') or not pos:
-                posStr = "N: "
+                posStr = "N-Term: "
             else:
-                posStr = "C: "
+                posStr = "C-Term: "
         else:
             posStr = res + pos + ": "
 
@@ -70,13 +70,10 @@ class mzIdentML(object):
     def __init__(self, filename):
         self.filename = filename
         self.mzid = open(filename, "r")
-        print "Loading mzIdentML file.  This may take some time..."
         self.tree = xml.parse(self.mzid)
         self.root = self.tree.getroot()
-        print "mzIdentML loaded."
 
-        assert "mzIdentML" in self.root.tag, "This isn't mzIdentML!"
-        #assert self.root.get("version") == "1.1.0", "Only mzIdentML v.1.1.0 is currently supported!"        
+        assert "mzIdentML" in self.root.tag, "%s does not appear to be a valid mzIdentML file."
         if self.root.get("version") != "1.1.0":
             print ("Multiplierz mzIdentML reader was written against the specification "
                    "for mzIdentML version 1.1.0; this file is version %s, so there may "
@@ -84,7 +81,7 @@ class mzIdentML(object):
 
         self.pfx = self.root.tag[:-9] # Take out "mzIdentML"        
 
-        print "Indexing file..." # Really this could all be done on an as-needed basis.
+        #print "Indexing file..." # Really this could all be done on an as-needed basis.
         self.parentMap = dict(sum([[(c.get("id"),p.get("id")) for c in p if c.get("id") and p.get("id")]
                                    for p in ch(self.tree.getiterator(self.pfx + "ProteinAmbiguityGroup"),
                                                self.tree.getiterator(self.pfx + "SpectrumIdentificationResult"))], []))
@@ -116,7 +113,7 @@ class mzIdentML(object):
         fileElements = self.root.getiterator(self.pfx + "SpectraData")
         #self.fileLookup = {data.get("id"):data for data in fileElements}
         self.fileLookup = dict([(data.get("id"), data) for data in fileElements])
-        print "Indexing complete."
+        #print "Indexing complete."
 
         self.dataFileScans = {}
         self.filePointers = {}
@@ -191,58 +188,80 @@ class mzIdentML(object):
         resultEl = self.spectrumLookup[self.parentMap[spectrumId]]
         dataEl = self.fileLookup[resultEl.get("spectraData_ref")]
 
-
-        # All peptide data will be the same in all evidence elements?
-        evidenceRef = spectEl.find(self.pfx + "PeptideEvidenceRef")
-        pepEvidence = self.evidenceLookup[evidenceRef.get("peptideEvidence_ref")]
-
-        pepInfo = self.peptideInfo(pepEvidence.get("peptide_ref"))
-
-        accessions = []
-        scores = []
-        for evidenceRef in spectEl.findall(self.pfx + "PeptideEvidenceRef"):
-            evidence = self.evidenceLookup[evidenceRef.get("peptideEvidence_ref")]
-            dbSeq = self.dbLookup[evidence.get("dBSequence_ref")]
-            accessions.append(dbSeq.get("accession"))
-
-            try:
-                cvparams = self.giveCVs(evidence)
-                score = [x['value'] for x in cvparams if x['name'] == 'Mascot:score'][0]
-                scores.append(score)
-            except IndexError:
-                pass
-        accessions = "; ".join(accessions)
-        scores = "; ".join(scores)
-
-        #pepInfo = evidenceInfo(pepEvidence)
+        spectCVs = self.giveCVs(spectEl)
+        # Annoying that these fields are Mascot specific.
+        spectrum_score = spectCVs['Mascot:score']
+        spectrum_expect = spectCVs['Mascot:expectation value']
 
         resultCVs = self.giveCVs(resultEl)
         try:
             spectDesc = resultCVs["spectrum title"]
         except KeyError:
             spectDesc = resultEl.get("spectrumID")
-        try:
-            retentionTime = float(resultCVs["MS:1001114"]) / 60.0
-        except KeyError:
-            retentionTime = None
 
-        spectrumInfo = {"Calculated mz" : spectEl.get("calculatedMassToCharge"),
-                        "Calculated PI" : spectEl.get("calculatedPI"),
-                        "Charge" : spectEl.get("chargeState"),
-                        "Experimental mz" : spectEl.get("experimentalMassToCharge"),
-                        "Passed Threshold" : spectEl.get("passThreshold"),
-                        "Rank" : spectEl.get("rank"),
-                        "Spectrum Name" : spectEl.get("name"),
-                        "Spectrum ID" : spectEl.get("id"),
-                        "Accession Number" : accessions,
-                        "Spectrum Description" : spectDesc,
-                        "MS2 Time" : retentionTime,
-                        "File" : dataEl.get("location"),
-                        "Protein Score" : scores
+
+        spectrum_info = {"Calculated mz" : float(spectEl.get("calculatedMassToCharge")),
+                         #"Calculated PI" : spectEl.get("calculatedPI"),
+                         "Charge" : int(spectEl.get("chargeState")),
+                         "Experimental mz" : float(spectEl.get("experimentalMassToCharge")),
+                         "Passed Threshold" : spectEl.get("passThreshold") == 'true',
+                         "Rank" : int(spectEl.get("rank")),
+                         #"Spectrum Name" : spectEl.get("name"),
+                         "Spectrum ID" : spectEl.get("id"),
+                         "Spectrum Description" : spectDesc,
+                         #"MS2 Time" : retentionTime,
+                         "File" : dataEl.get("location").replace(r'file:///', ''),
                         }
-        spectrumInfo.update(pepInfo)
+        # How is this not a function of the peptide assignment?
+        spectrum_info['Delta'] = (float(spectrum_info['Experimental mz']) -
+                                  float(spectrum_info['Calculated mz']))
+        #spectrumInfo.update(pepInfo)
+        ## All peptide data will be the same in all evidence elements?
+        ## No, this is designed to accomodate multiple peptide matches!
+        #evidenceRef = spectEl.find(self.pfx + "PeptideEvidenceRef")
+        #pepEvidence = self.evidenceLookup[evidenceRef.get("peptideEvidence_ref")]
 
-        return spectrumInfo
+        #pepInfo = self.peptideInfo(pepEvidence.get("peptide_ref"))
+
+        #accessions = []
+        #scores = []
+        #for evidenceRef in spectEl.findall(self.pfx + "PeptideEvidenceRef"):
+            #evidence = self.evidenceLookup[evidenceRef.get("peptideEvidence_ref")]
+            #dbSeq = self.dbLookup[evidence.get("dBSequence_ref")]
+            #accessions.append(dbSeq.get("accession"))
+
+            #try:
+                #cvparams = self.giveCVs(evidence)
+                #score = [x['value'] for x in cvparams if x['name'] == 'Mascot:score'][0]
+                #scores.append(score)
+            #except IndexError:
+                #pass
+        #accessions = "; ".join(accessions)
+        #scores = "; ".join(scores)
+
+        psms = []
+        for evidenceRef in spectEl.findall(self.pfx + "PeptideEvidenceRef"):
+            evidence = self.evidenceLookup[evidenceRef.get("peptideEvidence_ref")]
+            dbSeq = self.dbLookup[evidence.get("dBSequence_ref")]
+            accessions = dbSeq.get("accession")
+            pepInfo = self.peptideInfo(evidence.get("peptide_ref"))
+            
+            try:
+                cvparams = self.giveCVs(evidence)
+                score = float([x['value'] for x in cvparams if x['name'] == 'Mascot:score'][0])
+                expect = float([x['value'] for x in cvparams if x['name'] == 'Mascot:expectation value'][0])
+            except IndexError:
+                score = spectrum_score
+                expect = spectrum_expect
+            
+            psm = spectrum_info.copy()
+            psm.update(pepInfo)
+            psm['Accession Number'] = accessions
+            psm['Peptide Score'] = float(score)
+            psm['Expectation Value'] = float(expect)
+            psms.append(psm)
+            
+        return psms
 
 
     def evidenceInfo(self, evidenceId):
@@ -278,7 +297,7 @@ class mzIdentML(object):
         peptideInfo = {"Peptide Sequence" : pepEl.find(self.pfx + "PeptideSequence").text,
                        "Variable Modifications" : renderModificationString(modificationData),
                        "Peptide ID" : pepEl.get("id"),
-                       "Peptide Name" : pepEl.get("name")
+                       #"Peptide Name" : pepEl.get("name")
                        }
 
         return peptideInfo
@@ -325,9 +344,10 @@ class mzIdentML(object):
             items = spectrumResult.findall(self.pfx + "SpectrumIdentificationItem")
             topRank = [s for s in items if int(s.get("rank")) == 1]
             for spectrumItem in topRank:
-                info = self.spectrumInfo(spectrumItem.get("id"))
-                info['Delta'] = str(float(info['Experimental mz']) - float(info['Calculated mz']))
-                spectraData.append(info)
+                #info = self.spectrumInfo(spectrumItem.get("id"))
+                #info['Delta'] = str(float(info['Experimental mz']) - float(info['Calculated mz']))
+                #spectraData.append(info)
+                spectraData += self.spectrumInfo(spectrumItem.get("id"))
 
         return spectraData
 
@@ -560,28 +580,6 @@ class mzIdentML(object):
 
     def close(self):
         self.mzid.close()
-
-
-
-if __name__ == '__main__':
-    os.chdir("c:\Users\Max\Desktop")
-    #mzid = mzIdentML("Projects\F008292.mzid")
-    mzid = mzIdentML("C:\Users\Max\.multiplierz\F002032.mzid")
-    #mzid.writeIonAnnotations("Projects/triplexSILAC/20140117_XFZ-20131211_9-230.raw")
-
-    #foo = mzid.fullReport()
-    foo = mzid.peptideSummary()
-    #bar = mzid.proteinSummary()
-
-    #import multiplierz.mzReport.mzDB as mzd
-    #writer = mzd.SQLiteWriter("testmzd.mzd", columns = foo[0].keys())
-
-    #for thing in foo:
-        #strthing = {str(k):str(v) for (k, v) in thing.items()}
-        #writer.write(strthing)
-    #writer.close()
-
-    print "Done!"
 
 
 
