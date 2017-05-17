@@ -236,15 +236,16 @@ def retrieveMascotReport(mascot_ids = None,
         mascot_reporter = report.MascotReport("No server",
                                               mascot_version)
 
+    if chosen_folder:
+        assert os.path.isabs(chosen_folder), 'Output directory must be an absolute path.'
+    else:
+        chosen_folder = myData
+
     #Check Login
     if not login_name and password:
         mascot_reporter.mascot.logged_in = True
     else:
-        if mascot_ids:
-            check_login = mascot_reporter.login_mascot()
-            if check_login == 'error':
-                raise IOError, ("Could not log in to Mascot; check your Mascot settings "
-                                "and username/password, if applicable.")
+        assert mascot_reporter.mascot.logged_in, "Could not login to Mascot server."
     
     # Currently always processing requests sequentially/separately;
     # get_reports for more than one report at once generates a file
@@ -263,8 +264,8 @@ def retrieveMascotReport(mascot_ids = None,
                                                     show_query_data = show_query_data,
                                                     show_same_set = show_same_set,
                                                     show_sub_set = show_sub_set,
-                                                    protein_report = protein_report,
-                                                    quant = quant,
+                                                    protein_report = False,
+                                                    #quant = quant,
                                                     ext = ext,
                                                     mascotIDInResultName = True
                                                     )

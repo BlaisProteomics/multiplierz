@@ -683,11 +683,10 @@ class MascotReport:
                     dates = None,
                     outputfile = None,
                     ext = None,
+                    chosen_folder = '',
                     **report_kwargs):
         
-        if outputfile and ext:
-            if not outputfile.lower().endswith(ext):
-                outputfile += '.' + ext
+
         
         report_columns = mzReport.default_columns
         if float(self.mascot.version) >= 2.3 and 'Protein Database' not in report_columns:
@@ -706,11 +705,28 @@ class MascotReport:
                                                      **report_kwargs)
             datafilename = header[7][1] or mascot_id
             reports.append((mascot_id, datafilename, header, psms))
-        
-        if not outputfile:
-            outputfile = '.'.join([reports[0][1], ext.strip('.')])
             
-        if len(mascot_ids) == 1:
+        if outputfile and ext:
+            if not outputfile.lower().endswith(ext):
+                outputfile += '.' + ext        
+        elif ext and not outputfile:
+            outputfile = '.'.join([reports[0][1], ext.strip('.')])
+        else:
+            if not ext:
+                ext = 'xlsx'
+            outputfile = '_'.join(mascot_ids) + '.' + ext.strip('.')
+          
+        assert outputfile 
+        if chosen_folder and not os.path.isabs(outputfile):
+            outputfile = os.path.join(chosen_folder, outputfile)
+        
+        if 'mzid' in ext:
+            assert len(mascot_ids) == 1, ("Combined result file not supported "
+                                          "for mzIdentML files.")
+            self.mascot.download_mzid(mascot_id,
+                                      save_file = outputfile,
+                                      date = date)
+        elif len(mascot_ids) == 1:
             mascot_id, datafilename, header, psms = reports[0]
             if not outputfile:
                 outputfile = datafilename + '.' + ext
@@ -766,9 +782,6 @@ def runPercolator(datfile, mascotPercolatorPath):
     """
     Going by the known-successful-run:
 
-    C:\Users\Max\Downloads\MascotPercolator.2.02\MascotPercolator>java -cp MascotPercolator.jar cli.MascotPercolat
-    or -target C:\Users\Max\.multiplierz\F011336.dat -decoy C:\Users\Max\.multiplierz\F011336.dat -newDat -out C:\
-    Users\Max\.multiplierz\F011336Analysis
     """
 
     assert os.path.exists(mascotPercolatorPath), "Cannot find Mascot Percolator at %s" % mascotPercolatorPath
