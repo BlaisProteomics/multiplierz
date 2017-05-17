@@ -79,7 +79,7 @@ fixedModTypesForward = {'A': 'add_A_alanine',
 fixedModTypesBackward = dict([(x,y) for y, x in fixedModTypesForward.items()])
 
 
-
+# Does not include varmods args.
 defaultParameters = {'activation_method': 'ALL',
                      'add_A_alanine': '0.0000',
                      'add_B_user_amino_acid': '0.0000',
@@ -163,16 +163,7 @@ defaultParameters = {'activation_method': 'ALL',
                      'use_X_ions': '0',
                      'use_Y_ions': '1',
                      'use_Z_ions': '0',
-                     'use_sparse_matrix': '1',
-                     'variable_mod01': '15.9949 M 0 3 -1 0 0',
-                     'variable_mod02': '0.0 X 0 3 -1 0 0',
-                     'variable_mod03': '0.0 X 0 3 -1 0 0',
-                     'variable_mod04': '0.0 X 0 3 -1 0 0',
-                     'variable_mod05': '0.0 X 0 3 -1 0 0',
-                     'variable_mod06': '0.0 X 0 3 -1 0 0',
-                     'variable_mod07': '0.0 X 0 3 -1 0 0',
-                     'variable_mod08': '0.0 X 0 3 -1 0 0',
-                     'variable_mod09': '0.0 X 0 3 -1 0 0'}
+                     'use_sparse_matrix': '1'}
 
 # This needs '[COMET ENZYME INFO]' placed in front of it in the param file.
 defaultEnzymes = {'0': {'active': 0, 'name': 'No_enzyme', 'p': '-', 'specificity': '-'},
@@ -207,40 +198,24 @@ modLookup.update({'iTRAQ8plex':{'add_Nterm_peptide':'304.20536', 'add_K_lysine':
                   'iTRAQ4plex':{'add_Nterm_peptide':'144.10206245', 'add_K_lysine':'144.10206245'},
                   'Carbamidomethyl(C)': {'add_C_cysteine':'57.021464'},
                   'Methylthio(C)': {'add_C_cysteine':'45.98772'}})
-
-
-
-
-toStandardPSMConversions = {'assumed_charge':'Charge',
-                            'calc_neutral_pep_mass':'Predicted mr',
-                            #'deltacn':'Delta',
-                            'hit_rank':'Peptide Rank',
-                            'index':'Query',
-                            'massdiff':'Delta',
-                            'modified_peptide':'Variable Modifications',
-                            'peptide':'Peptide Sequence',
-                            'peptide_next_aa':'Following Residue',
-                            'peptide_prev_aa':'Preceding Residue',
-                            'precursor_neutral_mass':'Experimental mass', # Not 'Experimental mz'.
+                            
+toStandardPSMConversions = {'scan':'Query',
+                            'num':'#',
+                            'charge':'Charge',
+                            'exp_neutral_mass':'Predicted mz',
+                            'calc_neutral_mass':'Predicted mr',
+                            'e-value':'Expectation Value',
+                            'xcorr':'Cross-Correlation',
+                            'delta_cn':'Delta CN',
+                            'sp_score':'SP Score',
+                            'ions_matched':'Ions Matched',
+                            'ions_total':'Total Predicted Ions',
+                            'plain_peptide':'Peptide Sequence',
+                            'peptide_modifications':'Variable Modifications',
+                            'prev_aa':'Preceeding Residue',
+                            'next_aa':'Following Residue',
                             'protein':'Accession Number',
-                            'spectrum':'Spectrum Description',
-                            # Thats all the easily Mascot-equivalents.  Here's the rest:
-                            'deltacn':'DeltaCN',
-                            'deltacnstar':'DeltaCN*',
-                            'end_scan':'End Scan',
-                            'expect':'Expect',
-                            'num_matched_ions':'Matched Ions #',
-                            'num_matched_peptides':'Matched Peptides #',
-                            'num_missed_cleavages':'Missed Cleavages',
-                            'num_tol_term':'num_tol_term', # I DON'T KNOW.
-                            'num_tot_proteins':'Total Proteins #',
-                            'retention_time_sec':'Retention Time (sec)',
-                            'sprank':'SP Rank',
-                            'spscore':'SP Score',
-                            'start_scan':'Start Scan',
-                            'tot_num_ions':'Total Ion #',
-                            'xcorr':'Cross-Correlation'
-                            }
+                            'duplicate_protein_count':'Protein Count'}
 
 def convertCometOutputToMascot(cometcsv):
     from multiplierz.mzReport import reader, writer
@@ -349,7 +324,7 @@ def mgf_to_ms2(mgfFile, outputfile = None):
     sampleTitle = mgf.values()[0]['title']
     if 'MultiplierzMGF' in sampleTitle:
         titleMode = 'standard'
-    elif sampleTitle.split('.')[1] == sampleTitle.split('.')[2] and '|' in sampleTitle:
+    elif sampleTitle.count('.') > 2 and sampleTitle.split('.')[1] == sampleTitle.split('.')[2] and '|' in sampleTitle:
         titleMode = 'classic' # From that old, barbaric format.
     else:
         titleMode = 'mysterious!'
@@ -377,8 +352,15 @@ def mgf_to_ms2(mgfFile, outputfile = None):
     
         
         
-        
-        
+findmods = re.compile('\\[(\\d+.\\d+)\\]')
+def convertVarmods(psm):
+    peptide = psm['Peptide Sequence']
+    cometvm = psm['Variable Modifications'][2:-2]
+    mods = [(x.start(), x.group(1)) for x in findmods.finditer(cometvm)]
+    assert all([cometvm[i-1].isalpha() for i, _ in mods])
+    modstrs = ['%s%d: %s' % (cometvm[i-1], i, m) for i, m in mods]
+    psm['Variable Modifications'] = '; '.join(modstrs)
+    return psm
         
 def format_report(reportfile, outputfile = None):
     """
@@ -417,6 +399,7 @@ def format_report(reportfile, outputfile = None):
     for line in report:
         values = [tryNum(x.strip()) for x in line.split('\t')]
         row = dict(zip(columns, values))
+        row = convertVarmods(row)
         rows.append(row)
     
     report.close()
@@ -569,7 +552,9 @@ class CometSearch(dict):
                 parfile.write('%s = %s\n' % (field, value))
             
             for num, mod in enumerate(self.varmods, start = 1):
-                parfile.write('variable_mod0%s = %.4f %s %s %s %s %s %s\n' % (num, mod['mass'], mod['residues'],
+                residues = mod['residues'].upper().replace('N-TERM', 'n').replace('C-TERM', 'c')
+                residues = ''.join(x for x in residues if x.isalpha())
+                parfile.write('variable_mod0%s = %.4f %s %s %s %s %s %s\n' % (num, mod['mass'], residues,
                                                                               mod['binary'], mod['max_mods_per_peptide'],
                                                                               mod['term_distance'], mod['N/C-term'],
                                                                               mod['required']))
@@ -584,6 +569,7 @@ class CometSearch(dict):
     def run_search(self, data_file, output_xlsx = True):
         #assert self.enzyme_selection != None, "Must specify enzyme selection (attribute .enzyme_selection)!" 
         
+        self['digest_mass_range'] = '450.0 6000.0' # Remove this if this parameter gets added to the GUI!
         self['output_txtfile'] = '1'
         
         ext = data_file.split('.')[-1]
@@ -591,8 +577,8 @@ class CometSearch(dict):
             from multiplierz.mgf import extract
             data_file = extract(data_file)
         
-        if not data_file.lower().endswith('ms2'):
-            ms2_file = mgf_to_ms2(data_file)
+        #if not data_file.lower().endswith('ms2'):
+            #ms2_file = mgf_to_ms2(data_file)
         
         parfile = os.path.join(myData, 'COMET.par.temp')
         
@@ -601,10 +587,10 @@ class CometSearch(dict):
         self.write(parfile)
         
         try:
-            expectedResultFile = ms2_file[:-3] + 'txt'
+            expectedResultFile = data_file[:-3] + 'txt'
             
             print('Initiating Comet search...')
-            result = call([cometPath, '-P' + parfile, ms2_file])
+            result = call([cometPath, '-P' + parfile, data_file])
             print('Comet search completed with return value %s' % result)    
             assert os.path.exists(expectedResultFile), "Comet failed to produce expected result file."
             
@@ -617,16 +603,10 @@ class CometSearch(dict):
         
         finally:
             os.remove(parfile)
-        
-    
-if __name__ == '__main__':
-    print 'TEST MODE'
-    foo = CometSearch(r'C:\Users\Max\Downloads\comet_binaries_2016012(1)\comet_binaries_2016012\comet.params.new')
-    foo.database_name = r'C:\Users\Max\Desktop\Dev\coverageThings\HUMAN.fasta'
-    result = foo.run_search(r'C:\Users\Max\Desktop\SpectrometerData\2014-07-23-Mito-ISD-SDS.CID_ITMS.mgf')
-    print "FOO"
-    
 
-#if __name__ == '__main__':
-    #foo = r'C:\Users\Max\Desktop\SpectrometerData\2014-07-23-Mito-ISD-SDS.CID_ITMS.pep.csv'
-    #convertCometOutputToMascot(foo)
+
+
+
+if __name__ == '__main__':
+    format_report(r'\\rc-data1\blaise\ms_data_share\Max\112608_HCD_CE_K562_35.RAW.txt',
+                  r'\\rc-data1\blaise\ms_data_share\Max\112608_HCD_CE_K562_35.RAW.testout.xlsx')
