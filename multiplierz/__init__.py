@@ -67,6 +67,17 @@ myTemp = os.path.join(myData, "TEMP")
 SettingsFile = os.path.join(myData, 'settings.txt')
 modFile = os.path.join(myData, 'mods.txt')
 
+verbose_mode = True
+def vprint(thing):
+    """
+    Multiplierz verbosity-sensitive print function, for use 
+    internally.  Prints only if multiplierz.verbose_mode == True.
+    """
+    global verbose_mode # Slightly speeds up lookup, supposedly.
+    if verbose_mode:
+        print thing
+        
+
 
 class legacy_logging(object):
     # The old logging module assumed everything was in the old mz-scripting
@@ -76,7 +87,7 @@ class legacy_logging(object):
         pass
     
     def __call__(self, level = 30, message = 'Foo'):
-        print message
+        vprint(message)
         #self.logger.log(level, str(message))
         
     
