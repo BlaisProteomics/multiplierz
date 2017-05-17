@@ -6,36 +6,16 @@ import re
 from win32com.client import Dispatch
 from pywintypes import com_error
 
-debug = True
-
 def _to_float(x):
     try :
         out = float(x)
     except ValueError :
         out = str(x)
     return out
-
+from multiplierz import vprint
 from multiplierz.mzAPI import mzScan, mzFile as mzAPImzFile
 
-# In multiplierz, we'll use the mzAPI.mzScan class.
-# For stand-alone use of raw.py, uncomment this code
 
-#class mzScan(list):
-    #"""Subclass of list object for custom scan methods
-
-    #The mode can be 'p' or 'c' for profile or centroid respectively
-
-    #"""
-
-    #def __init__(self, s, time, mode='p', mz=0.0, z=0):
-        #list.__init__(self, s)
-        #self.time = time
-        #self.mode = mode
-        #self.mz = mz
-        #self.z = z
-
-    #def peak(self, mz, tolerance):
-        #return max([i for m,i in self if abs(m-mz) <= tolerance] or [0])
 
 class mzFile(mzAPImzFile):
     """msfilereader-based implementation of mzAPI's mzFile class"""
@@ -87,30 +67,22 @@ class mzFile(mzAPImzFile):
 
             retval = self.source.GetFirstSpectrumNumber(byref(first))
             if retval:
-                if debug:
-                    print retval
-                raise IOError, "Couldn't get spectrum number for headers."
+                raise IOError, "Couldn't get spectrum number for headers. %s" % retval
 
             retval = self.source.GetLastSpectrumNumber(byref(last))
             if retval:
-                if debug:
-                    print retval
-                raise IOError, "Couldn't get spectrum number for headers."
+                raise IOError, "Couldn't get spectrum number for headers. %s" % retval
 
             for scan in xrange(first.value, last.value + 1):
                 filter_str = comtypes.automation.BSTR(None)
 
                 retval = self.source.GetFilterForScanNum(scan, byref(filter_str))
                 if retval:
-                    if debug:
-                        print retval
-                    raise IOError, "Couldn't get filter."
+                    raise IOError, "Couldn't get filter. %s" % retval
 
                 retval = self.source.RTFromScanNum(scan, byref(scan_time))
                 if retval:
-                    if debug:
-                        print retval
-                    raise IOError, "Couldn't get retention time for headers."
+                    raise IOError, "Couldn't get retention time for headers. %s" % retval
 
                 data_m = data_re.search(filter_str.value)
                 mode_m = mode_re.search(filter_str.value)
@@ -126,17 +98,13 @@ class mzFile(mzAPImzFile):
                     num_fields = c_long()
                     retval = self.source.GetTrailerExtraLabelsForScanNum(scan, header_fields, comtypes.byref(num_fields))
                     if retval:
-                        if debug:
-                            print retval
-                        raise IOError, "Couldn't get extra labels for scan."
+                        raise IOError, "Couldn't get extra labels for scan. %s" % retval
 
                     if 'Monoisotopic M/Z:' in header_fields.value:
                         mz_value = comtypes.automation.VARIANT()
                         retval = self.source.GetTrailerExtraValueForScanNum(scan, u'Monoisotopic M/Z:', mz_value)
                         if retval:
-                            if debug:
-                                print retval
-                            raise IOError, "Couldn't get extra values for scan."
+                            raise IOError, "Couldn't get extra values for scan. %s" % retval
                         mz = mz_value.value
                     else:
                         mz = float(mz_re.search(filter_str.value).group(1))
@@ -167,7 +135,7 @@ class mzFile(mzAPImzFile):
                 obj.Open("Making sure its really functional.")
             except WindowsError:
                 obj = CreateObject("XRawfile.XRawfile")
-                print "Raw access via XCalibur."
+                vprint("Raw access via XCalibur.")
         except (_ctypes.COMError, AttributeError, WindowsError):
             try:
                 from win32com.client import Dispatch
@@ -183,7 +151,7 @@ class mzFile(mzAPImzFile):
                     GetModule("c:/Program Files/Thermo/MSFileReader/XRawfile2.dll")
                 import comtypes.gen.MSFileReaderLib as msf
                 obj = CreateObject(msf.MSFileReader_XRawfile)
-                print "Raw access via type library."
+                vprint("Raw access via type library.")
         #obj = Dispatch("MSFileReader.XRawfile")
 
         self.source = obj
@@ -192,14 +160,13 @@ class mzFile(mzAPImzFile):
         if retval:
             if int(retval) == 3:
                 raise IOError, "Could not open %s" % data_file
-            if debug :
-                print retval
+            else:
+                raise IOError, "Unspecified error code: %s" % retval
 
         retval = obj.SetCurrentController(c_long(0),c_long(1))
         if retval:
             obj.Close()
-            if debug :
-                print retval
+            raise IOError, "SetCurrentController error: %s" % retval
 
         self._filters = None
         self._headers = None
@@ -263,9 +230,7 @@ class mzFile(mzAPImzFile):
         scantime = c_double()
         retval = self.source.RTFromScanNum(scan,byref(scantime))
         if retval :
-            if debug :
-                print retval
-            raise IOError, "Could not get scan time."
+            raise IOError, "Could not get scan time. %s" % retval
 
         return scantime.value
 
@@ -281,9 +246,7 @@ class mzFile(mzAPImzFile):
         flags = comtypes.automation.VARIANT()
         retval = self.source.GetAverageMassList(start, end, bk,bk,bk,bk, filter ,0,0,0,False,cpw,ms,flags,peaknum)
         if retval :
-            if debug :
-                print retval
-            raise IOError, "Could not get mass list."
+            raise IOError, "Could not get mass list. %s" % retval
         return zip(ms.value[0],ms.value[1])
 
     def scan(self, time, centroid=False, mzScanMode = True):
@@ -316,16 +279,12 @@ class mzFile(mzAPImzFile):
         flags = comtypes.automation.VARIANT()
         retval = self.source.GetMassListFromScanNum(the_scan,None,0,0,0,c_long(centroid),cpw,ms,flags,peaknum)
         if retval :
-            if debug :
-                print retval
-            raise IOError, "Could not get mass list from scan."
+            raise IOError, "Could not get mass list from scan. %s" % retval
 
         z_value = comtypes.automation.VARIANT()
         retval = self.source.GetTrailerExtraValueForScanNum(the_scan, u'Charge State:', z_value)
         if retval:
-            if debug:
-                print retval
-            raise IOError, "Could not get extra values for scan."
+            raise IOError, "Could not get extra values for scan. %s" % retval
         z = z_value.value
         
         if mzScanMode:
@@ -362,16 +321,12 @@ class mzFile(mzAPImzFile):
         flags = comtypes.automation.VARIANT()
         retval = self.source.GetMassListFromScanNum(the_scan,None,0,0,0,True,cpw,ms,flags,peaknum)
         if retval :
-            if debug :
-                print retval
-            raise IOError, "Could not get mass list for centroid."
+            raise IOError, "Could not get mass list for centroid. %s" % retval 
 
         z_value = comtypes.automation.VARIANT()
         retval = self.source.GetTrailerExtraValueForScanNum(the_scan, u'Charge State:', z_value)
         if retval:
-            if debug:
-                print retval
-            raise IOError, "Could not get extra value for scan."
+            raise IOError, "Could not get extra value for scan. %s" % retval
         z = z_value.value
 
         if mzScanMode:
@@ -414,9 +369,7 @@ class mzFile(mzAPImzFile):
 
         retval = self.source.GetChroData(0,0,0,filter,massRange,"",0.0,byref(ftLB),byref(ftUB),0,0,cdata,flags,byref(val_num))
         if retval :
-            if debug :
-                print retval
-            raise IOError, "Could not get chromatogram data."
+            raise IOError, "Could not get chromatogram data. %s" % retval
         
         # Returned a tuple, previously.  Dunno why.
         if cdata.value:
@@ -438,24 +391,18 @@ class mzFile(mzAPImzFile):
 
         retval = self.source.GetStartTime(byref(start))
         if retval :
-            if debug :
-                print retval
-            raise IOError, "Could not get start time."
+            raise IOError, "Could not get start time. %s" % retval
 
         retval = self.source.GetEndTime(byref(stop))
         if retval :
-            if debug :
-                print retval
-            raise IOError, "Could not get end time."
+            raise IOError, "Could not get end time. %s" % retval
         return (start.value,stop.value)
 
     def scanForTime(self,the_time):
         the_scan = c_long()
         retval = self.source.ScanNumFromRT(c_double(the_time),byref(the_scan))
         if retval :
-            if debug :
-                print retval, the_time, self.data_file
-            raise IOError, "Could not get scan from retention time."
+            raise IOError, "Could not get scan from retention time. %s" % (retval, the_time)
         return the_scan.value
 
     def scan_for_time(self, time):
@@ -464,10 +411,8 @@ class mzFile(mzAPImzFile):
     def timeForScan(self,the_scan):
         the_time = c_double()
         retval = self.source.RTFromScanNum(c_long(the_scan),byref(the_time))
-        if retval :
-            if debug :
-                print retval, the_scan, self.data_file
-            raise IOError, "Could not get retention time for scan."
+        if retval:
+            raise IOError, "Could not get retention time for scan. %s" % (retval, the_scan)
         return the_time.value
 
     def time_for_scan(self, scan):
@@ -478,16 +423,12 @@ class mzFile(mzAPImzFile):
         stop = c_long()
 
         retval = self.source.GetFirstSpectrumNumber(byref(start))
-        if retval :
-            if debug :
-                print retval
-            raise IOError, "Could not get first scan number."
+        if retval:
+            raise IOError, "Could not get first scan number. %s" % retval
 
         retval = self.source.GetLastSpectrumNumber(byref(stop))
         if retval :
-            if debug :
-                print retval
-            raise IOError, "Could not get last scan number."
+            raise IOError, "Could not get last scan number. %s" % retval
         return (start.value,stop.value)
 
     def lscan(self,scanNum):
@@ -496,9 +437,7 @@ class mzFile(mzAPImzFile):
         flags = comtypes.automation.VARIANT()
         retval = self.source.GetLabelData(ms,flags,the_scan)
         if retval :
-            if debug :
-                print retval
-            raise IOError, "Could not get label data."
+            raise IOError, "Could not get label data. %s" % retval
         return zip(ms.value[0],ms.value[1],ms.value[4],ms.value[5])
     
     def rscan(self,scanNum):
@@ -508,9 +447,7 @@ class mzFile(mzAPImzFile):
         flags = comtypes.automation.VARIANT()
         retval = self.source.GetLabelData(ms,flags,the_scan)
         if retval :
-            if debug :
-                print retval
-            raise IOError, "Could not get label data."
+            raise IOError, "Could not get label data. %s" % retval
         return zip(ms.value[0],ms.value[1],ms.value[4], ms.value[5], ms.value[2])    #,ms.value[3] - Leave out baseline
 
     def cscan(self,scanNum):
@@ -523,10 +460,8 @@ class mzFile(mzAPImzFile):
         val_num = c_long()
 
         retval = self.source.GetTrailerExtraForScanNum(the_scan,labels,values,val_num)
-        if retval :
-            if debug :
-                print retval
-            raise IOError, "Could not get data for scans."
+        if retval:
+            raise IOError, "Could not get data for scans. %s" % retval
         return dict(zip( map(lambda x: str(x[:-1]), labels.value) , map(_to_float, values.value) ))
 
     def scanInjectionTime(self,scanNum):
@@ -537,9 +472,7 @@ class mzFile(mzAPImzFile):
 
         retval = self.source.GetTrailerExtraForScanNum(the_scan,labels,values,val_num)
         if retval :
-            if debug :
-                print retval
-            raise IOError, "Could not get data for scans."
+            raise IOError, "Could not get data for scans. %s" % retval
         vals = dict(zip( map(lambda x: str(x[:-1]), labels.value) , map(_to_float, values.value) ))
         return vals["Ion Injection Time (ms)"]
 
@@ -555,8 +488,6 @@ class mzFile(mzAPImzFile):
 
         retval = self.source.GetTrailerExtraForScanNum(the_scan,labels,values,val_num)
         if retval :
-            if debug :
-                print retval
-            raise IOError, "Could not get data for scans."
+            raise IOError, "Could not get data for scans. %s" % retval
         vals = dict(zip( map(lambda x: str(x[:-1]), labels.value) , map(_to_float, values.value) ))
         return (vals["Monoisotopic M/Z"],int(vals["Charge State"]))
