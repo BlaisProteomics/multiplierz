@@ -8,7 +8,7 @@ import numpy as np
 import cPickle as pickle
 import re
 from multiplierz.internalAlgorithms import ProximityIndexedSequence, inPPM
-
+from multiplierz import vprint, verbose_mode
 
 from multiplierz.mzTools.featureUtilities import save_feature_database, FeatureInterface
 from multiplierz.internalAlgorithms import peak_pick_PPM
@@ -17,7 +17,7 @@ import multiprocessing
 
 
 
-__all__ = ['detectorRun']
+__all__ = ['feature_analysis', 'detect_features']
 
 # These (and the spectrumDescriptionTo... functions) will be modified when invoked by the GUI.
 signalToNoiseThreshold = 15
@@ -281,7 +281,6 @@ def binByFullFeature(datafile, featureDB, results):
     for feature, results in featureItems.items():
         pep = results[0][0]['Peptide Sequence']
         if not all([x['Peptide Sequence'] == pep for x, s in results]):
-            #print feature
             overFitCount += 1
         
         for result, scans in results:
@@ -309,9 +308,6 @@ def binByFullFeature(datafile, featureDB, results):
         result['feature start time'] = '-'
         result['feature end time'] = '-'
         groupedResults.append(result)
-            
-    #print "Overfitting features: %s" % overFitCount
-    #print "Split PSMs %s | Unsplit PSMs %s" % (matchesToSplits, matchesToUnsplit)
 
     data.close()
     return groupedResults
@@ -438,12 +434,12 @@ def falseCoverTest(datafile, searchResults, features):
 def runSearch(datafile, resultFiles):
     assert datafile.lower().endswith('.raw'), "Only .raw files are currently supported."
   
-    features = detectFeatures(datafile)  
+    features = detect_features(datafile)  
   
 
-def detectorRun(datafile, resultFiles,
-                mzRegex = None, scanRegex = None,
-                tolerance = None, signalNoise = None):
+def feature_analysis(datafile, resultFiles,
+                     tolerance = None,
+                     mzRegex = None, scanRegex = None):
     
     """
     Performs feature-detection analysis on the given .RAW file and PSM
@@ -491,10 +487,10 @@ def detectorRun(datafile, resultFiles,
         assert os.path.exists(resultfile), "%s not found!" % resultfile
     assert datafile.lower().endswith('.raw'), "Only .raw files are currently supported."
     
-    featureFile = detectFeatures(datafile)
+    featureFile = detect_features(datafile, tolerance = tolerance)
     features = FeatureInterface(featureFile)
     
-    
+    outputfiles = []
     if resultFiles:
         print resultFiles
         print "Categorizing search results by file."
@@ -502,7 +498,7 @@ def detectorRun(datafile, resultFiles,
             resultfile = os.path.abspath(resultfile)
             inputResults = mzReport.reader(resultfile)
             outputfile = '.'.join(resultfile.split('.')[:-1] + ['featureDetect', 'xlsx']) 
-        
+            outputfiles.append(outputfile)
             
             
             resultsByFeature = binByFullFeature(datafile, features, inputResults)
@@ -524,8 +520,7 @@ def detectorRun(datafile, resultFiles,
     else:
         print "No PSM data given; skipping annotation step."
         
-    print "Done."
-
+    return featurefile, outputfiles
 
 
 
@@ -551,7 +546,7 @@ def dataReaderProc(datafile, que, scanNumbers):
 
     
     
-def detectFeatures(datafile, **constants):
+def detect_features(datafile, **constants):
     """
     Runs the feature detection algorithm on the target data file (currently,
     only Thermo .RAW is supported.)  Returns the path to the feature data
@@ -607,7 +602,7 @@ def detectFeatures(datafile, **constants):
         peak_pick_params = {}
     
     if os.path.exists(featurefile) and not force:
-        print "Feature data file already exists: %s" % featurefile
+        vprint("Feature data file already exists: %s" % featurefile)
         return featurefile
     
     setGlobals(constants)
@@ -618,7 +613,7 @@ def detectFeatures(datafile, **constants):
     data = mzFile(datafile)
     
     times.append(time.clock())
-    print "Opened data file; getting isotopes..."
+    vprint("Opened data file; getting isotopes...")
 
     scaninfo = [x for x in data.scan_info(0, 99999999) if x[3] == 'MS1']
     rtLookup = dict([(x[2], x[0]) for x in scaninfo])
@@ -645,12 +640,12 @@ def detectFeatures(datafile, **constants):
         
         thing = que.get(block = True)
         
-        if len(isotopeData) % 100 == 0:
-            print len(isotopeData)
+        if verbose_mode and len(isotopeData) % 100 == 0:
+            print len(isotopeData) # Shielded by explicit verbose_mode check.
     
     reader.join()
     # Could just discard the un-feature'd peaks immediately.
-    print "Isotopic features acquired; finding features over time..."
+    vprint("Isotopic features acquired; finding features over time...")
 
     times.append(time.clock())
 
@@ -667,7 +662,6 @@ def detectFeatures(datafile, **constants):
         scanIndex = ms1ToIndex[scanNum]
         for charge, isotopes in isotopesByCharge.items():
             for isoSeq in isotopes:
-                #isotopesByChargePoint[charge][scanIndex].append(isoSeq)
                 isotopesByChargePoint[charge][scanIndex].add(isoSeq)
                 allIsotopes.append((isoSeq, scanIndex, charge))
     
@@ -679,7 +673,7 @@ def detectFeatures(datafile, **constants):
             
 
     if whitelist_mzs:
-        print "Screening out irrelevant MZs; starting with %s..." % len(allIsotopes)
+        vprint("Screening out irrelevant MZs; starting with %s..." % len(allIsotopes))
         allIsotopes.sort(key = lambda x: x[0][0][0])
         whitelist_mzs = sorted(list(set([round(x, 2) for x in whitelist_mzs])))
         isoAcc = []
@@ -693,7 +687,7 @@ def detectFeatures(datafile, **constants):
                 isoAcc.append(iso)
         
         allIsotopes = isoAcc
-        print "...%s remain." % len(allIsotopes)
+        vprint("...%s remain." % len(allIsotopes))
     
     
     
@@ -709,7 +703,6 @@ def detectFeatures(datafile, **constants):
     # and floating point approximations!)
     
     featureList = []
-    print "Entering loop!"
     while allIsotopes:
         highIso, highScan, highChg = allIsotopes.pop()
         if tuple(highIso) in seenIsotopes:
@@ -729,14 +722,12 @@ def detectFeatures(datafile, **constants):
             except KeyError:
                 assert curScan < max(indexToMS1.keys())
                 break
-            #continuing = False
-            found = False
             
-            #scanSeqs = [iso for iso in isotopesByChargePoint[highChg][curScan]
-                        #if any([abs(x[0] - centerMZ) < tolerance for x in iso])]
+            
             scanSeqs = isotopesByChargePoint[highChg][curScan].returnRange(centerMZ - 2, centerMZ + 1.5)
             scanSeqs.sort(key = lambda x: x[centerIndex][1], reverse = True)
             
+            found = False
             for iso in scanSeqs: # These are known to have centerMZ in common.
                 # The indexes between iso and highIso may not be equivalent
                 # if there's sub-C12 peak(s) in either.  For a first draft
@@ -745,8 +736,6 @@ def detectFeatures(datafile, **constants):
                 # single-scan-dropouts of the C12 this is insufficient
                 # and such discrepancies should be accounted for.
                 
-                #if (abs(iso[0][0] - highIso[0][0]) < tolerance
-                    #and abs(iso[1][0] - highIso[1][0]) < tolerance
                 if (inPPM(tolerance, iso[0][0], highIso[0][0])
                     and inPPM(tolerance, iso[1][0], highIso[1][0])
                     and tuple(iso) not in seenIsotopes):
@@ -769,18 +758,15 @@ def detectFeatures(datafile, **constants):
             except KeyError:
                 assert curScan > max(indexToMS1.keys())
                 break
-            found = False
             
-            #scanSeqs = [iso for iso in isotopesByChargePoint[highChg][curScan]
-                        #if any([abs(x[0] - centerMZ) < tolerance for x in iso])]
+            
             scanSeqs = isotopesByChargePoint[highChg][curScan].returnRange(centerMZ - 2, centerMZ + 1.5)
             scanSeqs.sort(key = lambda x: x[centerIndex][1], reverse = True)
-
+            
+            found = False
             for iso in scanSeqs: # These are known to have centerMZ in common.
                 # Ditto.
-                
-                #if (abs(iso[0][0] - highIso[0][0]) < tolerance
-                    #and abs(iso[1][0] - highIso[1][0]) < tolerance                
+                               
                 if (inPPM(tolerance, iso[0][0], highIso[0][0])
                     and inPPM(tolerance, iso[1][0], highIso[1][0])
                     and tuple(iso) not in seenIsotopes):
@@ -797,27 +783,21 @@ def detectFeatures(datafile, **constants):
             featureList.append((highChg, newFeature))
         
         for _, iso in newFeature:
-            #assert tuple(iso) not in seenIsotopes
             seenIsotopes.add(tuple(iso))
-    
-    print "Exited loop!"
     times.append(time.clock())
     
     for chg, feature in featureList:
         for stage in feature:
             stage[0] = indexToMS1[stage[0]]
             
-    print "A %s" % time.clock()
     class idLookup():
         def __getitem__(self, thing):
             return thing
     lookup = idLookup()
 
-    print "B %s" % time.clock()
     if scanrange:
         featurefile = datafile + ('%s-%s.features' % scanrange)
 
-    print "C %s" % time.clock()
     featureObjects = []
     for chg, feature in featureList:
         newfeature = Feature()
@@ -827,20 +807,20 @@ def detectFeatures(datafile, **constants):
         newfeature.prepareBoxes(lookup)
         newfeature.prepareBoxes() # It's entirely different, for some reason?
         featureObjects.append(newfeature)
-    print "D %s" % time.clock()
     save_feature_database(featureObjects, featurefile)
     
-    print "Saved feature file."
+    vprint("Saved feature file.")
     times.append(time.clock())
     
-    print times
     return featurefile
 
 
 
+# Old-naming-convention alias, for legacy purposes.
+detectFeatures = detect_features
 
 
     
     
     
-# RUNNING FEATURE DETECTION BY USING THIS FILE AS __MAIN__ DOESN'T WORK
+# RUNNING FEATURE DETECTION BY USING THIS FILE AS __MAIN__ DOESN'T WORK.
