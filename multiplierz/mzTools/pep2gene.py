@@ -64,7 +64,7 @@ def convertAccessionsViaUniprot(accessions):
     
     normedGeneNames = dict()
     for acc, genes in geneNames.items():
-        normedGeneNames[acc.split('.')[0]] = (', '.join(genes), '')
+        normedGeneNames[acc.split('.')[0]] = ','.join(genes)
     
     return normedGeneNames#, uniprotIDs
 
@@ -130,7 +130,7 @@ def create_fasta_index(fasta_file, outputfile, labelParser = (lambda x: x),
     
 def add_gene_ids(target_file, p2g_database,
                  target_sheet = None,
-                 outputfile = None, inPlace = False, distinguish_leucine = True,
+                 outputfile = None, inPlace = False, leucine_equals_isoleucine = True,
                  legacy_columns = True):
     starttime = time.clock()
     
@@ -146,14 +146,26 @@ def add_gene_ids(target_file, p2g_database,
         seqLookup = data
         fmerLookup = pickle.load(dataRdr)
         geneLookup = pickle.load(dataRdr)
-        isoSeqLookup = pickle.load(dataRdr)
-        isoFmerLookup = pickle.load(dataRdr)
+        try:
+            isoSeqLookup = pickle.load(dataRdr)
+            isoFmerLookup = pickle.load(dataRdr)
+        except EOFError:
+            distinguish_leucine = False
+            isoSeqLookup = None
+            isoFmerLookup = None
     dataRdr.close()
     
-    if distinguish_leucine:
+    if isinstance(geneLookup.values()[0], tuple):
+        print "Legacy mode gene names detected."
+        oldTupleInstance = geneLookup.values()[0]
+        nameIndex = 0 if oldTupleInstance[0] and any(x.isalpha() for x in oldTupleInstance[0]) else 1
+        for k, v in geneLookup.items():
+            geneLookup[k] = v[nameIndex]
+    
+    if leucine_equals_isoleucine:
         assert isoFmerLookup, ("Pep2Gene database does not contain leucine-isoleucine " 
                                "ambiguity data; re-compile database or "
-                               "select distinguish_leucine = False .")
+                               "select leucine_equals_isoleucine = False .")
     if k_len:
         assert k_len == K, "Pep2Gene database created with kmers of length %s, not %s" % (k_len, K)
     
@@ -179,10 +191,10 @@ def add_gene_ids(target_file, p2g_database,
                        "IL Ambiguity gene_count", "IL Ambiguity gene_symbols"]
     iso_cols = ['I<->L Protein Count', 'I<->L Proteins', 'I<->L Gene Count',
                 'I<->L Gene Symbols']
-    if legacy_columns and distinguish_leucine:
+    if legacy_columns and leucine_equals_isoleucine:
         new_cols += iso_legacy_cols
         colname.update(dict(zip(iso_cols, iso_legacy_cols)))
-    elif distinguish_leucine:
+    elif leucine_equals_isoleucine:
         new_cols += iso_cols
         colname.update(dict(zip(iso_cols, iso_cols)))
     
@@ -211,7 +223,7 @@ def add_gene_ids(target_file, p2g_database,
             pepToProts[pep] = set(prot for prot in candidate_prots
                                   if pep_find.search(seqLookup[prot]))
             
-            if distinguish_leucine and isoPep not in isoPepToProts:
+            if leucine_equals_isoleucine and isoPep not in isoPepToProts:
                 iso_candidate_prots = reduce(set.intersection,
                                              (isoFmerLookup[isoPep[x:x+K]] for x
                                               in range(len(isoPep)-K)))
@@ -225,7 +237,7 @@ def add_gene_ids(target_file, p2g_database,
         proteinCount = len(pepToProts[pep])
         
         geneList = set(geneLookup[x] for x in pepToProts[pep] if x in geneLookup)
-        geneIds = '; '.join(set(g[0] for g in geneList))
+        geneIds = '; '.join(set(g for g in geneList))
         #geneSymbols = '; '.join(set(s for _, s in geneList))
         geneCount = len(geneList)
         
@@ -235,12 +247,12 @@ def add_gene_ids(target_file, p2g_database,
         row[colname['Gene Symbols']] = geneIds
         #row[colname['Gene IDs']] = 
         
-        if distinguish_leucine:
+        if leucine_equals_isoleucine:
             isoProteins = '; '.join(isoPepToProts[isoPep])
             isoProteinCount = len(isoPepToProts[isoPep])
             
             isoGeneList = set(geneLookup[x] for x in isoPepToProts[isoPep] if x in geneLookup)
-            isoGeneIds = '; '.join(set(g[0] for g in isoGeneList))
+            isoGeneIds = '; '.join(set(g for g in isoGeneList))
             #isoGeneSymbols = '; '.join(set(s for _, s in isoGeneList))
             isoGeneCount = len(isoGeneList)
             
@@ -259,25 +271,8 @@ def add_gene_ids(target_file, p2g_database,
     print "Output written: %.2f" % (time.clock() - prevtime)
     return outputfile
     
-        
-            
-        
-        
-
-        
-#if __name__ == '__main__':
-    #create_fasta_index(r'C:\Users\Max\Downloads\UP000005640_9606.fasta\Human_Uniprot_Full_8-4-16.fasta', 
-                     #r'C:\Users\Max\Downloads\UP000005640_9606.fasta\Human_Uniprot_Full_8-4-16_newMode.pickle',
-                     #labelParser = lambda x: x.split('|')[1])
-                     
 if __name__ == '__main__':
-    add_gene_ids(r'\\rc-data1\blaise\ms_data_share\Max\CSF\LoadingTitration\resultFiles\Fifth-combined.xlsx',
-                 r'\\rc-data1\blaise\ms_data_share\Databases\Updated_Marto_F_Human_NonRedundant.pep2gene',
-                 target_sheet = None)    
-    add_gene_ids(r'\\rc-data1\blaise\ms_data_share\Max\CSF\LoadingTitration\resultFiles\Tenth-combined.xlsx',
-                 r'\\rc-data1\blaise\ms_data_share\Databases\Updated_Marto_F_Human_NonRedundant.pep2gene',
-                 target_sheet = None)    
-    add_gene_ids(r'\\rc-data1\blaise\ms_data_share\Max\CSF\LoadingTitration\resultFiles\Half-combined.xlsx',
-                 r'\\rc-data1\blaise\ms_data_share\Databases\Updated_Marto_F_Human_NonRedundant.pep2gene',
-                 target_sheet = None)        
-    
+    from multiplierz.internalAlgorithms import typeInDir
+    for filename in typeInDir(r'C:\Users\Max\Downloads\Pep2gene_files', '.xlsx'):
+        add_gene_ids(filename,
+                     r'\\rc-data1\blaise\ms_data_share\Databases\Human_Uniprot_Full_8-4-16_newMode.pep2gene')
