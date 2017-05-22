@@ -35,7 +35,7 @@ Not all biologists are computer scientists, so Multiplierz provides a fully-grap
 
 ### News
 
-* 5/22/2017: The 2.0 release addition of multiplierz is pending publication!  We will update here as features are added, bugs are fixed, etc.
+* 5/22/2017: The 2.0 release edition of *multiplierz* is pending publication!  We will update here as features are added, bugs are fixed, etc.
 
 ***
 
