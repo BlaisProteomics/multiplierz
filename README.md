@@ -33,6 +33,12 @@ Not all biologists are computer scientists, so Multiplierz provides a fully-grap
 
 ***
 
+### News
+
+* 5/22/2017: The 2.0 release addition of multiplierz is pending publication!  We will update here as features are added, bugs are fixed, etc.
+
+***
+
 ### Contact the Author
 
 Questions related to use and modification of the Multiplierz library should be referred to W. Max Alexander at williamM_alexander@dfci.harvard.edu.
