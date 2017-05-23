@@ -604,9 +604,3 @@ class CometSearch(dict):
         finally:
             os.remove(parfile)
 
-
-
-
-if __name__ == '__main__':
-    format_report(r'\\rc-data1\blaise\ms_data_share\Max\112608_HCD_CE_K562_35.RAW.txt',
-                  r'\\rc-data1\blaise\ms_data_share\Max\112608_HCD_CE_K562_35.RAW.testout.xlsx')
