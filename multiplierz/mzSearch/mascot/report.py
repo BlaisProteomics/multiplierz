@@ -709,18 +709,21 @@ class MascotReport:
         if outputfile and ext:
             if not outputfile.lower().endswith(ext):
                 outputfile += '.' + ext        
-        elif ext and not outputfile:
-            outputfile = '.'.join([reports[0][1], ext.strip('.')])
-        else:
+        elif not outputfile:
             if not ext:
                 ext = 'xlsx'
-            outputfile = '_'.join(mascot_ids) + '.' + ext.strip('.')
+            outputfile = '_'.join(mascot_ids) + '.' + ext.strip('.')            
+            #outputfile = '.'.join([reports[0][1], ext.strip('.')])
+        elif outputfile and not ext:
+            ext = outputfile.split('.')[-1]
+            assert ext in ['csv', 'xlsx', 'xls', 'mzd', 'mzid']
+
           
         assert outputfile 
         if chosen_folder and not os.path.isabs(outputfile):
             outputfile = os.path.join(chosen_folder, outputfile)
         
-        if 'mzid' in ext:
+        if ext and 'mzid' in ext:
             assert len(mascot_ids) == 1, ("Combined result file not supported "
                                           "for mzIdentML files.")
             self.mascot.download_mzid(mascot_id,

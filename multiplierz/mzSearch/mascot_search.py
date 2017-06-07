@@ -48,9 +48,13 @@ class MascotSearch(object):
                 output.write('%s\%s' % (field, self.values[field]))
     
     
-    def run_search(self, data_file = None, user = None, password = None):
+    def run_search(self, data_file = None, user = None, password = None,
+                   outputfile = None):
         if data_file:
             self.values['FILE'] = data_file
+        if not outputfile:
+            self.values['FILE'] + '.xlsx'
+            
         assert 'FILE' in self.values, "Target data must be specified!"
         assert os.path.exists(self.values['FILE']), (("Search target %s not "
                                                       "found!") % self.values['FILE'])
@@ -83,28 +87,12 @@ class MascotSearch(object):
             datestr = datetime.now().strftime("%Y%m%d")
         
         output_dir = os.path.dirname(data_file)
-        #resultfile = retrieveMascotReport(mascot_ids = [dat_id],
-                                          #dates = [datestr],
-                                          #mascot_server = mascot_server,
-                                          #mascot_version = mascot_version,
-                                          #login_name = user,
-                                          #password = password,
-                                          #ext = '.xlsx',
-                                          #chosen_folder = output_dir,
-                                          #ion_cutoff = bestType(self.values['ion_cutoff']),
-                                          #show_query_data = bestType(self.values['show_query_data']) != 0,
-                                          #show_same_set = bestType(self.values['show_same_set']) != 0,
-                                          #show_sub_set = bestType(self.values['show_sub_set']) != 0,
-                                          #rank_one = bestType(self.values['rank_one']) != 0,
-                                          #bold_red = bestType(self.values['bold_red']) != 0,
-                                          #) 
-        #                      Other parameters should be externally suppliable!
         reportManager = report.MascotReport(mascot_server, mascot_version,
                                             user, password,
                                             cleanup = True)
         resultfile = reportManager.get_reports(mascot_ids = [dat_id],
                                                dates = [datestr],
-                                               outputfile = self.values['FILE'] + '.xlsx',
+                                               outputfile = outputfile,
                                                ion_cutoff = bestType(self.values['ion_cutoff']),
                                                show_query_data = bestType(self.values['show_query_data']) != 0,
                                                show_same_set = bestType(self.values['show_same_set']) != 0,

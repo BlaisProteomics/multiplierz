@@ -200,7 +200,7 @@ modLookup.update({'iTRAQ8plex':{'add_Nterm_peptide':'304.20536', 'add_K_lysine':
                   'Methylthio(C)': {'add_C_cysteine':'45.98772'}})
                             
 toStandardPSMConversions = {'scan':'Query',
-                            'num':'#',
+                            'num':'Peptide Rank',
                             'charge':'Charge',
                             'exp_neutral_mass':'Predicted mz',
                             'calc_neutral_mass':'Predicted mr',
@@ -217,20 +217,23 @@ toStandardPSMConversions = {'scan':'Query',
                             'protein':'Accession Number',
                             'duplicate_protein_count':'Protein Count'}
 
-def convertCometOutputToMascot(cometcsv):
-    from multiplierz.mzReport import reader, writer
-    psms = reader(cometcsv)
-    output = writer('.'.join(cometcsv.split('.')[:-1] + ['xlsx']),
-                    columns = [toStandardPSMConversions[x] for x in psms.columns])
+#def convertCometOutputToMascot(cometcsv, mgffile = None):
+
+
+    #from multiplierz.mzReport import reader, writer
+    #psms = reader(cometcsv)
+    #output = writer('.'.join(cometcsv.split('.')[:-1] + ['xlsx']),
+                    #columns = ['Spectrum Description'] + 
+                    #[toStandardPSMConversions[x] for x in psms.columns])
     
-    for psm in psms:
-        convpsm = {}
-        for key in psm:
-            convpsm[toStandardPSMConversions[key]] = psm[key]
-        output.write(convpsm)
+    #for psm in psms:
+        #convpsm = {}
+        #for key in psm:
+            #convpsm[toStandardPSMConversions[key]] = psm[key]
+        #output.write(convpsm)
     
-    psms.close()
-    output.close()
+    #psms.close()
+    #output.close()
     
     
     
@@ -362,7 +365,7 @@ def convertVarmods(psm):
     psm['Variable Modifications'] = '; '.join(modstrs)
     return psm
         
-def format_report(reportfile, outputfile = None):
+def format_report(reportfile, outputfile = None, mgffile = None, parameters = None):
     """
     Renders a native Comet output .txt file into an mzReport-compatible and
     prettier .xlsx format.
@@ -371,6 +374,13 @@ def format_report(reportfile, outputfile = None):
     underscore in the 'modified peptide' column; hopefully that will be fixed
     soon.)
     """
+    
+    if mgffile:
+        from multiplierz.mgf import parse_to_generator
+        mgfgen = parse_to_generator(mgffile)
+        queryToDesc = dict(enumerate(x['title'] for x in mgfgen), start = 1)
+    else:
+        queryToDesc = {}    
     
     columns = []
     rows = []
@@ -400,17 +410,25 @@ def format_report(reportfile, outputfile = None):
         values = [tryNum(x.strip()) for x in line.split('\t')]
         row = dict(zip(columns, values))
         row = convertVarmods(row)
+        row['Spectrum Description'] = queryToDesc.get(row['Query'], 'Unknown')
         rows.append(row)
     
     report.close()
     if not outputfile:
         outputfile = '.'.join(reportfile.split('.')[:-1] + ['xlsx'])
-    headerwriter = writer(outputfile, columns = ['Program', 'Data',
-                                                 'Search Run Time', 'Database'],
-                                      sheet_name = 'Comet_Header')
-    headerwriter.write(header)
-    headerwriter.close()
-    mainwriter = writer(outputfile, columns = columns, sheet_name = 'Data')
+    
+    if outputfile.lower().endswith('xlsx') or outputfile.lower().endswith('xls'):
+        headerwriter = writer(outputfile, columns = ['Program', 'Data',
+                                                     'Search Run Time', 'Database'],
+                                          sheet_name = 'Comet_Header')
+        headerwriter.write(header)
+        headerwriter.write(['', '', '', ''])
+        if parameters:
+            for setting, value in sorted(parameters.items()):
+                headerwriter.write({'Program':setting, 'Data':value,
+                                    'Search Run Time':'', 'Database':''})
+        headerwriter.close()
+    mainwriter = writer(outputfile, columns = ['Spectrum Description'] + columns, sheet_name = 'Data')
     for row in rows:
         mainwriter.write(row)
     mainwriter.close()
@@ -464,7 +482,7 @@ class CometSearch(dict):
         if not (cometPath and os.path.exists(cometPath)):
             raise RuntimeError, ("Comet executable not found at %s; update the "
                                  "multiplierz settings file to indicate your Comet "
-                                 "installation.")
+                                 "installation." % cometPath)
         
         self.file_name = file_name
         self.fields = []
@@ -566,7 +584,7 @@ class CometSearch(dict):
             
 
         
-    def run_search(self, data_file, output_xlsx = True):
+    def run_search(self, data_file, outputfile = None):
         #assert self.enzyme_selection != None, "Must specify enzyme selection (attribute .enzyme_selection)!" 
         
         self['digest_mass_range'] = '450.0 6000.0' # Remove this if this parameter gets added to the GUI!
@@ -594,11 +612,17 @@ class CometSearch(dict):
             print('Comet search completed with return value %s' % result)    
             assert os.path.exists(expectedResultFile), "Comet failed to produce expected result file."
             
-            if output_xlsx:
-                outputfile = format_report(expectedResultFile)
+            if outputfile.split('.')[-1].lower() in ['xlsx', 'xls', 'mzd']:
+                resultfile = format_report(expectedResultFile, outputfile, data_file,
+                                           parameters = dict(self))
             else:
-                outputfile = expectedResultFile
+                resultfile = expectedResultFile
             
+            if outputfile:
+                os.rename(resultfile, outputfile)
+            else:
+                outputfile = resultfile
+                
             return outputfile
         
         finally:

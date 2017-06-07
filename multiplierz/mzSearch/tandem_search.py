@@ -6,6 +6,7 @@ import xml.etree.ElementTree as ET
 from multiplierz.mzTools.mzIdentMLAPI import mzIdentML
 from multiplierz.mzReport import writer
 from multiplierz.mzReport.formats.xtandem import format_XML
+import xml.dom.minidom as minidom # For XML pretty-printing.
 
 __all__ = ['TandemSearch']
 
@@ -326,11 +327,9 @@ class TandemSearch(dict):
         return ''.join(output)
     
     def write(self, outputfile = None):
-        if not (outputfile or self.file_name):
+        if not outputfile:
             outputfile = os.path.join(myData, 'XTANDEMTEMP.TEMP')
             self.save_parameter_file = False
-        elif not outputfile:
-            outputfile = self.file_name
         
         bioml = ET.Element('bioml')
         
@@ -340,17 +339,25 @@ class TandemSearch(dict):
         
         for category, fields in self.items():
             for field, value in fields.items():
-                fullfield = ', '.join([category, field])
+                if category == 'refine' and not field:
+                    fullfield = 'refine'
+                else:
+                    fullfield = ', '.join([category, field])
                 
                 par = ET.Element('note')
                 par.set('type', 'input')
                 par.set('label', fullfield)
-                par.text = str(value)
+                par.text = str(value) if value != None else ''
                 
                 bioml.append(par)
         
-        xml = ET.ElementTree(bioml)
-        xml.write(outputfile)
+        xmlform = ET.ElementTree(bioml)
+        domform = minidom.parseString(ET.tostring(xmlform.getroot()))
+        output = open(outputfile, 'w')
+        output.write(domform.toprettyxml())
+        output.close()
+        #xml.write(outputfile)
+        
         
         return outputfile
     
@@ -368,17 +375,17 @@ class TandemSearch(dict):
         if not fasta_files:
             fasta_files = self.fasta_files
         
-        for i in range(len(fasta_files)):
-            if fasta_files[i].lower().endswith('fasta'):
-                fastaConverter = os.path.join(os.path.dirname(xtandemExe), 'fasta_pro.exe')
-                call([fastaConverter, fasta_files[i]])
-                fasta_files[i] = fasta_files[i] + '.pro'
-        
+        #for i in range(len(fasta_files)):
+            #if fasta_files[i].lower().endswith('fasta'):
+                #if not os.path.exists(fasta_files[i] + '.pro'):
+                    #print "Converting %s..." % fasta_files[i]
+                    #fastaConverter = os.path.join(os.path.dirname(xtandemExe), 'fasta_pro.exe')
+                    #call([fastaConverter, fasta_files[i]])
+                #fasta_files[i] = fasta_files[i] + '.pro'
         
         # This will cause calling run_search to visibly mutate the object!
         # Which may be the only reasonable way to do it- the mutated fields
         # were ignored to begin with, in order to account for the FASTA file.
-        
         
         if not self['protein']['taxon']:
             taxon = 'arbitrary'
@@ -418,7 +425,7 @@ class TandemSearch(dict):
         
         assert os.path.exists(expectedOutput), "Output file not found!"
         
-        format_XML(expectedOutput, outputfile)
+        format_XML(expectedOutput, outputfile, parameters = dict(self))
         
         return outputfile
         
