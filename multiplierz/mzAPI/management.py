@@ -82,7 +82,11 @@ def registerInterfaces():
     
     dllsFound = {}
     for directory in sys.path + [os.path.dirname(sys.executable)]:
+        if len(os.path.abspath(directory)) <= 3: # Searching from base directory is unwise.
+            print "Not searching from %s" % directory
+            continue 
         for path, names, files in os.walk(directory):
+            #print path
             for filename in files:
                 if (filename in interfaceModules.keys()) and (not filename in dllsFound.keys()):
                     dllsFound[filename] = os.path.join(path, filename)
