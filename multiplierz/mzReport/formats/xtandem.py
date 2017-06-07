@@ -162,12 +162,12 @@ def xTandemArray(xTandem_file, rev_mods=None, db_regex=None):
                     miss = '0'
 
                 #For each peptide domain, make a hash for one row in a multiplierz spreadsheet
-                row = { 'Protein Rank': str(prot_rank),
+                row = { #'Protein Rank': str(prot_rank),
                         'Accession Number': prot_acc,
-                        'Protein Description': prot_desc,
-                        'Protein Mass': str(prot_mass),
-                        'Protein Matches': prot_matches,
-                        'Protein Score': str(prot_score),
+                        #'Protein Description': prot_desc,
+                        #'Protein Mass': str(prot_mass),
+                        #'Protein Matches': prot_matches,
+                        #'Protein Score': str(prot_score),
                         'Peptide Sequence': pep_seq,
                         'Variable Modifications': var_mods,
                         'Experimental mz': pep_exp_mz,
@@ -190,52 +190,52 @@ def xTandemArray(xTandem_file, rev_mods=None, db_regex=None):
     # we'll sort the array by rank before returning it
     x_array.sort(key = lambda x: int(x['Protein Rank']))
 
-    return x_array, ['Protein Description',
-                     'Missed Cleavages',
-                     'Charge',
-                     'Preceding Residue',
-                     'Peptide Sequence',
-                     'Following Residue',
+    return x_array, ['Expect',
                      'Peptide Rank',
-                     'End Position',
-                     'Delta',
-                     'Protein Matches',
-                     'Accession Number',
-                     'Variable Modifications',
-                     'Protein Mass',
                      'Peptide Score',
-                     'Start Position',
-                     'Protein Rank',
-                     'Protein Score',
-                     'Predicted mr',
-                     'Spectrum Description',
-                     'Expect',
+                     #'Protein Description',
+                     #'Protein Matches',                  
+                     #'Protein Rank',
+                     #'Protein Score', 
+                     #'Protein Mass',
                      'Experimental mz',
+                     'Predicted mr',
+                     'Delta',
+                     'Accession Number',
+                     'Missed Cleavages',
+                     'Peptide Sequence',
+                     'Variable Modifications',                  
+                     'Charge',
+                     'Spectrum Description',
+                     'Preceding Residue',
+                     'Following Residue',                  
+                     'Start Position',
+                     'End Position',                  
                      'Query']
 
 
 
-headerSequence = ['Protein Description',
-                  'Missed Cleavages',
-                  'Charge',
-                  'Preceding Residue',
-                  'Peptide Sequence',
-                  'Following Residue',
+headerSequence = ['Expect',
                   'Peptide Rank',
-                  'End Position',
-                  'Delta',
-                  'Protein Matches',
-                  'Accession Number',
-                  'Variable Modifications',
-                  'Protein Mass',
                   'Peptide Score',
-                  'Start Position',
-                  'Protein Rank',
-                  'Protein Score',
-                  'Predicted mr',
-                  'Spectrum Description',
-                  'Expect',
+                  #'Protein Description',
+                  #'Protein Matches',                  
+                  #'Protein Rank',
+                  #'Protein Score', 
+                  #'Protein Mass',
                   'Experimental mz',
+                  'Predicted mr',
+                  'Delta',
+                  'Accession Number',
+                  'Missed Cleavages',
+                  'Peptide Sequence',
+                  'Variable Modifications',                  
+                  'Charge',
+                  'Spectrum Description',
+                  'Preceding Residue',
+                  'Following Residue',                  
+                  'Start Position',
+                  'End Position',                  
                   'Query']
 
 def xtandemParse(tandemfile):
@@ -289,12 +289,12 @@ def xtandemParse(tandemfile):
         except KeyError:
             miss = '0'        
     
-        row = { 'Protein Rank': None,
+        row = { #'Protein Rank': None,
                 'Accession Number': model.get('label'),
-                'Protein Description': None,
-                'Protein Mass': None,
-                'Protein Matches': None,
-                'Protein Score': None,
+                #'Protein Description': None,
+                #'Protein Mass': None,
+                #'Protein Matches': None,
+                #'Protein Score': None,
                 'Peptide Sequence': pep_seq,
                 'Variable Modifications': modstring,
                 'Experimental mz': str((pep_exp_mh + (pep_exp_z - 1)*1.00727638)/pep_exp_z),
@@ -318,19 +318,34 @@ def xtandemParse(tandemfile):
 
 
 
-def format_XML(xTandem_file, save_file, rev_mods=None, db_regex=None):
+def format_XML(xTandem_file, save_file, parameters = None,
+               rev_mods=None, db_regex=None):
     '''Create a report from the xTandem output (which is an XML file)'''
 
     #rows, headers = xTandemArray(xTandem_file, rev_mods, db_regex)
     rows = xtandemParse(xTandem_file)
 
     if os.path.exists(save_file):
-        os.remove(save_file)
+        try:
+            os.remove(save_file)
+        except WindowsError:
+            pass
 
     report = multiplierz.mzReport.writer(save_file, columns=headerSequence)
 
     for row in rows:
         report.write(row)
 
+    report.close()
+    report = multiplierz.mzReport.writer(save_file, sheet_name = "XTandem_Header",
+                                         columns = ["Category", "Setting", "Value"])
+    if parameters:
+        for category, settings in parameters.items():
+            for setting, value in settings.items():
+                report.write({'Category':category,
+                              'Setting':setting,
+                              'Value':value})
+    else:
+        report.write(['No', 'Parameters', 'Found'])
     report.close()
 
