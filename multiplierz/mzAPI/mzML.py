@@ -26,7 +26,7 @@ class mzFile(multiplierz.mzAPI.mzFile):
     the source raw data, however.)
     """
     
-    def __init__(self, data_file):
+    def __init__(self, data_file, *etc, **etcetc):
         if data_file.lower().endswith('mzml'):
             flptr, flname = tempfile.mkstemp(suffix = '.mzmlsql')
             #flptr.close()

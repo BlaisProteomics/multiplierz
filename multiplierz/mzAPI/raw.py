@@ -141,8 +141,6 @@ class mzFile(mzAPImzFile):
                 from win32com.client import Dispatch
                 obj = Dispatch("MSFileReader.XRawfile")
             except com_error:
-                # If it won't register directly, attempt the
-                # crazy experimental indirect method.
                 from comtypes.client import GetModule
                 import sys
                 if sys.maxsize > 2**32: # If 64-bit version.
