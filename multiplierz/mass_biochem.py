@@ -918,7 +918,9 @@ def fragment(peptide, mods = [], charges = [1],
             neutralLossDynamics[mod_masses[key]] = value
     
     #assert not neutralPhosLoss, "Not currently set up for phos loss!"
-    
+    #czLoss = 15.010899035
+    cLoss = 17.026000420104097 # NH3+
+    zLoss = 16.018724 # NH2
     
     modBySite = defaultdict(list)
     if isinstance(mods, basestring):
@@ -934,9 +936,9 @@ def fragment(peptide, mods = [], charges = [1],
     
     
     fragmentSetsByIonType = {}
-    if 'b' in ions: # Left to right, right?
+    if 'b' in ions or 'c' in ions: # Left to right, right?
         bfrags = []
-        blossfrags = []
+        cfrags = []
         bmass = protonMass
         presentmods = []
         for site in range(1, len(peptide)): # 1-indexed.
@@ -950,15 +952,24 @@ def fragment(peptide, mods = [], charges = [1],
                 if mod in neutralLossDynamics:
                     neutralLoss -= neutralLossDynamics[mod]            
 
-            bfrags.append(('b'+str(site), bmass))
+            if 'b' in ions:
+                bfrags.append(('b'+str(site), bmass))
+            if 'c' in ions:
+                cfrags.append(('c'+str(site), bmass + cLoss))
 
             if neutralLoss:
-                bfrags.append(('b%d-%.0f'%(site, abs(neutralLoss)), bmass + neutralLoss))                
-        
-        fragmentSetsByIonType['b'] = bfrags
+                if 'b' in ions:
+                    bfrags.append(('b%d-%.0f'%(site, abs(neutralLoss)), bmass + neutralLoss))                
+                if 'c' in ions:
+                    cfrags.append(('c%d-%.0f'%(site, abs(neutralLoss)), bmass + neutralLoss + cLoss))
+        if 'b' in ions:
+            fragmentSetsByIonType['b'] = bfrags
+        if 'c' in ions:
+            fragmentSetsByIonType['c'] = cfrags
     
-    if 'y' in ions:
+    if 'y' in ions or 'z' in ions:
         yfrags = []
+        zfrags = []
         ymass = H2Omass + protonMass
         presentmods = []
         for site in range(len(peptide)-1, 0, -1): # 0-indexed.
@@ -974,12 +985,20 @@ def fragment(peptide, mods = [], charges = [1],
                     neutralLoss -= neutralLossDynamics[mod]
             
             realsite = len(peptide)-site
-            yfrags.append(('y'+str(realsite), ymass))
+            if 'y' in ions:
+                yfrags.append(('y'+str(realsite), ymass))
+            if 'z' in ions:
+                zfrags.append(('z'+str(realsite), ymass - zLoss))
 
             if neutralLoss:
                 yfrags.append(('y%d-%.0f'%(realsite, abs(neutralLoss)), ymass + neutralLoss))
+                if 'z' in ions:
+                    zfrags.append(('z%d-%.0f'%(realsite, abs(neutralLoss)), ymass + neutralLoss - zLoss))
         
-        fragmentSetsByIonType['y'] = yfrags
+        if 'y' in ions:
+            fragmentSetsByIonType['y'] = yfrags
+        if 'z' in ions:
+            fragmentSetsByIonType['z'] = zfrags
                 
     # Similar for z and w and whatever, I guess.
     
