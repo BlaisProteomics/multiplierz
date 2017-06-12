@@ -1,5 +1,6 @@
 import multiplierz.mzAPI.raw
 from multiplierz.mzAPI import mzFile
+from multiplierz.internalAlgorithms import splitOnFirst
 from multiplierz import protonMass, __version__, vprint
 import os
 from numpy import average, std
@@ -116,7 +117,7 @@ def parse_mgf(mgffile, labelType = (lambda x: x), header = False, rawStrings = F
                 if 'END IONS' in line:
                     break
                 elif '=' in line:
-                    field, value = line.split('=')
+                    field, value = splitOnFirst(line, '=')
                     
                     if (not rawStrings) and field == 'CHARGE':
                         value = int(value.strip('\n+ '))
@@ -439,7 +440,7 @@ def extract(datafile, outputfile = None, default_charge = 2, centroid = True,
                       129.131471, 129.137790, 130.134825, 130.141145, 131.138180])
         
         assert label_tolerance < 0.005, ("label_tolerance must be lower "
-                                         "than 0.005 for 10-plex experiments!" % label_tolerance)
+                                         "than 0.005 for 10-plex experiments! (Currently %s)" % label_tolerance)
     else:
         raise NotImplementedError, ("Labels of type %s not recognized.\n"
                                     "Should be one of [4,6,8,10] or None.")
@@ -464,6 +465,7 @@ def extract(datafile, outputfile = None, default_charge = 2, centroid = True,
     scans_written = 0
     
     lastMS1 = None
+    lastMS1ScanName = None
     for time, mz, scanNum, scanLevel, scanMode in scanInfo:
         scanName = scanNum if isinstance(scanNum, int) else time
         
@@ -486,6 +488,10 @@ def extract(datafile, outputfile = None, default_charge = 2, centroid = True,
                 return sum([[(x[0][0], c) for x in xs]
                             for c, xs in envelopes.items()], [])
             
+            continue
+        elif scanLevel == 'MS3':
+            continue
+        elif lastMS1ScanName == None:
             continue
         
         try:
