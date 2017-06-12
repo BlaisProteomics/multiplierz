@@ -255,14 +255,18 @@ def binByFullFeature(datafile, featureDB, results):
         mz = spectrumDescriptionToMZ(result['Spectrum Description'])
         scan = spectrumDescriptionToScanNumber(result['Spectrum Description'])        
         charge = int(result['Charge'])
-        scan = ms2toms1[scan]
+        try:
+            scan = ms2toms1[scan]
+        except:
+            continue
         
         features = [(i, x) for i, x in featureDB.mz_range(mz - 0.01, mz + 0.01)
                     if x.containsPoint(mz, scan, charge)]
         if features:
             index, feature = min(features, key = lambda x: abs(x[1].mz - mz))
             scans = min(feature.scans), max(feature.scans)
-            featureItems[index].append((result, scans))
+            intensity = feature.c12Intensity()
+            featureItems[index].append((result, scans, intensity))
         else:
             features = [(i, x) for i, x in featureDB.mz_range(mz - 1, mz + 1)
                         if x.bordersPoint(mz, scan, charge)]
@@ -270,7 +274,8 @@ def binByFullFeature(datafile, featureDB, results):
                 index, feature = min(features, key = lambda x: abs(x[1].mz - mz))
                 edge = feature.bordersPoint(mz, scan, charge)
                 scans = min(feature.scans), max(feature.scans)
-                edgeItems[index].append((result, edge, scans))
+                intensity = feature.c12Intensity()
+                edgeItems[index].append((result, edge, scans, intensity))
             else:
                 inexplicableItems.append(result)
                 
@@ -280,25 +285,27 @@ def binByFullFeature(datafile, featureDB, results):
     overFitCount = 0
     for feature, results in featureItems.items():
         pep = results[0][0]['Peptide Sequence']
-        if not all([x['Peptide Sequence'] == pep for x, s in results]):
+        if not all([x['Peptide Sequence'] == pep for x, s, i in results]):
             overFitCount += 1
         
-        for result, scans in results:
+        for result, scans, intensity in results:
             result['Feature'] = feature
             result['feature error'] = '-'
             result['feature start scan'] = scans[0]
             result['feature end scan'] = scans[1]
             result['feature start time'] = data.timeForScan(scans[0])  if scans[0] else '-'
             result['feature end time'] = data.timeForScan(scans[1])  if scans[1] else '-'
+            result['feature intensity'] = intensity
             groupedResults.append(result)
     for feature, resultEdges in edgeItems.items():
-        for result, edge, scans in resultEdges:
+        for result, edge, scans, intensity in resultEdges:
             result['Feature'] = '-'
             result['feature error'] = str(feature) + " " + edge
             result['feature start scan'] = scans[0]
             result['feature end scan'] = scans[1]
             result['feature start time'] = data.timeForScan(scans[0]) if scans[0] else '-'
-            result['feature end time'] = data.timeForScan(scans[1]) if scans[1] else '-'          
+            result['feature end time'] = data.timeForScan(scans[1]) if scans[1] else '-'    
+            result['feature intensity'] = intensity
             groupedResults.append(result)
     for result in inexplicableItems:
         result['Feature'] = '-'
@@ -307,6 +314,7 @@ def binByFullFeature(datafile, featureDB, results):
         result['feature end scan'] = '-'
         result['feature start time'] = '-'
         result['feature end time'] = '-'
+        result['feature intensity'] = '-'
         groupedResults.append(result)
 
     data.close()
@@ -509,7 +517,8 @@ def feature_analysis(datafile, resultFiles,
                                                                        'feature start scan',
                                                                        'feature end scan',
                                                                        'feature start time',
-                                                                       'feature end time'])
+                                                                       'feature end time',
+                                                                       'feature intensity'])
             
             for result in resultsByFeature:
                 output.write(result)
@@ -520,7 +529,7 @@ def feature_analysis(datafile, resultFiles,
     else:
         print "No PSM data given; skipping annotation step."
         
-    return featurefile, outputfiles
+    return featureFile, outputfiles
 
 
 
@@ -563,12 +572,6 @@ def detect_features(datafile, **constants):
     
     featurefile = datafile + '.features'
     
-    #constants = constants['constants']
-    #if 'tolerance' in constants:
-        #global tolerance
-        #tolerance = constants['tolerance']
-    #else:
-        #tolerance = 0.01
     if 'tolerance' in constants:
         global tolerance
         tolerance = constants['tolerance']
@@ -599,7 +602,7 @@ def detect_features(datafile, **constants):
     elif 'tolerance' in constants:
         peak_pick_params = {'tolerance':constants['tolerance']}
     else:
-        peak_pick_params = {}
+        peak_pick_params = {tolerance : 10}
     
     if os.path.exists(featurefile) and not force:
         vprint("Feature data file already exists: %s" % featurefile)
