@@ -291,8 +291,6 @@ class XLSReader(XLSheetWriter):
             sheetname = self.wb.sheet_names()[0]
             vprint("Warning:  Worksheet name not specified; defaulting to %s" % sheetname)
             self.sheet = self.wb.sheet_by_name(sheetname)
-            
-        self.all_sheets = self.wb.sheet_names()[0]
                 
         self.columns = [x.value if x.value != None else '' for x in self.sheet.row(0)]
     
@@ -303,7 +301,9 @@ class XLSReader(XLSheetWriter):
     
     def close(self):
         self.wb.release_resources()
-        
+    
+    def sheet_names(self):
+        return self.wb.sheet_names()
 
         
 
