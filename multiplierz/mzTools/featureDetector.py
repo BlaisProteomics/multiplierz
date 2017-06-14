@@ -14,6 +14,7 @@ from multiplierz.mzTools.featureUtilities import save_feature_database, FeatureI
 from multiplierz.internalAlgorithms import peak_pick_PPM
 import multiprocessing
 
+from multiplierz.mgf import standard_title_parse
 
 
 
@@ -27,13 +28,18 @@ featureMatchupTolerance = 0.05
 
 whitelist_tol = 0.1
 def spectrumDescriptionToMZ(description):
+    if 'MultiplierzMGF' in description:
+        return float(standard_title_parse(description)['mz'])
     try:
         return float(description.split('-|')[0].split('-')[-1])
     except ValueError:
         return float(description.split("|")[1])
 
 def spectrumDescriptionToScanNumber(description):
-    return int(description.split('.')[1])
+    if 'MultiplierzMGF' in description:
+        return int(standard_title_parse(description)['scan'])
+    else:
+        return int(description.split('.')[1])
 
 
 #allowedC12RatioDifference = 0.3
@@ -572,7 +578,7 @@ def detect_features(datafile, **constants):
     
     featurefile = datafile + '.features'
     
-    if 'tolerance' in constants:
+    if 'tolerance' in constants and constants['tolerance']:
         global tolerance
         tolerance = constants['tolerance']
         if tolerance < 1:
@@ -599,10 +605,10 @@ def detect_features(datafile, **constants):
         
     if 'peak_picking_params' in constants:
         peak_pick_params = constants['peak_picking_params']
-    elif 'tolerance' in constants:
+    elif 'tolerance' in constants and constants['tolerance']:
         peak_pick_params = {'tolerance':constants['tolerance']}
     else:
-        peak_pick_params = {tolerance : 10}
+        peak_pick_params = {'tolerance' : 10}
     
     if os.path.exists(featurefile) and not force:
         vprint("Feature data file already exists: %s" % featurefile)
