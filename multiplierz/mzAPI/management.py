@@ -23,7 +23,7 @@ import os
 
 def pause():
     print "\n-"
-    print "Press enter to exit."
+    print "Press enter to continue."
     raw_input()
     return
 
@@ -34,6 +34,21 @@ import sys
 #print zip(*os.walk(foo[1]))[0]
 #print os.path.dirname(__file__)
 #print sys.executable
+
+def testInterfaces():
+    from win32com.client import Dispatch
+    guids = ['MSFileReader.XRawfile',
+             '{9eabbbb3-5a2a-4f73-aa60-f87b736d3476}',
+             '{7e3450b1-75e7-49b2-9be7-64cbb2458c56}',
+             'Agilent.MassSpectrometry.DataAnalysis.MassSpecDataReader']
+    worked = []
+    for guid in guids:
+        try:
+            Dispatch(guid)
+            worked.append(True)
+        except:
+            worked.append(False)
+    return worked
 
 def registerInterfaces():
     print "Checking for access to MS data formats..."
@@ -124,7 +139,7 @@ def registerInterfaces():
     print "\n"
     if not afterChecks["RAW"]:
         print "\n To register RAW file access, download and install the free Thermo MS File Reader."
-        
+        return 1
     
     return 0
 
