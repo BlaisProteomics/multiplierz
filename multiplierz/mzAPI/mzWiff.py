@@ -254,10 +254,10 @@ class mzFile_explicit_numbering(mzAPImzFile):
             for exp in expCounts[sample]:
                 expInfo[exp] = self.source.ExperimentInfo(sample, exp)
                 
-            # Obnoxious to have to call this simply for percursor masses.
-            cycleData = self.source.GetSampleData(sample) 
-            for exp, cyc, rt, mass, cole in zip(*cycleData):
-                cycleInfo[sample, int(exp), int(cyc)] = rt, mass, cole                
+            ## Obnoxious to have to call this simply for percursor masses.
+            #cycleData = self.source.GetSampleData(sample) 
+            #for exp, cyc, rt, mass, cole in zip(*cycleData):
+                #cycleInfo[sample, int(exp), int(cyc)] = rt, mass, cole                
                 
             cycles = self.source.GetNumCycles(sample)
             start_pt = max([0, start_cycle])
@@ -270,7 +270,7 @@ class mzFile_explicit_numbering(mzAPImzFile):
                     
                     level = 'MS%d' % int(level)
                     precM = precM if precM > 0 else 0
-                    centroid = 'p' if centroid > 0 else 'c'
+                    centroid = 'p' if centroid == 0 else 'c'
                     
                     if (level != 'MS1') and not precM:
                         if debug:
@@ -279,6 +279,11 @@ class mzFile_explicit_numbering(mzAPImzFile):
                         # It seems like this means it wasn't a real scan?
                         continue
                     
+                    # Slight cheat to resolve issue where multiplie scans
+                    # wind up with the precise same RT, which causes unexpected
+                    # behavior in many use cases.
+                    if scaninfo and rt == scaninfo[-1][0]:
+                        rt += 0.000001
                     
                     scaninfo.append((rt, precM, (cycle+1, exp+1, sample+1), level, centroid))
                     
@@ -376,12 +381,15 @@ class mzFile_explicit_numbering(mzAPImzFile):
                 locstr = ''
             elif level == 'MS2':
                 levelstr = 'ms2'
-                locstr = '%.2f@hcd00.00 ' % mz
+                locstr = '%.2f@00.00 ' % mz
             else:
                 raise Exception, level
             
-            filterstr = "FTMS + %s NSI Full %s %s[%d.00-%d.00]" % (mode, levelstr, locstr,
-                                                           mzrange[0], mzrange[1])
+            detector = expInfo[sample-1, exp-1][3]
+            
+            filterstr = "%s + %s NSI Full %s %s[%d.00-%d.00]" % (detector, mode, levelstr, locstr,
+                                                                 mzrange[0], mzrange[1])
+            
             self._filters.append((rt, filterstr))
         
         return self._filters

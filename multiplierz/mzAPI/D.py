@@ -7,7 +7,6 @@ from multiplierz.mzAPI import mzScan
 import os, sys
 from math import floor, ceil
 
-vprint(sys.executable)
 if os.path.basename(sys.executable) == 'mzDesktop.exe':
     agilentDir = os.path.join(os.path.dirname(sys.executable),
                               'interface_modules', 'agilentdlls')
@@ -148,15 +147,32 @@ class mzFile(baseFile):
         else:
             separator = 'TOF'
     
+        colEs = self.source.MSScanFileInformation.CollisionEnergy
+        if len(colEs) == 1:
+            colE = colEs[0]
+        else:
+            colE = None
+    
         if not self._filters:
             self._filters = []
             for rt, mz, index, level, polarity in self.scan_info():
                 scanObj = self.source.GetSpectrum_6(index)
-                rangeobj = scanObj.MeasuredMassRange.QueryInterface(bc.IRange)
-                string = "%s MS %s NSI Full ms%s [%d-%d]" % (separator, polarity, 
-                                                             int(level[2]) if level != 'MS1' else '',
-                                                             floor(rangeobj.Start),
-                                                             ceil(rangeobj.End))
+                rangeobj = scanObj.MeasuredMassRange.QueryInterface(bc.IRange) # Yep, definitely spectrum-specific.
+                
+                if colE: # Singular collision energy in the file.
+                    energy = colE
+                else:
+                    energy = float(scanObj.CollisionEnergy)
+                
+                if level != 'MS1':
+                    precstr = '%.4f@%.2f' % (mz, energy)
+                else:
+                    precstr = ''
+                string = "%s MS %s NSI Full ms%s %s[%d-%d]" % (separator, polarity, 
+                                                               int(level[2]) if level != 'MS1' else '',
+                                                               precstr,
+                                                               floor(rangeobj.Start),
+                                                               ceil(rangeobj.End))
                 self._filters.append((rt, string))
         
         return self._filters
@@ -176,10 +192,12 @@ class mzFile(baseFile):
         present, else the other.
         """
         
-        if not centroid:
+        if centroid == None:
             mode = desiredModeDict['PeakElseProfile'.lower()]
-        else:
+        elif isinstance(centroid, basestring):
             mode = desiredModeDict[centroid.lower()] # Usually 'profile' or 'centroid'.
+        else:
+            mode = desiredModeDict['centroid' if centroid else 'profile']
         
         scanObj = self.source.GetSpectrum_8(scan, self.noFilter, self.noFilter, mode)
         return zip(scanObj.XArray, scanObj.YArray)
