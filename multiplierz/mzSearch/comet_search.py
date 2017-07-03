@@ -365,7 +365,8 @@ def convertVarmods(psm):
     psm['Variable Modifications'] = '; '.join(modstrs)
     return psm
         
-def format_report(reportfile, outputfile = None, mgffile = None, parameters = None):
+def format_report(reportfile, outputfile = None, mgffile = None, parameters = None,
+                  most_rank = None, most_exp = None):
     """
     Renders a native Comet output .txt file into an mzReport-compatible and
     prettier .xlsx format.
@@ -374,6 +375,10 @@ def format_report(reportfile, outputfile = None, mgffile = None, parameters = No
     underscore in the 'modified peptide' column; hopefully that will be fixed
     soon.)
     """
+    if most_rank:
+        most_rank = int(most_rank)
+    if most_exp:
+        most_exp = float(most_exp)
     
     if mgffile:
         from multiplierz.mgf import parse_to_generator
@@ -430,6 +435,10 @@ def format_report(reportfile, outputfile = None, mgffile = None, parameters = No
         headerwriter.close()
     mainwriter = writer(outputfile, columns = ['Spectrum Description'] + columns, sheet_name = 'Data')
     for row in rows:
+        if most_rank and row['Peptide Rank'] > most_rank:
+            continue
+        if most_exp and row['Expectation Value'] > most_exp:
+            continue
         mainwriter.write(row)
     mainwriter.close()
     
@@ -584,7 +593,7 @@ class CometSearch(dict):
             
 
         
-    def run_search(self, data_file, outputfile = None):
+    def run_search(self, data_file, outputfile = None, most_rank = None, most_exp = None):
         #assert self.enzyme_selection != None, "Must specify enzyme selection (attribute .enzyme_selection)!" 
         
         self['digest_mass_range'] = '450.0 6000.0' # Remove this if this parameter gets added to the GUI!
@@ -604,6 +613,9 @@ class CometSearch(dict):
             parfile += '.temp'
         self.write(parfile)
         
+        if not outputfile:
+            outputfile = data_file + '.xlsx'
+        
         try:
             expectedResultFile = data_file[:-3] + 'txt'
             
@@ -614,7 +626,9 @@ class CometSearch(dict):
             
             if outputfile.split('.')[-1].lower() in ['xlsx', 'xls', 'mzd']:
                 resultfile = format_report(expectedResultFile, outputfile, data_file,
-                                           parameters = dict(self))
+                                           parameters = dict(self),
+                                           most_rank = most_rank,
+                                           most_exp = most_exp)
             else:
                 resultfile = expectedResultFile
             
