@@ -908,7 +908,6 @@ def fragment(peptide, mods = [], charges = [1],
              ions = ['b', 'y'], 
              neutralPhosLoss = False,
              neutralLossDynamics = {},
-             enumerateFragments = False,
              waterLoss = False):
     # Currently only records one neutral loss even if there's more than
     # one loss-inducing mod.  Simplicity is a virtue?
@@ -1011,21 +1010,32 @@ def fragment(peptide, mods = [], charges = [1],
             continue
         assert chg > 1, "Positive charge states only!"
         
-        bfrag = 'b' + '+'*chg
-        yfrag = 'y' + '+'*chg
-        fragmentSetsByIonType[bfrag] = []
-        fragmentSetsByIonType[yfrag] = []
-        
-        for site, (prelabel, bion) in enumerate(fragmentSetsByIonType['b'], start = 1):
-            chgion = _placeCharge(bion, chg)
-            #label = 'b' + str(site) + ('+'*chg)
-            label = prelabel + '+'*chg
-            fragmentSetsByIonType[bfrag].append((label, chgion))
-        for site, (prelabel, yion) in enumerate(fragmentSetsByIonType['y'], start = 1):
-            chgion = _placeCharge(yion, chg)
-            #label = 'y' + str(site) + ('+'*chg)
-            label = prelabel + '+'*chg
-            fragmentSetsByIonType[yfrag].append((label, chgion))
+        #if 'b' in ions:
+            #bfrag = 'b' + '+'*chg
+            #fragmentSetsByIonType[bfrag] = []
+            #for site, (prelabel, bion) in enumerate(fragmentSetsByIonType['b'], start = 1):
+                #chgion = _placeCharge(bion, chg)
+                ##label = 'b' + str(site) + ('+'*chg)
+                #label = prelabel + '+'*chg
+                #fragmentSetsByIonType[bfrag].append((label, chgion))            
+        #if 'y' in ions:
+            #yfrag = 'y' + '+'*chg
+            #fragmentSetsByIonType[yfrag] = []
+            #for site, (prelabel, yion) in enumerate(fragmentSetsByIonType['y'], start = 1):
+                #chgion = _placeCharge(yion, chg)
+                ##label = 'y' + str(site) + ('+'*chg)
+                #label = prelabel + '+'*chg
+                #fragmentSetsByIonType[yfrag].append((label, chgion))
+                
+        for iontype in ions:
+            chgion = iontype + '+'*chg
+            fragmentSetsByIonType[chgion] = []
+            for site, (prelabel, preion) in enumerate(fragmentSetsByIonType[iontype], start = 1):
+                newion = _placeCharge(preion, chg)
+                newlabel = prelabel + '+'*chg
+                fragmentSetsByIonType[chgion].append((newlabel, newion))
+                
+                
     
     # Water-loss duplicates of ALL ions!
     if waterLoss:
@@ -1042,6 +1052,9 @@ def fragment(peptide, mods = [], charges = [1],
                 waterlosses.append((newlabel, newion))
             fragmentSetsByIonType[fragtype] += waterlosses
     
+    if 1 not in charges:
+        for iontype in ions:
+            del fragmentSetsByIonType[iontype]
     
     return fragmentSetsByIonType
 
