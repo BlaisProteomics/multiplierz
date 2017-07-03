@@ -235,9 +235,11 @@ class mzFile(object):
         if data_file.lower().startswith('http://'):
             import mzURL
             self.__class__ = mzURL.mzFile
+            self.format = 'mzserver'
             mzURL.mzFile.__init__(self, data_file, **kwargs)
         elif data_file.lower().endswith('.wiff'):
             import mzWiff
+            self.format = 'wiff'
             if kwargs.get('implicit_mode', False) == True:
                 self.__class__ = mzWiff.mzFile_implicit_numbering
                 mzWiff.mzFile_implicit_numbering.__init__(self, data_file, **kwargs)
@@ -256,22 +258,26 @@ class mzFile(object):
         elif data_file.lower().endswith('.raw'):
             import raw
             self.__class__ = raw.mzFile
+            self.format = 'raw'
             raw.mzFile.__init__(self, data_file, **kwargs)
         elif (data_file.lower().endswith('.mzml') or
               data_file.lower().endswith('.mzml.gz') or
               data_file.lower().endswith('.mzmlsql')):
             import mzML
             self.__class__ = mzML.mzFile
+            self.format = 'mzml'
             mzML.mzFile.__init__(self, data_file, **kwargs)
         elif data_file.lower().endswith('.d'):
             #assert sys.maxsize <= 2**32, "Agilent files are not currently supported in 64-bit Python."
             
             import D
             self.__class__ = D.mzFile
+            self.format = 'd'
             D.mzFile.__init__(self, data_file, **kwargs)
         elif data_file.lower().endswith('.t2d'):
             import mzT2D
             self.__class__ = mzT2D.mzFile
+            self.format = 't2d'
             mzT2D.mzFile.__init__(self, data_file, **kwargs)
         else:
             raise NotImplementedError, "Can't open %s; extension not recognized." % data_file
