@@ -665,13 +665,16 @@ class MascotReport:
         
         # With 2.5 Mascot, the decoy mode test crashes Python outright.
         #if dat_interface.hasDecoyHits():
-            #decoy_dat_interface = interface.MascotDatFile(dat_file, 
-                                                          #decoyMode = True,
-                                                          #**_mascot_options)
-            #for row in decoy_dat_interface.peptide_report():
-                #row = mzReport.ReportEntry(report_columns, values)
-                #data_sheet.append(row)
-            #decoy_dat_interface.close()        
+        try:
+            decoy_dat_interface = interface.MascotDatFile(datfile, 
+                                                          decoyMode = True,
+                                                          **mascot_options)
+            for values in decoy_dat_interface.peptide_report():
+                row = mzReport.ReportEntry(report_columns, values)
+                data_sheet.append(row)
+            decoy_dat_interface.close()       
+        except Exception as err:
+            print "Reading decoy data failed with error: %s" % err
         
         if not retain_dat_file:
             os.remove(datfile)
@@ -687,7 +690,9 @@ class MascotReport:
                     **report_kwargs):
         
 
-        
+        if ext:
+            ext = ext.lstrip('.')
+            
         report_columns = mzReport.default_columns
         if float(self.mascot.version) >= 2.3 and 'Protein Database' not in report_columns:
             report_columns.insert(1, 'Protein Database')        
@@ -705,7 +710,8 @@ class MascotReport:
                                                      **report_kwargs)
             datafilename = header[7][1] or mascot_id
             reports.append((mascot_id, datafilename, header, psms))
-            
+        
+        imputed_output_file_name = False
         if outputfile and ext:
             if not outputfile.lower().endswith(ext):
                 outputfile += '.' + ext        
@@ -713,6 +719,7 @@ class MascotReport:
             if not ext:
                 ext = 'xlsx'
             outputfile = '_'.join(mascot_ids) + '.' + ext.strip('.')            
+            imputed_output_file_name = True
             #outputfile = '.'.join([reports[0][1], ext.strip('.')])
         elif outputfile and not ext:
             ext = outputfile.split('.')[-1]
@@ -731,8 +738,10 @@ class MascotReport:
                                       date = date)
         elif len(mascot_ids) == 1:
             mascot_id, datafilename, header, psms = reports[0]
-            if not outputfile:
+            if imputed_output_file_name or not outputfile:
                 outputfile = datafilename + '.' + ext
+                if chosen_folder:
+                    outputfile = os.path.join(chosen_folder, outputfile)
             output = mzReport.writer(outputfile,
                                      columns = header[0],
                                      sheet_name = 'Mascot Header')
