@@ -99,6 +99,8 @@ heavyR = "Label:13C(6)15N(4)"
 
 def featureToPSM(resultFile, featureData, groupSILAC = False):
     results = reader(resultFile)
+    if 'Feature' not in results.columns:
+        raise IOError, "Not a feature-annotated file!"
     
     featureToPSMs = defaultdict(list)
     if groupSILAC:
