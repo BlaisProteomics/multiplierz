@@ -1,10 +1,7 @@
-from setuptools import setup, find_packages
+from setuptools import setup, find_packages, dist
 
 from codecs import open
 from os import path
-
-
-#data_dir = path.abspath(path.dirname('__here__'))
 
 
 setup(name = 'multiplierz',
@@ -26,5 +23,9 @@ setup(name = 'multiplierz',
                       'multiplierz':['unimod.sqlite', '_msparser.pyd']},
       include_package_data=True,
       install_requires = ['numpy', 'comtypes', 'matplotlib', 'pypiwin32',
-                          'openpyxl', 'xlrd', 'xlwt', 'requests'] # Removed 'lxml'.
+                          'openpyxl', 'xlrd', 'xlwt', 'requests'], # Removed 'lxml'.
       )
+
+
+
+        
