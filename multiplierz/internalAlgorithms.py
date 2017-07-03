@@ -22,7 +22,18 @@ def floatrange(start, stop, step = 1):
 
 
 
-
+def splitOnFirst(string, char):
+    """
+    Splits on only the first instance of a character.  Like the .split()
+    method, removes the splitting character, but other instances of the
+    character are retained.  Always returns a 2-tuple, with the whole
+    string in the first element if the char is not found.
+    """
+    index = string.find(char)
+    if index >= 0:
+        return string[:index], string[index+1:]
+    else:
+        return string, ''
         
         
 def insert_tag(filename, tag):
@@ -212,7 +223,7 @@ class ProximityIndexedSequence(object):
             key = next(x for x in self.bins.keys() if x[0] <= el[0] <= x[1])
             self.bins[key].append(el)
         except StopIteration:
-            # Add is often used to iteratively build the list; tidyBins()
+            # Add is often used to iteratively build the list; rebalance()
             # *ought* to be called if things are being used correctly, but
             # its still faster if the bins are made in some reasonable size.
             maxbinlimit = max([x[1] for x in self.bins.keys()])
