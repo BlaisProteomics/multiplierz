@@ -170,7 +170,7 @@ def partial_database(fasta, output = None, search = ''):
     return output
 
 
-def reverse_database(fasta, outputFile = None, include_forward = False):
+def reverse_database(fasta, outputFile = None, include_forward = False, tag = 'rev_'):
     '''
     Writes a reverse-sequence database, where each header is annotated
     with 'rev_' and each sequence is reversed from the original.
@@ -195,7 +195,7 @@ def reverse_database(fasta, outputFile = None, include_forward = False):
     inputGen = Reader(fasta)
 
     for protein, sequence in inputGen:
-        revProtein = '>rev_' + protein
+        revProtein = tag + protein
         revSequence = ''.join(list(reversed(sequence)))
 
         if include_forward:
@@ -250,7 +250,7 @@ def pseudo_reverse(fasta, output, enzyme = 'Trypsin', tag = 'rev_', include_forw
             reconstructed.append(subseq[:-1][::-1] + subseq[-1])
         reconstructed = ''.join(reconstructed)
         
-        outputFile.write(header, reconstructed)
+        outputFile.write(tag+header, reconstructed)
     
     outputFile.close()
 
