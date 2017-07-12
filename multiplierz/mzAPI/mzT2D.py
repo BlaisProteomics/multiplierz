@@ -28,10 +28,10 @@ class mzFile(multiplierz.mzAPI.mzFile):
         
         descwords = desc.split()
         filename = descwords[2].strip(',')
-        if filename.split('_')[1] == 'MSMS':
+        if filename.split('_')[1].upper() == 'MSMS':
             level = 2
             precursor = float(filename.split('_')[2])
-        elif filename.split('_')[1] == 'MS':
+        elif filename.split('_')[1].upper() == 'MS':
             level = 1
             precursor = '-'
         else:
