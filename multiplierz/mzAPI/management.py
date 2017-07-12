@@ -35,6 +35,8 @@ import sys
 #print os.path.dirname(__file__)
 #print sys.executable
 
+msfilereader_installer = os.path.join(os.path.dirname(__file__), 'MSFileReader_x86_x64_v3.0SP3.exe')
+
 def testInterfaces():
     from win32com.client import Dispatch
     guids = ['MSFileReader.XRawfile',
@@ -118,6 +120,7 @@ def registerInterfaces():
             registerResults[interfaceModules[filename]] = "No .DLL"
 
     registerResults["RAW"] = "N/A"
+    
         
     afterChecks = {}
     for filetype, guid in interfaceGUIDs.items():
@@ -130,7 +133,7 @@ def registerInterfaces():
     
     print "Registration operations completed."
     print "Results: \n"
-    print "File Type\tRegistered Before\tRegAsm Return Code\Registered Now"
+    print "File Type\tRegistered Before\tRegAsm Return Code\tRegistered Now"
     for filetype in interfaceGUIDs.keys():
         print "{0}\t\t{1}\t\t{2}\t\t\t{3}".format(filetype,
                                                   initialChecks[filetype],
@@ -138,10 +141,57 @@ def registerInterfaces():
                                                   afterChecks[filetype])
     print "\n"
     if not afterChecks["RAW"]:
-        print "\n To register RAW file access, download and install the free Thermo MS File Reader."
-        return 1
+        print "MSFileReader (required for RAW file access) has not been installed.  Run the Thermo MSFileReader installation package now? [Y/n]"
+        if 'n' not in raw_input().lower():
+            if not os.path.exists(msfilereader_installer):
+                print "MSFileReader installer not found!  Please re-install multiplierz or download MSFileReader from the Thermo Scientific website."
+                print msfilereader_installer
+                return 1
+            print "Please wait..."
+            retval = subprocess.call(msfilereader_installer)
+            if not retval:
+                print "Done."
+            else:
+                print "An error occurred. (Return value %s)" % retval
+    
+        
     
     return 0
 
 if __name__ == '__main__':
-    registerInterfaces()
+    import ctypes, sys
+    import win32com.shell.shell as shell
+    from win32com.shell import shellcon
+    import win32event, win32process, win32con # con not com?!
+    from time import sleep
+
+    # Much Windows interface voodoo;
+    # Calls registerInterfaces(), with the complication that if 
+    # this is not being run with administrator priviledges, it runs
+    # a new Python process calling this module that requests
+    # admin priviledges on startup.
+
+    if ctypes.windll.shell32.IsUserAnAdmin():
+        registerInterfaces()
+        pause()
+    else:
+        print sys.executable, sys.argv
+        #reRun = ' '.join([sys.executable] + sys.argv)
+        #foo = ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, "", None, 1)
+        #procinfo = shell.ShellExecuteEx(lpVerb = 'runas', lpFile = sys.executable,
+                                        #lpParameters = ' '.join(sys.argv), nShow = 5 )
+        procinfo = shell.ShellExecuteEx(nShow = win32con.SW_SHOWNORMAL,
+                                        fMask = shellcon.SEE_MASK_NOCLOSEPROCESS,
+                                        lpVerb = 'runas',
+                                        lpFile = sys.executable,
+                                        lpParameters = ' '.join(sys.argv))
+        sleep(0.5)
+        obj = win32event.WaitForSingleObject(procinfo['hProcess'], win32event.INFINITE)
+        try:
+            retval = win32process.GetExitCodeProcess(procinfo['hProcess'])
+        except:
+            retval = 'No return value.'
+        
+        print retval
+        
+    
