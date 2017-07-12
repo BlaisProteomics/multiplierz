@@ -1,4 +1,3 @@
-import multiplierz.mzAPI.raw
 from multiplierz.mzAPI import mzFile
 from multiplierz.internalAlgorithms import splitOnFirst
 from multiplierz import protonMass, __version__, vprint
@@ -278,75 +277,7 @@ class MGF_Writer(object):
     def __exit__(self, *etc):
         self.close()
         
-    
 
-#ScanFeatureData = {} # Isotopic feature data per scan; should be refreshed per file processed!
-    
-#def _get_precursor(pMZ, scan, scanNum, charge, tolerance):
-    #"""
-    #Used in extract(); attempts to find the charge of a given precursor peak
-    #in an MS1 scan.   
-    #"""
-    
-    #scan = [x[:2] for x in scan]
-    
-    #global ScanFeatureData
-    #if scanNum not in ScanFeatureData:
-        #c12Table = {}
-        #for chg in range(1, 20):
-            #c12Table[chg] = [] # To avoid gaps.
-            
-        #featureData, etc = peak_pick(scan, max_charge = 10, tolerance = tolerance)
-        #for chg, isotopeSeqs in featureData.items():
-            #for iso in isotopeSeqs:
-                ##c12Table.append((iso, chg))
-                #c12Table[chg].append((iso, chg))
-        
-        #ScanFeatureData[scanNum] = c12Table
-    #else:
-        #c12Table = ScanFeatureData[scanNum]
-    
-    #if charge:
-        #nearSequences = [iso for iso, chg in c12Table[charge]
-                         #if iso[-1][0] > pMZ - 0.05 and iso[0][0] < pMZ + 0.05]
-        ##                Matching charge, and given mz falling (given tolerances)
-        ##                somewhere within the range of the isotopic envelope.
-    #else:
-        ## If not given a charge, we want to recover it from the isotopes table.
-        #nearSequences, charges = zip(*[(iso, chg) for iso, chg in sum(c12Table.values(), []) if
-                                       #iso[-1][0] > pMZ - 0.05 and iso[0][0] < pMZ + 0.05])
-        
-    #if not nearSequences:
-        #precMZ = None
-    #else:
-        #if len(nearSequences) == 1: # Efficiency; assume its right if its the only option.
-            #seq = nearSequences[0]
-            #if not charge:
-                #charge = charges[0]
-                
-        #else: # Multiple possible isotopic sequences.
-            #seqIndex, seq = min(enumerate(nearSequences),
-                                #key = lambda x: min([abs(mz - pMZ) for mz, int in x[1]]))
-            ##                   Take the isotopic sequence with the nearest peak.
-            
-            #if not charge:
-                #charge = charges[seqIndex]
-                ## ...and the corresponding charge, if necessary.
-        
-        ##                                 Most intense peak in the isotopic sequence.
-        #highIndex, highPt = max(enumerate(seq), key = lambda x: x[1][1])
-        
-        ## highPt is likely the C12 if its the leftmost peak, otherwise its likely
-        ## the C13.  In the latter case, if its not the next-to-leftmost, the
-        ## one beside it is considered the C12 and any peaks further left than
-        ## that are ???mysteries???
-        #if highIndex > 0:
-            #precMZ = seq[highIndex - 1][0]
-        #else:
-            #precMZ = highPt[0]
-        ## Complicated!
-        
-    #return precMZ, charge
         
     
                 
@@ -373,7 +304,8 @@ def extract(datafile, outputfile = None, default_charge = 2, centroid = True,
     # Currently doesn't compensate for injection time! Would be required in
     # order to deal with iTRAQ/TMT labels.
     
-    from multiplierz.spectral_process import deisotope_reduce_scan, peak_pick, centroid
+    from multiplierz.spectral_process import deisotope_reduce_scan, peak_pick
+    from multiplierz.spectral_process import centroid as centroid_func # Distinct from 'centroid' argument.
     
     def _get_precursor(mz, possible_prec, charge):
         try:
@@ -474,14 +406,14 @@ def extract(datafile, outputfile = None, default_charge = 2, centroid = True,
             
             possible_precursors = None
             def calculate_precursors():
-                if isinstance(data, multiplierz.mzAPI.raw.mzFile):
+                if data.format == 'raw':
                     lastMS1 = data.lscan(lastMS1ScanName)
                 else:
                     try:
                         lastMS1 = data.scan(lastMS1ScanName,
                                             centroid = True)
                     except NotImplementedError:
-                        lastMS1 = centroid(data.scan(lastMS1ScanName))      
+                        lastMS1 = centroid_func(data.scan(lastMS1ScanName))      
                         
                 envelopes = peak_pick(lastMS1, tolerance = 0.01, min_peaks = 2,
                                       enforce_isotopic_ratios=False)[0]
@@ -494,16 +426,34 @@ def extract(datafile, outputfile = None, default_charge = 2, centroid = True,
         elif lastMS1ScanName == None:
             continue
         
-        try:
-            scan = data.scan(scanName, centroid = True)
-        except NotImplementedError as err:
-            # Currently calls to mzWiff with centroid enabled return
-            # an error.
+        #try:
+            #scan = data.scan(scanName, centroid = centroid)
+        #except NotImplementedError as err:
+            ## Currently calls to mzWiff with centroid enabled return
+            ## an error.
+            #if centroid:
+                #scan = centroid_func(data.scan(scanName))
+            #else:
+                #raise err
+            
+        # Each file type handles centroiding differently (or not at all.)
+        if data.format == 'raw':
+            scan = data.scan(scanName, centroid = centroid)
+        elif data.format == 'wiff':
+            # explicit_numbering, of course, can't be active here.
+            scan = data.scan(scanName)
             if centroid:
-                scan = centroid(data.scan(scanName))
-            else:
-                raise err
+                scan = centroid_func(scan)
+        elif data.format == 'd':
+            scan = data.scan(scanName, centroid = centroid)
+            if centroid and not scan:
+                # mzAPI.D returns empty if centroid data is not present in
+                # the file, but that can be corrected by external centroiding.
+                scan = centroid_func(data.scan(scanName, centroid = False))
+        else:
+            raise NotImplementedError, "Extractor does not handle type %s" % data.format
         
+            
         if filters and not mz:
             mz = float(filters[time].split('@')[0].split(' ')[-1])            
         
