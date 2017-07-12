@@ -168,11 +168,11 @@ class mzFile(baseFile):
                     precstr = '%.4f@%.2f' % (mz, energy)
                 else:
                     precstr = ''
-                string = "%s MS %s NSI Full ms%s %s[%d-%d]" % (separator, polarity, 
+                string = "%s MS %s NSI Full ms%s %s[%.2f-%.2f]" % (separator, polarity, 
                                                                int(level[2]) if level != 'MS1' else '',
                                                                precstr,
-                                                               floor(rangeobj.Start),
-                                                               ceil(rangeobj.End))
+                                                               (rangeobj.Start),
+                                                               (rangeobj.End))
                 self._filters.append((rt, string))
         
         return self._filters
