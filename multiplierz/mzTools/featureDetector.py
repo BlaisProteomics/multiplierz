@@ -453,7 +453,8 @@ def runSearch(datafile, resultFiles):
 
 def feature_analysis(datafile, resultFiles,
                      tolerance = None,
-                     mzRegex = None, scanRegex = None):
+                     mzRegex = None, scanRegex = None,
+                     **constants):
     
     """
     Performs feature-detection analysis on the given .RAW file and PSM
@@ -501,7 +502,7 @@ def feature_analysis(datafile, resultFiles,
         assert os.path.exists(resultfile), "%s not found!" % resultfile
     assert datafile.lower().endswith('.raw'), "Only .raw files are currently supported."
     
-    featureFile = detect_features(datafile, tolerance = tolerance)
+    featureFile = detect_features(datafile, tolerance = tolerance, **constants)
     features = FeatureInterface(featureFile)
     
     outputfiles = []
