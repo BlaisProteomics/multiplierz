@@ -107,7 +107,13 @@ class mzFile(mzAPImzFile):
                             raise IOError, "Couldn't get extra values for scan. %s" % retval
                         mz = mz_value.value
                     else:
-                        mz = float(mz_re.search(filter_str.value).group(1))
+                        try:
+                            mz = float(mz_re.search(filter_str.value).group(1))
+                        except AttributeError as err:
+                            if 'SRM' in filter_str.value:
+                                mz = float(str(filter_str).split()[6])
+                            else:
+                                raise err
 
                 self._headers.append((scan_time.value, # scan time
                                       mz, # scan m/z from header, or 0 if MS1
@@ -257,13 +263,12 @@ class mzFile(mzAPImzFile):
 
         """
 
-        #Sneaky ability to access scans directly by scan_num... Shhhhh....
+        # Scan can be either an RT value (if float) or a scan number (if int).
         if isinstance(time, float):
             scan_num = self.scanForTime(time)
         else:
             scan_num = time
 
-        (scan_time,mz,sn,st,scan_mode) = self.headers()[scan_num - 1]
         the_scan = c_long(scan_num)
 
 
@@ -282,10 +287,13 @@ class mzFile(mzAPImzFile):
         z_value = comtypes.automation.VARIANT()
         retval = self.source.GetTrailerExtraValueForScanNum(the_scan, u'Charge State:', z_value)
         if retval:
-            raise IOError, "Could not get extra values for scan. %s" % retval
-        z = z_value.value
+            #raise IOError, "Could not get extra values for scan. %s" % retval
+            z = 0.0
+        else:
+            z = z_value.value
         
         if mzScanMode:
+            (scan_time,mz,sn,st,scan_mode) = self.headers()[scan_num - 1]
             return mzScan(zip(ms.value[0],ms.value[1]), scan_time, scan_mode, mz, z)
         else:
             return zip(ms.value[0],ms.value[1])
@@ -472,7 +480,10 @@ class mzFile(mzAPImzFile):
         if retval :
             raise IOError, "Could not get data for scans. %s" % retval
         vals = dict(zip( map(lambda x: str(x[:-1]), labels.value) , map(_to_float, values.value) ))
-        return vals["Ion Injection Time (ms)"]
+        try:
+            return vals["Ion Injection Time (ms)"]
+        except KeyError:
+            return 1
 
     def scanPrecursor(self,scanNum):
         if isinstance(scanNum, float):
