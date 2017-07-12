@@ -744,7 +744,7 @@ class MascotReport:
                     outputfile = os.path.join(chosen_folder, outputfile)
             output = mzReport.writer(outputfile,
                                      columns = header[0],
-                                     sheet_name = 'Mascot Header')
+                                     sheet_name = 'Mascot_Header')
             for line in header[1:]:
                 output.write(line)
             output.close()
