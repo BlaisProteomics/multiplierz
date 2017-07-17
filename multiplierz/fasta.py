@@ -223,7 +223,7 @@ def combine(fasta_files, output):
     
     return output
     
-def pseudo_reverse(fasta, output, enzyme = 'Trypsin', tag = 'rev_', include_forward = False):
+def pseudo_reverse(fasta, output = None, enzyme = 'Trypsin', tag = 'rev_', include_forward = False):
     """
     Creates a psuedo-reverse database, in which each individual fragment sequence
     specified by the given enzyme is reversed.  The cleavage sites themselves are
@@ -236,12 +236,6 @@ def pseudo_reverse(fasta, output, enzyme = 'Trypsin', tag = 'rev_', include_forw
     fastaFile = parse_to_generator(fasta)
     outputFile = Writer(output)
     
-    if include_forward:
-        for header, sequence in fastaFile:
-            outputFile.write(header, sequence)
-        fastaFile.close()
-        fastaFile = parse_to_generator(fasta)	
-    
     for header, sequence in fastaFile:
         subsequences = [x[0] for x in digest(sequence, enzyme)]
         
@@ -250,12 +244,11 @@ def pseudo_reverse(fasta, output, enzyme = 'Trypsin', tag = 'rev_', include_forw
             reconstructed.append(subseq[:-1][::-1] + subseq[-1])
         reconstructed = ''.join(reconstructed)
         
+        if include_forward:
+            outputFile.write(header, sequence)
         outputFile.write(tag+header, reconstructed)
     
     outputFile.close()
 
     return output
-
-
-
 
