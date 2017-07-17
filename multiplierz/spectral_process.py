@@ -4,7 +4,7 @@ from multiplierz import protonMass
 from collections import deque
 from numpy import std
 
-def centroid(scan):
+def centroid(scan, threshold_scale = 1):
     """
     Centroids profile-mode data given in [(M/Z, intensity)] format.
     """
@@ -12,7 +12,7 @@ def centroid(scan):
     if not scan:
         return scan
     
-    threshold = average(zip(*scan)[1])
+    threshold = average(zip(*scan)[1]) * threshold_scale
     peaks = []
     peak = []
     for pt in scan:
