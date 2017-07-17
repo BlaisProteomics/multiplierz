@@ -92,7 +92,8 @@ class mzFile_implicit_numbering(mzAPImzFile):
                 in exp_info
                 if sample == self.sample]
     
-    def xic(self, start_time = 0, end_time = 999999, start_mz = 0, end_mz = 2000, filters = None):
+    def xic(self, start_time = 0, end_time = 999999, start_mz = 0, end_mz = 2000,
+            experiment = 1, filters = None):
         """
         Gets the eXtracted Ion Chromatogram of the given time- and mz-range.
         
@@ -100,7 +101,7 @@ class mzFile_implicit_numbering(mzAPImzFile):
         """
     
         return self.data.xic(start_time, end_time, start_mz, end_mz, 
-                             sample = self.sample, experiment=1, filters = filters)
+                             sample = self.sample, experiment=experiment, filters = filters)
     
     def time_range(self):
         """
@@ -127,6 +128,9 @@ class mzFile_implicit_numbering(mzAPImzFile):
         
     def filters(self):
         return self.data.filters()
+    
+    def scan_modes(self):
+        return self.data.scan_modes()
     
     def headers(self):
         return self.data.scan_info()
@@ -393,7 +397,14 @@ class mzFile_explicit_numbering(mzAPImzFile):
             self._filters.append((rt, filterstr))
         
         return self._filters
-        
+    
+    def scan_modes(self):
+        modes = []
+        for sample in range(0, self.source.GetSamples()):
+            for experiment in range(0, self.source.GetExperiments(sample)):
+                modes.append(self.source.ExperimentInfo(sample, experiment)[3])
+        return modes
+    
     def headers(self, *etc):
         self._headers = self.scan_info()
         return self._headers
