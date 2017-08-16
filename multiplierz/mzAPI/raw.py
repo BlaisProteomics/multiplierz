@@ -63,7 +63,7 @@ class mzFile(mzAPImzFile):
 
             mode_re = re.compile(r'\s+(ms(?:\d+)?)\s+')
             data_re = re.compile(r'\s+([cp])\s+')
-            mz_re = re.compile(r'(\d+\.\d+)@')
+            #mz_re = re.compile(r'(\d+\.\d+)@|Full ms2 (\d+\.\d+) [')
 
             retval = self.source.GetFirstSpectrumNumber(byref(first))
             if retval:
@@ -75,7 +75,7 @@ class mzFile(mzAPImzFile):
 
             for scan in xrange(first.value, last.value + 1):
                 filter_str = comtypes.automation.BSTR(None)
-
+                
                 retval = self.source.GetFilterForScanNum(scan, byref(filter_str))
                 if retval:
                     raise IOError, "Couldn't get filter. %s" % retval
@@ -84,12 +84,28 @@ class mzFile(mzAPImzFile):
                 if retval:
                     raise IOError, "Couldn't get retention time for headers. %s" % retval
 
-                data_m = data_re.search(filter_str.value)
-                mode_m = mode_re.search(filter_str.value)
+                filterstr = filter_str.value.upper()
 
-                scan_mode = str(mode_m.group(1)).upper()
-                if scan_mode == 'MS':
+                data_m = data_re.search(filter_str.value)
+                #mode_m = mode_re.search(filter_str.value)
+
+                #scan_mode = str(mode_m.group(1)).upper()
+                #if scan_mode == 'MS':
+                    #scan_mode = 'MS1'
+                   
+                 
+                if 'MS1' in filterstr:
                     scan_mode = 'MS1'
+                elif 'MS2' in filterstr:
+                    scan_mode = 'MS2'
+                elif 'MS3' in filterstr:
+                    scan_mode = 'MS3'
+                elif 'PR' in filterstr:
+                    scan_mode = 'PR'
+                elif ' MS ' in filterstr:
+                    scan_mode = 'MS1' # Some annoying formats.
+                else:
+                    raise IOError, 'Unrecognized scan filter format: %s' % filter_str.value               
 
                 if scan_mode == 'MS1':
                     mz = 0.0
@@ -107,14 +123,13 @@ class mzFile(mzAPImzFile):
                             raise IOError, "Couldn't get extra values for scan. %s" % retval
                         mz = mz_value.value
                     else:
-                        try:
-                            mz = float(mz_re.search(filter_str.value).group(1))
-                        except AttributeError as err:
-                            if 'SRM' in filter_str.value:
-                                mz = float(str(filter_str).split()[6])
-                            else:
-                                raise err
-
+                        if '@' in filterstr:
+                            mz = float(filterstr.split('@')[0].split()[-1])
+                        elif 'SRM' in filterstr or ('SID=' in filterstr and 'FULL ' in filterstr):
+                            mz = float(filterstr.split()[6])
+                        else:
+                            raise IOError, 'Unrecognized filter format: %s' % filterstr
+                        
                 self._headers.append((scan_time.value, # scan time
                                       mz, # scan m/z from header, or 0 if MS1
                                       scan, # scan name == scan number
