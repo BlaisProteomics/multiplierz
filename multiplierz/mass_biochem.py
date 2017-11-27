@@ -47,7 +47,6 @@ except IOError:
            "multiplierz repository.")
     
 
-
 # From Unimod.
 AtomicMass = {'13C': 13.00335483,
               '15N': 15.00010897,
@@ -86,6 +85,55 @@ AtomicMass = {'13C': 13.00335483,
               'Zn': 63.9291448,
               'e': 0.000549}
 AW = AtomicMass # For legacy reasons.
+
+#AverageMasses = {'Br': 78.9183361,
+                 #'C': 12.01104,
+                 #'Cl': 34.968852721,
+                 #'D': 2.014,
+                 #'F': 18.9984046,
+                 #'Fe': 55.845,
+                 #'H': 1.007976,
+                 #'N': 14.00666,
+                 #'O': 15.99932,
+                 #'P': 30.973762,
+                 #'S': 32.06469,
+                 #'e': 0.000549}
+AverageMasses = {'Al': 26.98154,
+                 'Ar': 39.948,
+                 'As': 74.92159,
+                 'B': 10.811,
+                 'Be': 9.012182,
+                 'Br': 79.904,
+                 'C': 12.011,
+                 'Ca': 40.078,
+                 'Cl': 35.4527,
+                 'Co': 58.9332,
+                 'Cr': 51.9961,
+                 'Cu': 63.546,
+                 'F': 18.9984,
+                 'Fe': 55.847,
+                 'Ga': 69.723,
+                 'Ge': 72.61,
+                 'H': 1.00794,
+                 'He': 4.002602,
+                 'K': 39.0983,
+                 'Li': 6.941,
+                 'Mg': 24.305,
+                 'Mn': 54.93805,
+                 'N': 14.00674,
+                 'Na': 22.98977,
+                 'Ne': 20.1797,
+                 'Ni': 58.6934,
+                 'O': 15.9994,
+                 'P': 30.97376,
+                 'S': 32.066,
+                 'Sc': 44.95591,
+                 'Se': 78.96,
+                 'Si': 28.0855,
+                 'Ti': 47.88,
+                 'V': 50.9415,
+                 'Zn': 65.39}                 
+Avg_AW = AverageMasses
 
 # dictionary of modification shorthand
 mod_dictionary = {'p': 'Phospho',
@@ -147,7 +195,7 @@ EnzymeSpecification = {'Arg-C':          '[R][A-Z]',
                        'Trypsin':        '[KR][^P]'
                        }
 
-# Values are (monisotopic mass, average mass)
+# Values are (monoisotopic mass, average mass)
 # Courtesy of ExPASy: http://education.expasy.org/student_projects/isotopident/htdocs/aa-list.html
 AminoAcidMasses = {'A': (71.03711, 71.0788),
                    'C': (103.00919, 103.1388),
@@ -799,10 +847,12 @@ def n15_label(pepFormula, modFormula, spMass):
     return pepFormula, modFormula, spMass
 
 SpecialModifications = {'N15-Labelled' : n15_label}    
-mascotVarModPattern = re.compile(r'[A-Z][0-9]{,3}: .*')
+mascotVarModPattern = re.compile(r'([A-Z][0-9]{1,3})|N-term|C-term: .*')
 mascotFixModPattern = re.compile(r'.* \(.*\)')
 
-def peptide_mass(peptide, modifications = None):
+def peptide_mass(peptide, modifications = None, use_monoisotopic = True):
+    massType = 0 if use_monoisotopic else 1
+    
     if not modifications: # Due to that odd Python default-argument quirk.
         modifications = []
     elif isinstance(modifications, basestring):
@@ -852,7 +902,7 @@ def peptide_mass(peptide, modifications = None):
             # Mod as plain mod name.
             for atom, num in ModificationFormulae[mod].items():
                 modFormula[atom] += num
-        elif formula_form.match(mod):
+        elif isinstance(mod, basestring) and formula_form.match(mod):
             # Mod as written-out chemical formula.
             moddict = parse_chemical_formula(mod)
             for atom, num in moddict:
@@ -880,9 +930,13 @@ def peptide_mass(peptide, modifications = None):
     assert all([x >= 0 for x in combinedFormula]), "Impossible molecule; %s" % combinedFormula
     
     mass = specialMass
-    for el, num in combinedFormula:
-        mass += AW[el] * num
-    
+    if use_monoisotopic:        
+        for el, num in combinedFormula:
+            mass += AW[el] * num
+    else:       
+        for el, num in combinedFormula:
+            mass += Avg_AW[el] * num  
+                
     return mass
     
     
@@ -898,8 +952,7 @@ mz = peptide_mz # Legacy.
 
 
 
-def _placeCharge(ion, chg): # Assume single-charge to start.
-    mass = ion - protonMass
+def _placeCharge(mass, chg): # Assume uncharged to start.
     return (mass + (chg*protonMass)) / chg
 
 knownNeutralLosses = {'Phospho':chemicalFormulaMass('H3PO4')}
@@ -908,9 +961,12 @@ def fragment(peptide, mods = [], charges = [1],
              ions = ['b', 'y'], 
              neutralPhosLoss = False,
              neutralLossDynamics = {},
-             waterLoss = False):
+             waterLoss = False,
+             use_monoisotopic = True):
     # Currently only records one neutral loss even if there's more than
     # one loss-inducing mod.  Simplicity is a virtue?
+
+    massType = 0 if use_monoisotopic else 1
     
     for key, value in neutralLossDynamics.items():
         if isinstance(key, basestring):
@@ -921,30 +977,51 @@ def fragment(peptide, mods = [], charges = [1],
     cLoss = 17.026000420104097 # NH3+
     zLoss = 16.018724 # NH2
     
+    nterminusMass = 0
+    cterminusMass = H2Omass
+    
     modBySite = defaultdict(list)
     if isinstance(mods, basestring):
         mods = mods.split('; ')
-    for modstr in mods:
-        if modstr:
-            site = int(modstr.split(': ')[0][1:])
+    for modstr in [x for x in mods if x]:
+        if ':' in modstr:
             mod = modstr.split(': ')[1].strip()
             try:
-                modBySite[site].append(float(mod))
+                modmass = float(mod)
             except ValueError:
-                modBySite[site].append(mod_masses[mod])
-    
+                modmass = mod_masses[mod]
+            if modstr[:6].lower() == 'n-term':
+                nterminusMass = modmass 
+            elif modstr[:6].lower() == 'c-term':
+                cterminusMass = modmass + protonMass
+            else:
+                site = int(modstr.split(': ')[0][1:])
+                modBySite[site].append(modmass)
+        else:
+            # Fixed mod processing.
+            assert re.match('[A-Za-z0-9\-\. ]* \([A-Z]\)', modstr), modstr
+            mod, loc = modstr.split()
+            try:
+                modmass = float(mod)
+            except ValueError:
+                modmass = mod_masses[mod]
+            loc = loc.strip('()')
+            for site, aa in enumerate(peptide, start = 1):
+                if aa == loc:
+                    modBySite[site].append(modmass)
+        
     
     fragmentSetsByIonType = {}
-    if 'b' in ions or 'c' in ions: # Left to right, right?
+    if 'b' in ions or 'c' in ions:
         bfrags = []
         cfrags = []
-        bmass = protonMass
+        bmass = nterminusMass
         presentmods = []
         for site in range(1, len(peptide)): # 1-indexed.
             aa = peptide[site-1]
             mods = modBySite[site]
             presentmods += mods
-            bmass += AminoAcidMasses[aa][0] + sum(mod_masses.get(x, x) for x in mods)
+            bmass += AminoAcidMasses[aa][massType] + sum(mod_masses.get(x, x) for x in mods)
                     
             neutralLoss = 0
             for mod in presentmods:
@@ -969,13 +1046,13 @@ def fragment(peptide, mods = [], charges = [1],
     if 'y' in ions or 'z' in ions:
         yfrags = []
         zfrags = []
-        ymass = H2Omass + protonMass
+        ymass = cterminusMass
         presentmods = []
         for site in range(len(peptide)-1, 0, -1): # 0-indexed.
             aa = peptide[site]
             mods = modBySite[site+1]
             presentmods += mods
-            ymass += AminoAcidMasses[aa][0] + sum(mod_masses.get(x, x) for x in mods)
+            ymass += AminoAcidMasses[aa][massType] + sum(mod_masses.get(x, x) for x in mods)
             
 
             neutralLoss = 0
@@ -1002,44 +1079,31 @@ def fragment(peptide, mods = [], charges = [1],
     # Similar for z and w and whatever, I guess.
     
     
+    chargedFragmentSets = {}
     # Replicate sequences for multiply-charged states.
     for chg in charges:
         chg = int(chg)
-        
-        if chg == 1:
-            continue
-        assert chg > 1, "Positive charge states only!"
-        
-        #if 'b' in ions:
-            #bfrag = 'b' + '+'*chg
-            #fragmentSetsByIonType[bfrag] = []
-            #for site, (prelabel, bion) in enumerate(fragmentSetsByIonType['b'], start = 1):
-                #chgion = _placeCharge(bion, chg)
-                ##label = 'b' + str(site) + ('+'*chg)
-                #label = prelabel + '+'*chg
-                #fragmentSetsByIonType[bfrag].append((label, chgion))            
-        #if 'y' in ions:
-            #yfrag = 'y' + '+'*chg
-            #fragmentSetsByIonType[yfrag] = []
-            #for site, (prelabel, yion) in enumerate(fragmentSetsByIonType['y'], start = 1):
-                #chgion = _placeCharge(yion, chg)
-                ##label = 'y' + str(site) + ('+'*chg)
-                #label = prelabel + '+'*chg
-                #fragmentSetsByIonType[yfrag].append((label, chgion))
+        assert chg >= 1, "Positive charge states only!"
                 
         for iontype in ions:
-            chgion = iontype + '+'*chg
-            fragmentSetsByIonType[chgion] = []
+            if chg == 1:
+                chgion = iontype
+            else:
+                chgion = iontype + '+'*chg
+            chargedFragmentSets[chgion] = []
             for site, (prelabel, preion) in enumerate(fragmentSetsByIonType[iontype], start = 1):
                 newion = _placeCharge(preion, chg)
-                newlabel = prelabel + '+'*chg
-                fragmentSetsByIonType[chgion].append((newlabel, newion))
+                if chg == 1:
+                    newlabel = prelabel
+                else:
+                    newlabel = prelabel + '+'*chg
+                chargedFragmentSets[chgion].append((newlabel, newion))
                 
                 
     
     # Water-loss duplicates of ALL ions!
     if waterLoss:
-        for fragtype, labelions in fragmentSetsByIonType.items():
+        for fragtype, labelions in chargedFragmentSets.items():
             waterlosses = []
             for label, ion in labelions:
                 newlabel = list(label)
@@ -1050,13 +1114,13 @@ def fragment(peptide, mods = [], charges = [1],
                 mass -= H2Omass
                 newion = (mass + (chg * protonMass)) / chg
                 waterlosses.append((newlabel, newion))
-            fragmentSetsByIonType[fragtype] += waterlosses
+            chargedFragmentSets[fragtype] += waterlosses
     
-    if 1 not in charges:
-        for iontype in ions:
-            del fragmentSetsByIonType[iontype]
+    #if 1 not in charges:
+        #for iontype in ions:
+            #del fragmentSetsByIonType[iontype]
     
-    return fragmentSetsByIonType
+    return chargedFragmentSets
 
 
 
@@ -1436,11 +1500,11 @@ def mz_pep_decode(peptide):
                 else: # mod name (this will raise an exception if invalid)
                     m.append((mB.group(2),
                               unimod.get_mod_delta(mB.group(2)),
-                              (0.0,) + unimod.get_mod_neutral_loss(mB.group(2), AA)))
+                              (0.0,) + (unimod.get_mod_neutral_loss(mB.group(2), AA),) ))
         else: # abbreviation
             m = [(mA.group(2),
                   unimod.get_mod_delta(mod_dictionary[mA.group(2)]),
-                  (0.0,) + unimod.get_mod_neutral_loss(mod_dictionary[mA.group(2)], AA))]
+                  (0.0,) + (unimod.get_mod_neutral_loss(mod_dictionary[mA.group(2)], AA),) )]
 
         # note: the first neutral loss is always 0.0, so that the mod delta is reflected in
         # the default set of ions. additional neutral losses (with corresponding labels) are
@@ -1504,6 +1568,10 @@ def mz_pep_decode_new(peptide):
                 raise NotImplementedError, "Unimod lookup is disabled in this version."
         modsets[loc+1] = modset
         modmasses[loc+1] = modmass
+    for i in range(1, len(peptide)+1):
+        if i not in modsets:
+            modsets[i] = None
+            modmasses[i] = None
     
     return pure_peptide, modsets, modmasses
         
