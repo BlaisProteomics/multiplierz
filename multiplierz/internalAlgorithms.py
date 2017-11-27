@@ -118,6 +118,10 @@ def multisplit(thing, delimiters):
 
 def inPPM(ppm, mA, mB):
     return abs(mA - mB) < (max((mA, mB))/1000000.0)*ppm
+
+def PPM_bounds(ppm, mass):
+    val = (mass/1000000.0)*ppm
+    return mass - val, mass + val
     
     
 def parseClassicSpectrumDesc(desc):
@@ -151,7 +155,7 @@ def parseClassicSpectrumDesc(desc):
 
 
 
-class ProximityIndexedSequence(object):
+class old_ProximityIndexedSequence(object):
     def __init__(self, sequence, indexer = lambda x: x, 
                  binCount = None, binSequence = None,
                  dynamic = True, **kwargs):
@@ -318,12 +322,12 @@ class ProximityIndexedSequence(object):
     
     
 class NaiveProximitySequence(object):
-    def __init__(self, sequence, indexer = lambda x: x):
+    def __init__(self, sequence, indexer = (lambda x: x)):
         self.sequence = [(indexer(x), x) for x in sequence]
         self.indexer = indexer
     
     def __getitem__(self, thing):
-        return min(self.sequence, key = lambda x: abs(thing - self.indexer(x)))[1]
+        return min(self.sequence, key = lambda x: abs(thing - x[0]))[1]
     
     def remove(self, thing):
         index = self.indexer(thing)
@@ -711,7 +715,66 @@ def peak_pick_PPM(scan, tolerance = 10, max_charge = 8, min_peaks = 3, correctio
     else:
         return dict(envelopes), unassigned            
     
+
+
+
+import bisect
+from itertools import chain
+class ProximityIndexedSequence(object):
+    # Turns out there's a python recipe to do just about this but better, but
+    # now I have a bunch of legacy code that uses this interface!  Ah well.
+    def __init__(self, sequence, indexer = lambda x: x, *args, **kwargs):
+        
+        self.indexer = indexer
+        self.lookup = collectByCriterion(sequence, indexer)
+        self.indexes = sorted(self.lookup.keys())
+        
+    def seal(self):
+        pass
     
+    # add and remove are linear time, is the only problem with this version.
+    # Pretty sure in most use cases this is acceptable.
+    def add(self, value):
+        index = self.indexer(value)
+        bisect.insort_left(self.indexes, index)
+        if index not in self.lookup:
+            self.lookup[index] = [value]
+        else:
+            self.lookup[index].append(value)
+    def remove(self, value): 
+        index = self.indexer(value)
+        self.indexes.remove(index)
+        self.lookup[index].remove(value)
+        
+    def __getitem__(self, index):
+        try:
+            neardex = bisect.bisect_left(self.indexes, index)
+            founddex =  min(self.indexes[neardex-1:neardex+1],
+                            key = lambda x: abs(index - x))
+            return self.lookup[founddex][0]
+        except IndexError:
+            return self.lookup[self.indexes[-1]][0]
+        except ValueError:
+            return self.lookup[self.indexes[0]][0]
+    def asList(self):
+        return list(chain(*(self.lookup[i] for i in self.indexes)))
+    def __iter__(self):
+        for value in chain(*(self.lookup[i] for i in self.indexes)):
+            yield value
+    def returnRange(self, begin, stop):
+        startdex = bisect.bisect_left(self.indexes, begin)
+        stopdex = bisect.bisect_right(self.indexes, stop)
+        output = []
+        for index in self.indexes[startdex:stopdex]:
+            output += self.lookup[index]
+        return output
+    
+        
+        
+    
+
+
+
     
 # Just for debugging.
 def deisochart(envelopes, unassigned):
@@ -781,9 +844,40 @@ def deisocompare(envelopes1, unassigned1, envelopes2, unassigned2):
     pyt.show()  
     
     
-        
 
-        
+
+
+if __name__ == '__main__':
+    from random import uniform, seed
+    seed(1)
+    
+    noise = [float(uniform(0, 10)) for _ in range(10000)]
+    import numpy
+    indexer = lambda x: float(numpy.log(x))
+    
+    oldver = NaiveProximitySequence(noise, indexer)
+    newver = ProximityIndexedSequence(noise, indexer)
+    
+    subnoise = [float(uniform(0, 10)) for _ in range(10000)]
+    #for x in subnoise:
+        #assert oldver[indexer(x)] == newver[indexer(x)]
+    
+    #assert oldver.asList() == newver.asList()
+    
+    "Static test done."
+    
+    #oldver = old_ProximityIndexedSequence([], indexer, dynamic = True)
+    newver = ProximityIndexedSequence([], indexer)    
+    
+    for x in noise:
+        #oldver.add(x)
+        newver.add(x)
+    
+    for x in subnoise:
+        assert oldver[indexer(x)] == newver[indexer(x)]    
+    #assert oldver.asList() == newver.asList()
+    
+    print "Done!"
         
         
         
