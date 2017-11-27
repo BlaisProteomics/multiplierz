@@ -69,8 +69,38 @@ def convertAccessionsViaUniprot(accessions):
     return normedGeneNames#, uniprotIDs
 
 
-def create_fasta_index(fasta_file, outputfile, labelParser = (lambda x: x),
-                       distinguish_leucine = True):
+
+def readLocalMapForFasta(local_map_file, accessions, accession_parser = None):
+    # Local mapping file, for now, is just assumed to be a pickled dict. 
+    # Only including relevant accessions purely for the sake of output file size.
+    import cPickle as pickle
+    local_map = pickle.load(open(local_map_file, 'rb'))
+    output_map = {}
+    valid = 0
+    accession_re = re.compile('(NP_[0-9]{6,15})|([OPQ][0-9][A-Z0-9]{3}[0-9]|[A-NR-Z][0-9]([A-Z][A-Z0-9]{2}[0-9]){1,2})')
+    
+    for accession in accessions:
+        match = accession_re.search(accession)
+        if match:
+            acc = match.group()
+            try:
+                output_map[acc] = local_map[acc]
+                valid += 1
+            except KeyError:
+                continue
+        
+    if valid < float(len(accessions))/10:
+        raise ValueError, ("Only %s matching accessions out of %s found in %s" % 
+                           (valid, len(accessions), local_map_file))
+    print "Local map file match: %s/%s" % (valid, len(accessions))
+    return output_map
+    
+    
+
+
+def create_fasta_index(fasta_file, outputfile = None, labelParser = (lambda x: x),
+                       distinguish_leucine = True,
+                       local_mapping_file = None):
     starttime = time.clock()
     
     if not outputfile:
@@ -94,7 +124,11 @@ def create_fasta_index(fasta_file, outputfile, labelParser = (lambda x: x),
     print "FASTA file read: %.2f" % (time.clock() - prevtime)
     prevtime = time.clock()
     
-    prot_to_gene = convertAccessionsViaUniprot(fasta.keys())
+    if not local_mapping_file:
+        prot_to_gene = convertAccessionsViaUniprot(fasta.keys())
+    else:
+        prot_to_gene = readLocalMapForFasta(local_mapping_file, fasta.keys())
+    assert any(prot_to_gene.values()), 'WARNING: Gene mapping acquisition failed to find any genes.  Check your header parser?'
     print "Gene lookup acquired: %.2f" % (time.clock() - prevtime)
     prevtime = time.clock()
     
@@ -184,7 +218,7 @@ def add_gene_ids(target_file, p2g_database,
         new_cols = add_legacy_cols
         colname = dict(zip(add_cols, add_legacy_cols))
     else:
-        new_cols = add_legacy_cols
+        new_cols = add_cols
         colname = dict(zip(add_cols, add_cols))
         
     iso_legacy_cols = ['IL Ambiguity pro_count', 'IL Ambiguity pro_list', 
@@ -214,11 +248,19 @@ def add_gene_ids(target_file, p2g_database,
             pep = row['Peptide Sequence'].upper()
         except KeyError:
             pep = row['peptide sequence'].upper()
+        
+        pep = ''.join([x for x in pep if x.isalpha()])
+            
+        if len(pep) < K:
+            continue # No 4-mers in a 3-mer!
             
         isoPep = pep.replace('I', 'L')
         if pep not in pepToProts:
             candidate_prots = reduce(set.intersection,
                                      (fmerLookup[pep[x:x+K]] for x in range(len(pep)-K)))
+            # pep_find could be replaced by giving the p2g database a pre-made set of
+            # hashes of all tryptic peptides in a protein, and seeing if the hash of the
+            # pep is present in the set.
             pep_find = re.compile('((^M?)|[KR](?=[^P]))%s(((?<=[KR])[^P])|$)' % pep)
             pepToProts[pep] = set(prot for prot in candidate_prots
                                   if pep_find.search(seqLookup[prot]))
@@ -271,8 +313,32 @@ def add_gene_ids(target_file, p2g_database,
     print "Output written: %.2f" % (time.clock() - prevtime)
     return outputfile
     
+#if __name__ == '__main__':
+    ##from multiplierz.internalAlgorithms import typeInDir
+    ##for filename in typeInDir(r'C:\Users\Max\Downloads\Pep2gene_files', '.xlsx'):
+    #add_gene_ids(r'C:\Users\Max\Downloads\Parsed Peptide and cys site.xlsx',
+                 #r'\\rc-data1\blaise\ms_data_share\Databases\Human_Uniprot_Full_8-4-16_newMode.pep2gene')
+#if __name__ == '__main__':
+    #create_fasta_index(r'\\rc-data1\blaise\ms_data_share\Databases\Updated_Marto_F_Human.fasta',
+                       #labelParser = lambda x: x.split('|')[3])
+
+
+#if __name__ == '__main__':
+    #mapping = r'\\rc-data1\blaise\ms_data_share\Databases\pep2gene_uniprot_mapper_versionless.pickle'
+    
+    #from multiplierz.internalAlgorithms import typeInDir
+    #fastas = typeInDir(r'\\rc-data1\blaise\ms_data_share\Databases\CURRENT_UNIPROT_DBS',
+                       #'fasta',
+                       #True)
+    #for fastafile in fastas:
+        #try:
+            #create_fasta_index(fastafile,
+                               #labelParser = lambda x: x.split('|')[1],
+                               #local_mapping_file = mapping)
+        #except ValueError:
+            #print "Failed on %s" % fastafile
+
 if __name__ == '__main__':
-    from multiplierz.internalAlgorithms import typeInDir
-    for filename in typeInDir(r'C:\Users\Max\Downloads\Pep2gene_files', '.xlsx'):
-        add_gene_ids(filename,
-                     r'\\rc-data1\blaise\ms_data_share\Databases\Human_Uniprot_Full_8-4-16_newMode.pep2gene')
+    add_gene_ids(r'C:\Users\Max\Desktop\Projects\allCyscapTMTRatios\CD34_GCSF_d11_summary_filt_nogenes.xlsx',
+                 r'\\rc-data1\blaise\ms_data_share\Databases\CURRENT_UNIPROT_DBS\UP000005640_9606.fasta.pep2gene',
+                 legacy_columns = False)
