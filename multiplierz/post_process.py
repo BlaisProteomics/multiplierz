@@ -153,6 +153,7 @@ def combine_accessions(reportfile, outputfile = None):
     from multiplierz.mzReport import reader, writer
     
     report = reader(reportfile)
+    columns = report.columns
 
     molecules = defaultdict(list)
     for row in report:
@@ -164,18 +165,24 @@ def combine_accessions(reportfile, outputfile = None):
         accessions = [x['Accession Number'] for x in rows]
         newRow = max(rows, key = lambda x: x['Peptide Score'])
         
-        newRow['Accession Number'] = '; '.join([x['Accession Number'] for x in rows])
-        newRow['Protein Description'] = '; '.join([x['Protein Description'] for x in rows])
-        newRow['Protein Masses'] = '; '.join([str(x['Protein Mass']) for x in rows])
+        if 'Accession Number' in columns:
+            newRow['Accession Number'] = '; '.join([x['Accession Number'] for x in rows])
+        if 'Protein Description' in columns:
+            newRow['Protein Description'] = '; '.join([x['Protein Description'] for x in rows])
+        if 'Protein Masses' in columns:
+            newRow['Protein Masses'] = '; '.join([str(x['Protein Mass']) for x in rows])
         newRow['Protein Redundancy'] = len(rows)
         outputData.append(newRow)
     
+    try:
+        columns = [x for x in columns + ['Protein Masses'] if x in newRow]
+    except UnboundLocalError:
+        pass # Means there was no newRow, and thus no rows, so it's pretty arbitrary.
     
     if not outputfile:
         outputfile = insert_tag(reportfile, 'combined_accessions')
     
-    output = writer(outputfile, columns = report.columns + ['Protein Masses', 
-                                                            'Protein Redundancy'])
+    output = writer(outputfile, columns = columns + ['Protein Redundancy'])
     report.close()
     for row in outputData:
         output.write(row)
