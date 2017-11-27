@@ -3,8 +3,7 @@ import os
 from collections import defaultdict
 import warnings
 from multiplierz.mzAPI import mzScan, mzFile as mzAPImzFile
-from multiplierz.internalAlgorithms import ProximityIndexedSequence
-from multiplierz.internalAlgorithms import centroid as centroid_func
+from multiplierz.internalAlgorithms import centroid as centroid_func, ProximityIndexedSequence
 
 
 __author__ = 'William Max Alexander'
@@ -92,16 +91,17 @@ class mzFile_implicit_numbering(mzAPImzFile):
                 in exp_info
                 if sample == self.sample]
     
-    def xic(self, start_time = 0, end_time = 999999, start_mz = 0, end_mz = 2000,
-            experiment = 1, filters = None):
+    def xic(self, start_time = 0, stop_time = 999999, start_mz = 0, stop_mz = 2000,
+            filter = None, experiment = 1):
         """
         Gets the eXtracted Ion Chromatogram of the given time- and mz-range.
         
-        The target experiment is assumed to be 0, i.e., MS1-level scans.
+        For a standard MS1 XIC, leave 'experiment' set to 1 (for usual methods.)
         """
     
-        return self.data.xic(start_time, end_time, start_mz, end_mz, 
-                             sample = self.sample, experiment=experiment, filters = filters)
+        return self.data.xic(start_time, stop_time, start_mz, stop_mz, 
+                             sample = self.sample, experiment=experiment, 
+                             filter = filter)
     
     def time_range(self):
         """
@@ -135,6 +135,15 @@ class mzFile_implicit_numbering(mzAPImzFile):
     def headers(self):
         return self.data.scan_info()
     
+    def MRM_info(self):
+        return self.data.MRM_info()
+    
+    def MRM_channels(self):
+        return self.data.MRM_channels()
+    
+    def MRM_scan(self, cycle):
+        return self.data.MRM_scan(cycle)
+    
     def close(self):
         self.data.close()
         
@@ -154,11 +163,11 @@ class mzFile_explicit_numbering(mzAPImzFile):
         self.file_type = 'wiff'
         self.data_file = data_file
         
-        try:
-            self.source = CreateObject("{9eabbbb3-5a2a-4f73-aa60-f87b736d3476}")
-        except WindowsError as err:
-            print "WiffReaderCOM.dll not found in registry."
-            raise err        
+        #try:
+        self.source = CreateObject("{9eabbbb3-5a2a-4f73-aa60-f87b736d3476}")
+        #except WindowsError as err:
+            #print "WiffReaderCOM.dll not found in registry."
+            #raise err        
     
         if not os.path.exists(data_file + '.scan'):
             raise IOError, "%s.scan not found!" % data_file
@@ -254,9 +263,9 @@ class mzFile_explicit_numbering(mzAPImzFile):
         # samples is always length 1, due to the above checks, so this
         # is currently more complicated than it needs to be.
         for sample in samples:
-            expInfo = {}
-            for exp in expCounts[sample]:
-                expInfo[exp] = self.source.ExperimentInfo(sample, exp)
+            #expInfo = {}
+            #for exp in expCounts[sample]:
+                #expInfo[exp] = self.source.ExperimentInfo(sample, exp)
                 
             ## Obnoxious to have to call this simply for percursor masses.
             #cycleData = self.source.GetSampleData(sample) 
@@ -300,8 +309,8 @@ class mzFile_explicit_numbering(mzAPImzFile):
                     
                 
                     
-    def xic(self, start_time = 0, end_time = 999999, start_mz = 0, end_mz = 2000,
-            sample = None, experiment = 1, filters = None):
+    def xic(self, start_time = 0, stop_time = 999999, start_mz = 0, stop_mz = 2000,
+            sample = None, experiment = 1, filter = None):
         """
         Get the eXtracted Ion Chromatogram of the given time- and mz-range in
         the given sample data.  If sample is not specified, the previously set
@@ -309,15 +318,30 @@ class mzFile_explicit_numbering(mzAPImzFile):
         
         Experiment is by default 1 (the experiment of MS1 scans.)
         """
-        if filters and filters.strip().lower() not in ['full ms', 'full ms2']:
-            raise NotImplementedError, "Filter strings are not compatible with WIFF files. %s" % filters
+        if filter and filter.strip().lower() not in ['full ms', 'full ms2']:
+            raise NotImplementedError, "Filter strings are not compatible with WIFF files. %s" % filter
         
         if not sample:
             sample = self.sample
         
-        xic = zip(*self.source.XicByExp(sample-1, experiment-1, float(start_mz), float(end_mz)))
-        return [x for x in xic if start_time <= x[0] <= end_time]
+        xic = zip(*self.source.XicByExp(sample-1, experiment-1, float(start_mz), float(stop_mz)))
+        return [x for x in xic if start_time <= x[0] <= stop_time]
     
+    def tic(self, start_time = None, stop_time = None, sample = None, experiment = None):
+        """
+        Get the Total Ion Chromatogram of the given time range in the given sample
+        data.  This is not dependent on the experiment setting.
+        """
+    
+        if not sample:
+            sample = self.sample
+            
+        tic = zip(*self.source.TicByExp(sample-1, 0))
+        if start_time:
+            tic = [x for x in tic if x[0] >= start_time]
+        if stop_time:
+            tic = [x for x in tic if x[0] <= stop_time]
+        return tic
     
     def time_range(self, sample = None):
         """
@@ -379,7 +403,11 @@ class mzFile_explicit_numbering(mzAPImzFile):
         
         self._filters = []
         for rt, mz, (cycle, exp, sample), level, mode in self.scan_info():
-            mzrange = map(int, expInfo[sample-1, exp-1][1:3]) # ...Perhaps?
+            try:
+                mzrange = map(int, expInfo[sample-1, exp-1][1:3]) # ...Perhaps?
+            except ValueError:
+                assert expInfo[sample-1, exp-1][1] == 'MRM' and expInfo[sample-1, exp-1][1] == 'MRM'
+                mzrange = 0, 0
             if level == 'MS1':
                 levelstr = 'ms'
                 locstr = ''
@@ -402,12 +430,24 @@ class mzFile_explicit_numbering(mzAPImzFile):
         modes = []
         for sample in range(0, self.source.GetSamples()):
             for experiment in range(0, self.source.GetExperiments(sample)):
-                modes.append(self.source.ExperimentInfo(sample, experiment)[3])
+                modes.append((experiment+1, self.source.ExperimentInfo(sample, experiment)[3]))
         return modes
     
     def headers(self, *etc):
         self._headers = self.scan_info()
         return self._headers
+    
+    def MRM_info(self):
+        values = self.source.GetMRMInfo(self.sample-1, 0)
+        keys = ['ExperimentType', 'SpectrumType', 'RawDataType',
+                'Polarity', 'IDAType', 'SourceType', 'NumberOfScans']
+        return dict(zip(keys, values))
+    
+    def MRM_channels(self):
+        return list(self.source.GetMRMChannels(self.sample-1, 0))
+    
+    def MRM_scan(self, cycle):
+        return list(self.source.MRMScan(self.sample-1, 0, cycle))
     
     def close(self):
         # No close function in the COM object yet.  Should there be one?
