@@ -69,11 +69,12 @@ def registerInterfaces():
                         "MassSpecDataReader.dll" : "D", # Agilent
                         "BaseCommon.dll" : "D",
                         "BaseDataAccess.dll" : "D",
-                        "BlaisT2D.dll" : "T2D"}
+                        "BlaisT2D.dll" : "T2D",
+                        "RawReader.dll" : "RAW"}
     interfaceGUIDs = {"T2D" : "{7e3450b1-75e7-49b2-9be7-64cbb2458c56}",
                       "D" : 'Agilent.MassSpectrometry.DataAnalysis.MassSpecDataReader',
                       "WIFF" : "{9eabbbb3-5a2a-4f73-aa60-f87b736d3476}",
-                      "RAW" : "MSFileReader.XRawfile"}
+                      "RAW" : "{10729396-43ee-49e5-aa07-85f02292ac70}"}
     
     
     if sys.maxsize > 2**32: bitness = "64"
@@ -118,8 +119,6 @@ def registerInterfaces():
             registerResults[interfaceModules[filename]] |= ret
         except KeyError:
             registerResults[interfaceModules[filename]] = "No .DLL"
-
-    registerResults["RAW"] = "N/A"
     
         
     afterChecks = {}
@@ -140,19 +139,19 @@ def registerInterfaces():
                                                   registerResults[filetype],
                                                   afterChecks[filetype])
     print "\n"
-    if not afterChecks["RAW"]:
-        print "MSFileReader (required for RAW file access) has not been installed.  Run the Thermo MSFileReader installation package now? [Y/n]"
-        if 'n' not in raw_input().lower():
-            if not os.path.exists(msfilereader_installer):
-                print "MSFileReader installer not found!  Please re-install multiplierz or download MSFileReader from the Thermo Scientific website."
-                print msfilereader_installer
-                return 1
-            print "Please wait..."
-            retval = subprocess.call(msfilereader_installer)
-            if not retval:
-                print "Done."
-            else:
-                print "An error occurred. (Return value %s)" % retval
+    #if not afterChecks["RAW"]:
+        #print "MSFileReader (required for RAW file access) has not been installed.  Run the Thermo MSFileReader installation package now? [Y/n]"
+        #if 'n' not in raw_input().lower():
+            #if not os.path.exists(msfilereader_installer):
+                #print "MSFileReader installer not found!  Please re-install multiplierz or download MSFileReader from the Thermo Scientific website."
+                #print msfilereader_installer
+                #return 1
+            #print "Please wait..."
+            #retval = subprocess.call(msfilereader_installer)
+            #if not retval:
+                #print "Done."
+            #else:
+                #print "An error occurred. (Return value %s)" % retval
     
         
     
