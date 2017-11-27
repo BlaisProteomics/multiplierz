@@ -229,8 +229,8 @@ class mzFile(object):
         #if data_file.lower().endswith('.lnk') or os.path.islink(data_file):
             #data_file = follow_link(data_file)
 
-        if not data_file.lower().startswith('http://'):
-            assert os.path.exists(data_file), "%s not found!" % data_file
+        if not (data_file.lower().startswith('http://') or os.path.exists(data_file)):
+            raise IOError, "%s not found!" % data_file
 
         if data_file.lower().startswith('http://'):
             import mzURL
