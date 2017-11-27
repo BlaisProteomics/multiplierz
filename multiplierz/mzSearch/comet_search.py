@@ -178,6 +178,13 @@ defaultEnzymes = {'0': {'active': 0, 'name': 'No_enzyme', 'p': '-', 'specificity
                   '9': {'active': 1, 'name': 'PepsinA', 'p': 'P', 'specificity': 'FL'},
                   '10': {'active': 1, 'name': 'Chymotrypsin', 'p': 'P', 'specificity': 'FWYL'}}
 
+defaultVarmods = [{'mass' : 15.994915,
+                   'residues' : 'M',
+                   'binary' : 0,
+                   'max_mods_per_peptide' : 5,
+                   'term_distance' : 0,
+                   'N/C-term' : 0,
+                   'required' : 0}]
 
 def readVarmods():
     from multiplierz import load_mods
@@ -559,7 +566,7 @@ class CometSearch(dict):
                 self[field] = value
                 self.fields.append(field)
             self.enzymes = defaultEnzymes
-            # self.varmods = defaultVarmods
+            self.varmods = defaultVarmods
         
     def write(self, file_name = None):
         assert file_name or self.file_name, "No output file specified!"
@@ -570,13 +577,17 @@ class CometSearch(dict):
             file_name = self.file_name
         
         
+        main_pars = []
+        for field in self.fields:
+            value = self[field]
+            main_pars.append(('%s = %s\n' % (field, value)))
+        main_pars.sort()
         with open(file_name, 'w') as parfile:
             for line in parameterPreamble:
                 parfile.write(line)
                 
-            for field in self.fields:
-                value = self[field]
-                parfile.write('%s = %s\n' % (field, value))
+            for line in main_pars:
+                parfile.write(line)
             
             for num, mod in enumerate(self.varmods, start = 1):
                 residues = mod['residues'].upper().replace('N-TERM', 'n').replace('C-TERM', 'c')
