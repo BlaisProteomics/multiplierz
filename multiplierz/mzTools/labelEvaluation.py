@@ -1,5 +1,6 @@
 from multiplierz.mzReport import reader, writer
 from multiplierz.mzTools.featureDetector import detectFeatures, Feature
+from multiplierz.mzTools.featureUtilities import FeatureInterface
 import cPickle as pickle
 from collections import defaultdict
 from multiplierz.mzAPI import mzFile
@@ -139,17 +140,15 @@ def evaluateTMTiTRAQ(outputfile, columns, results, resultIntMap):
         
         for psm in pepSet:
             assert seq == psm['Peptide Sequence']
-            try:
-                varmods = [x for x in psm['Variable Modifications'].split(';') if 'plex' not in x]
-            except AttributeError:
-                varmods = ''
             
-            lysLabelCount = len([x for x in varmods if x[0] == 'K' and 'plex' in x])
+            # Should work now?
+            lysLabelCount = len([x for x in psm['Variable Modifications'].split('; ')
+                                 if x and x[0] == 'K' and 'plex' in x])
             ntermLabel = any([(x[:len('N-term')] == 'N-term' and 'plex' in x) for
-                              x in varmods])
+                              x in psm['Variable Modifications'].split('; ')])
             
             psm['Lysines'] = lysCount
-            psm['Lysine labels'] = lysCount
+            psm['Lysine Labels'] = lysCount
             psm['N-term Label'] = ntermLabel
             
             try:
@@ -210,10 +209,10 @@ def evaluateMascotFile(resultfile, datafile = None, featurefile = None, outputfi
     assert ('SILAC' in quant) or ('plex' in varmods), "Label method not recognized!"
     
     if not featurefile:
-        print "Detecting features.  This may take some time..."
-        features = detectFeatures(datafile, signalToNoiseThreshold = 15)
+        featurefile = detectFeatures(datafile, signalToNoiseThreshold = 15)
+        features = FeatureInterface(featurefile)
     else:
-        features = pickle.load(open(featurefile, 'r'))
+        features = FeatureInterface(featurefile)
     
     print "Matching features to PSMs..."
     results = reader(resultfile)
@@ -241,7 +240,7 @@ def evaluateMascotFile(resultfile, datafile = None, featurefile = None, outputfi
         mz = psm['Experimental mz']
         scan = int(psm['Spectrum Description'].split('.')[1])
         charge = int(psm['Charge'])
-        for feature in features:
+        for index, feature in features.mz_range(mz - 1, mz + 1):
             if feature.containsPoint(mz, ms1map[scan], charge):
                 featureIntMap[scan] = feature.c12Intensity()
                 break
@@ -255,4 +254,10 @@ def evaluateMascotFile(resultfile, datafile = None, featurefile = None, outputfi
         return evaluateSILAC(outputfile, columns, results, featureIntMap), outputfile
     elif 'plex' in varmods:
         return evaluateTMTiTRAQ(outputfile, columns, results, featureIntMap), outputfile
-    
+
+
+
+
+if __name__ == '__main__':
+    evaluateMascotFile(r'\\rc-data1\blaise\ms_data_share\Max\LabelEvaluator\2017-10-11-Buhrlage-DUB-Set1_HCD_RECAL.mgf.xlsx',
+                       r'\\rc-data1\blaise\ms_data_share\Max\LabelEvaluator\2017-10-11-Buhrlage-DUB-Set1.raw')
