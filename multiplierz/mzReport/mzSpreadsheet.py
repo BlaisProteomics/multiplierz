@@ -185,10 +185,8 @@ class XLSXWriter(XLSheetReader):
             for key in row.keys(): # There's probably a better way to do that.
                 lKey = key
                 if lKey != key and (key in row): row[lKey] = row[key]
-            try:
-                row = [row[x] for x in self.columns]
-            except KeyError as err:
-                raise err
+            row = [row[x] for x in self.columns]
+            
         
         for index, value in enumerate(row, start = 1):
             cell = self.sheet.cell(row = self.currentRow, column = index)

@@ -28,8 +28,10 @@ class MascotSearch(object):
                 if '=' in line:
                     words = [x.strip() for x in line.split('=')]
                     if len(words) != 2:
-                        print "ERROR on line: %s" % line
+                        print "Warning- ignoring parse error on line: %s" % line
                     else:
+                        if words[0] in self.values:
+                            raise IOError, ("Duplicated field: %s" % words[0])
                         self.fields.append(words[0])
                         self.values[words[0]] = bestType(words[1])
     
@@ -51,9 +53,9 @@ class MascotSearch(object):
     def run_search(self, data_file = None, user = None, password = None,
                    outputfile = None):
         if data_file:
-            self.values['FILE'] = data_file
+            self.values['FILE'] = os.path.abspath(data_file)
         if not outputfile:
-            self.values['FILE'] + '.xlsx'
+            outputfile = self.values['FILE'] + '.xlsx'
             
         assert 'FILE' in self.values, "Target data must be specified!"
         assert os.path.exists(self.values['FILE']), (("Search target %s not "
@@ -133,7 +135,8 @@ def retrieveMascotReport(mascot_ids = None,
                          login_name = None,
                          password = None,
                          keep_dat = False,
-                         pep2gene = None):
+                         pep2gene = None,
+                         include_search_number = False):
     """    
     Retrieves a search results from Mascot and performs several optional
     post-processing and annotation steps; use this to download reports 
@@ -239,9 +242,13 @@ def retrieveMascotReport(mascot_ids = None,
     # get_reports for more than one report at once generates a file
     # combined by sheets.
     ret_vals = []
-    for mascot_id in mascot_ids:
+    if dates and any(dates):
+        report_vals = zip(mascot_ids, dates)
+    else:
+        report_vals = zip(mascot_ids, [None]*len(mascot_ids))
+    for mascot_id, date in report_vals:
         ret_vals.append(mascot_reporter.get_reports(mascot_ids = [mascot_id],
-                                                    dates = dates,
+                                                    dates = [date],
                                                     local_dat_files = dat_file_list,
                                                     chosen_folder = chosen_folder,
                                                     combined_file = combined_file,
@@ -259,6 +266,15 @@ def retrieveMascotReport(mascot_ids = None,
                                                     )
                         )
 
+    if include_search_number:
+        new_filenames = []
+        for filename, m_id in zip(ret_vals, mascot_ids):
+            words = filename.split('.')
+            new_filename = '.'.join(words[:-1] + [m_id, words[-1]])
+            os.rename(filename, new_filename)
+            new_filenames.append(new_filename)
+        ret_vals = new_filenames
+            
     if pep2gene:
         p2gDB = pep2gene
         import multiplierz.mzTools.pep2gene as p2g

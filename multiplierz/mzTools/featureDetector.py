@@ -4,10 +4,9 @@ from collections import defaultdict, deque
 import time
 import multiplierz.mzReport as mzReport
 import os
-import numpy as np
 import cPickle as pickle
 import re
-from multiplierz.internalAlgorithms import ProximityIndexedSequence, inPPM
+from multiplierz.internalAlgorithms import ProximityIndexedSequence, inPPM, average
 from multiplierz import vprint, verbose_mode
 
 from multiplierz.mzTools.featureUtilities import save_feature_database, FeatureInterface
@@ -34,12 +33,24 @@ def spectrumDescriptionToMZ(description):
         return float(description.split('-|')[0].split('-')[-1])
     except ValueError:
         return float(description.split("|")[1])
+    
+def mzFromPSM(psm):
+    if 'Spectrum Description' in psm:
+        return spectrumDescriptionToMZ(psm['Spectrum Description'])
+    else:
+        return float(psm['m/z [Da]']) # Proteome Discoverer output.
 
 def spectrumDescriptionToScanNumber(description):
     if 'MultiplierzMGF' in description:
         return int(standard_title_parse(description)['scan'])
     else:
         return int(description.split('.')[1])
+
+def scanFromPSM(psm):
+    if 'Spectrum Description' in psm:
+        return spectrumDescriptionToScanNumber(psm['Spectrum Description'])
+    else:
+        return int(psm['First Scan']) # Proteome Discoverer output.
 
 
 #allowedC12RatioDifference = 0.3
@@ -55,11 +66,11 @@ dropoutTimeTolerance = 0.5
 
 def unzip(thing): return [list(x) for x in zip(*thing)]
 
-curveargs = [-1.02857097, 0.000113693166, 8.53554707]
+#curveargs = [-1.02857097, 0.000113693166, 8.53554707]
 
-def getC12Ratio(mz, charge):
-    mass = mz * charge # Very approximately.
-    return np.log(mass) * curveargs[0] + mass * curveargs[1] + curveargs[2]
+#def getC12Ratio(mz, charge):
+    #mass = mz * charge # Very approximately.
+    #return np.log(mass) * curveargs[0] + mass * curveargs[1] + curveargs[2]
 
 
 class Feature():
@@ -77,62 +88,40 @@ class Feature():
             return sum([[(i, x, y, c, n) for (x, y, c, n) in region] for i, region in self.regions], [])
         except ValueError: # Not lscan-derived points.
             return sum([[(i, x, y) for (x, y) in region] for i, region in self.regions], [])
-    def length(self):
-        return len(self.regions)
     def strengthAt(self, index):
         try:
             return sum([x[1] for x in self.regions[index][1]])
         except IndexError:
             return 0
     def topSignal(self):
-        return max([self.strengthAt(x) for x in range(0, self.length())])
+        return max([self.strengthAt(x) for x in range(0, len(self.regions))])
     def totalIntensity(self):
-        return sum([self.strengthAt(x) for x in range(0, self.length())])
+        return sum([self.strengthAt(x) for x in range(0, len(self.regions))])
     def c12Intensity(self):
         return sum([min(x, key = lambda x: x[0])[1] for _, x in self.regions])
     def segment(self, start, end):
         subFeature = Feature()
         subFeature.regions = self.regions[start:end]
         return subFeature
-    def prepareBoxes(self, absScanLookup = None):
-        if absScanLookup:
-            if self.wasSplit: raise Exception, "Don't do this!"
+    def scanxic(self):
+        return [(r[0], r[1][0][1]) for r in sorted(self.regions)]
+    # Previous version didn't have absolute-scan-index conversion on regions.
+    def calculate_bounds(self, absolute_scan_lookup):
+        regionIndices = zip(*self.regions)[0]
+        self.scans = [absolute_scan_lookup[x] for x in regionIndices]
+        self.scanrange = min(self.scans), max(self.scans)
         
-            self.scans = [absScanLookup[x] for x, y in self.regions]
-            
-            minIndex = min([x for x, y in self.regions])
-            try:
-                minScan = absScanLookup[minIndex - 1]
-            except KeyError:
-                minScan = absScanLookup[minIndex]
-            
-            maxIndex = max([x for x, y in self.regions])
-            try: 
-                maxScan = absScanLookup[maxIndex + 1]
-            except KeyError: 
-                maxScan = absScanLookup[maxIndex]
+        self.regions = [(absolute_scan_lookup[x], y) for x, y in self.regions]
         
-            self.scanrange = minScan, maxScan
-        else:
-            assert self.scanrange
-
-            minMZs = [min(x, key = lambda x: x[0])[0] for y, x in self.regions]
-    
-            #minMZRanks = [len([x for x in minMZs if abs(x - mz) < 0.1]) for mz in minMZs]
-            ##self.mz = max(zip(minMZs, minMZRanks), key = lambda x: x[1])[0]
-            #self.mz = max(zip(minMZRanks, minMZs), key = lambda x: (x[0], -1 * x[1]))[1]
-            mz = np.average(minMZs)
-            while not all([abs(x - mz) < 0.1 for x in minMZs]):
-                lowhalf = [x for x in minMZs if x < mz]
-                highhalf = [x for x in minMZs if x > mz]
-                minMZs = max([lowhalf, highhalf], key = len)
-                mz = np.average(minMZs)
-            self.mz = mz
-                
+        minMZs = [min(zip(*peaks)[0]) for y, peaks in self.regions]
+        avgC12 = average(minMZs)
+        while not all([abs(x - avgC12) < 0.05 for x in minMZs]):
+            oddOneOut = max(minMZs, key = lambda x: abs(x - avgC12))
+            minMZs.remove(oddOneOut)
+            avgC12 = average(minMZs)
+        self.mz = avgC12
         
-        #for i in range(0, len(self.regions)):
-            #self.regions[i] = absScanLookup[self.regions[i][0]], self.regions[i][1]
-    
+  
     def containsPoint(self, mz, scan, charge):
         return (charge == self.charge and abs(mz - self.mz) < featureMatchupTolerance
                 and self.scanrange[0] < scan < self.scanrange[1])
@@ -258,8 +247,10 @@ def binByFullFeature(datafile, featureDB, results):
     edgeItems = defaultdict(list)
     inexplicableItems = []
     for result in results:
-        mz = spectrumDescriptionToMZ(result['Spectrum Description'])
-        scan = spectrumDescriptionToScanNumber(result['Spectrum Description'])        
+        #mz = spectrumDescriptionToMZ(result['Spectrum Description'])
+        #scan = spectrumDescriptionToScanNumber(result['Spectrum Description']) 
+        mz = mzFromPSM(result)
+        scan = scanFromPSM(result)
         charge = int(result['Charge'])
         try:
             scan = ms2toms1[scan]
@@ -290,9 +281,15 @@ def binByFullFeature(datafile, featureDB, results):
     groupedResults = []
     overFitCount = 0
     for feature, results in featureItems.items():
-        pep = results[0][0]['Peptide Sequence']
-        if not all([x['Peptide Sequence'] == pep for x, s, i in results]):
-            overFitCount += 1
+        try:
+            pep = results[0][0]['Peptide Sequence']
+            if not all([x['Peptide Sequence'] == pep for x, s, i in results]):
+                overFitCount += 1            
+        except KeyError:
+            pep = results[0][0]['Annotated Sequence']
+            if not all([x['Annotated Sequence'] == pep for x, s, i in results]):
+                overFitCount += 1               
+
         
         for result, scans, intensity in results:
             result['Feature'] = feature
@@ -329,7 +326,7 @@ def binByFullFeature(datafile, featureDB, results):
 
 
 def falseCoverTest(datafile, searchResults, features):
-    import numpy
+    import numpy as np
     from scipy.optimize import curve_fit
     import random
 
@@ -366,12 +363,12 @@ def falseCoverTest(datafile, searchResults, features):
         
     def gauss(x, *p):
         A, mu, sigma = p
-        return A*numpy.exp(-(x-mu)**2/(2.*sigma**2))
+        return A*np.exp(-(x-mu)**2/(2.*sigma**2))
     
     def deriveGaussian(points):  
         initialP = [0.5, 0.5, 0.5]  
 
-        hist, bin_edges = numpy.histogram(points)
+        hist, bin_edges = np.histogram(points)
         bin_centres = (bin_edges[:-1] + bin_edges[1:])/2
         
         coeff, var_mat = curve_fit(gauss, bin_centres.astype(np.float64), hist.astype(np.float64), p0=initialP)
@@ -814,8 +811,18 @@ def detect_features(datafile, **constants):
         for scan, envelope in feature:
             newfeature.add(envelope, scan, chg)
         
-        newfeature.prepareBoxes(lookup)
-        newfeature.prepareBoxes() # It's entirely different, for some reason?
+        newfeature.calculate_bounds(lookup)
+        
+        #newfeature.prepareBoxes(lookup)
+        #newfeature.prepareBoxes() # It's entirely different, for some reason?
+
+        #test = Feature()
+        #for scan, envelope in feature:
+            #test.add(envelope, scan, chg)
+        #test.calculate_bounds(lookup)
+        
+        #assert test.mz == newfeature.mz and test.charge == newfeature.charge
+        
         featureObjects.append(newfeature)
     save_feature_database(featureObjects, featurefile)
     

@@ -199,7 +199,7 @@ class mascot(object):
         Logs in to mascot. Returns "success" or "error" based on login success
         """
 
-        login_url = self.server + r'/cgi/login.pl'
+        login_url = (os.path.join(self.server, r'cgi/login.pl'))
         login_form = CurlForm()
 
         # URL encodings of form data
@@ -1292,6 +1292,10 @@ class FieldParser(dict):
             elif m3:
                 self.current_field = None
                 self.parse_line(s[m3.end():])
+            elif 'OPTION VALUE' in s: # Regexes are silly.
+                value = s.split('>')[1].split('<')[0]
+                self[self.current_field].append(value)
+                
 
 
 
@@ -1406,7 +1410,7 @@ class MascotSearcher(object):
         search_url = self.server + r'/cgi/nph-mascot.exe?1'
         
         search_form = dict(search_form)
-        search_form.update([('FORMVER','1.01'), ('SEARCH','MIS')])
+        search_form.update([('FORMVER','1.01'), ('SEARCH','MIS'), ('MULTI_SITE_MODS', '1')])
         if target_file:
             filename = target_file
         else:
@@ -1418,7 +1422,8 @@ class MascotSearcher(object):
         r = requests.post(search_url,
                           data = search_form,
                           files = searchFile,
-                          cookies = dict(self.cookies))
+                          cookies = dict(self.cookies),
+                          stream = True)
         #print r.json()['url']
         
         dat_file_id, err = (None, None)
