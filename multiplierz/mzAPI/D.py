@@ -107,6 +107,7 @@ class mzFile(baseFile):
         self.noFilter = CreateObject(r'Agilent.MassSpectrometry.DataAnalysis.MsdrPeakFilter')
         
         self.source = CreateObject(r'Agilent.MassSpectrometry.DataAnalysis.MassSpecDataReader')
+        
         s = self.source.OpenDataFile(datafile)
         if not s:
             raise IOError, "Error opening %s" % datafile
@@ -256,7 +257,7 @@ class mzFile(baseFile):
             
         return self.info
     
-    def xic(self, start_time = 0, stop_time = None, start_mz = 0, stop_mz = None, filter = None):
+    def xic(self, start_time = 0, stop_time = None, start_mz = 0, stop_mz = None, filter = None, UV = False):
         if filter:
             assert filter.strip().lower() == 'full ms', 'Thermo-style XIC filters are not supported for Agilent files.'
         
@@ -273,7 +274,10 @@ class mzFile(baseFile):
         chromFilter = CreateObject(r'Agilent.MassSpectrometry.DataAnalysis.BDAChromFilter')
         
         chromFilter.MSLevelFilter = 0 # "All", should perhaps instead be 1 for "ms1"?
-        chromFilter.ChromatogramType = 7 # Extracted-Ion
+        if not UV:
+            chromFilter.ChromatogramType = 7 # Extracted-Ion
+        else:
+            chromFilter.ChromatogramType = 4 # ExtractedWavelength
         chromFilter.SingleChromatogramForAllMasses = True        
         
         mzRange = CreateObject(r'Agilent.MassSpectrometry.DataAnalysis.MinMaxRange')
@@ -294,6 +298,12 @@ class mzFile(baseFile):
         xic = self.source.GetChromatogram(chromFilter)[0].QueryInterface(bda.IBDAChromData)
         return zip(xic.XArray, xic.YArray)
     
+    
+    def uv_trace(self):
+        nonmsSource = self.source.QueryInterface(msdr.INonmsDataReader)
+        nonmsDevs = nonmsSource.GetNonmsDevices()
+        return nonmsSource.GetTWC(nonmsDevs[0])
+        
     
     def deisotope_scan(self, scan,
                        tolerance_da = 0.0025, tolerance_ppm = 7,
@@ -330,3 +340,6 @@ class mzFile(baseFile):
         return zip(scanObj.XArray, scanObj.YArray)
         
         
+if __name__ == '__main__':
+    foo = mzFile(r'\\rc-data1\blaise\ms_data_share\Max\mzStudio\2016-04-13-Equil1.D')
+    foo.uv_trace()
