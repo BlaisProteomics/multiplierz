@@ -32,7 +32,9 @@ siteTypeLookup = {'G' : 'add_G_glycine',
                   'Y' : 'add_Y_tyrosine',
                   'W' : 'add_W_tryptophan',
                   'N-term' : 'add_Nterm_peptide',
-                  'C-term' : 'add_Cterm_peptide'}
+                  'C-term' : 'add_Cterm_peptide',
+                  'U' : 'add_U_user_amino_acid' # Not actually used.
+                  }
 
 class UnimodDatabase(object):
     def __init__(self, file_name):
@@ -108,33 +110,31 @@ class UnimodDatabase(object):
         return [x[0] for x in self.cur.fetchall()]    
     
     def site_form_mod_names(self):
-        command = """SELECT name, spec FROM mods"""
+        from multiplierz.internalAlgorithms import collectByCriterion
+        command = """SELECT name, site, specset FROM modsites"""
         self.cur.execute(command)
         specmoddata = self.cur.fetchall()
+        specmodsets = collectByCriterion(specmoddata, lambda x: (x[0], x[2]))
         modnames = []
-        for name, data in specmoddata:
-            sites = demarshal(data)
-            for modlist in sites.values():
-                sitespecstr = ''.join(zip(*modlist)[0])
-                modnames.append('%s (%s)' % (name, sitespecstr))
-        return modnames
-    
+        for specmodset in specmodsets.values():
+            modname = specmodset[0][0]
+            sites = ''.join(sorted(set(zip(*specmodset)[1])))
+            modnames.append('%s (%s)' % (modname, sites))
+        return sorted(modnames)
+            
     def get_pycomet_lookup(self):
-        mods = self.get_all_mod_names()
+        from multiplierz.internalAlgorithms import collectByCriterion
+        command = """SELECT name, site, specset FROM modsites"""
+        self.cur.execute(command)
+        specmoddata = self.cur.fetchall()
+        specmodsets = collectByCriterion(specmoddata, lambda x: (x[0], x[2]))
         lookup = {}
-        for mod in mods:
+        for specmodset in specmodsets.values():
+            modname = specmodset[0][0]
+            delta = self.get_mod_delta(modname)
+            sites = sorted(set(zip(*specmodset)[1]))
             massLookup = {}
-            
-            delta = self.get_mod_delta(mod)
-            for sitetype in self.get_mod_specificities(mod).values():
-                for aa, category in sitetype:
-                    longsite = siteTypeLookup[aa]
-                    massLookup[longsite] = delta
-            
-            lookup[mod] = massLookup
-        
+            for site in sites:
+                massLookup[siteTypeLookup[site]] = delta
+            lookup[modname] = massLookup
         return lookup
-                
-            
-    
-    
