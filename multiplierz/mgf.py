@@ -279,17 +279,24 @@ class MGF_Writer(object):
         
 
         
-    
-                
-                    
-                
-                
+RAW_CAL_MASS = 445.120025
+calibrant_tolerance = 0.003
+def raw_scan_recalibration(scan, calibrant):
+    cal_region = [x for x in scan if abs(calibrant - x[0]) < calibrant_tolerance]
+    if cal_region:
+        cal_mz = max(cal_region, key = lambda x: x[1])[0]
+        cal_factor = RAW_CAL_MASS / cal_mz
+        return [(x[0] * cal_factor, x[1]) for x in scan], cal_mz
+    else:
+        return scan, calibrant
     
     
 def extract(datafile, outputfile = None, default_charge = 2, centroid = True,
             scan_type = None, deisotope_and_reduce_charge = True,
+            deisotope_and_reduce_args = {},
             min_mz = 140, precursor_tolerance = 0.005,
-            isobaric_labels = None, label_tolerance = 0.01):
+            isobaric_labels = None, label_tolerance = 0.01,
+            deisotope_reduce_args = {}):
     """
     Converts a mzAPI-compatible data file to MGF.
     
@@ -381,7 +388,9 @@ def extract(datafile, outputfile = None, default_charge = 2, centroid = True,
         partscan = [x for x in scan if x[0] < labels[-1][1] + 3]
         if not partscan:
             return dict([(str(l), '0') for l in zip(*labels)[0]])
-        
+
+        # This should probably actually sum all points within
+        # the tolerance range.
         scan_values = {}
         for label, mz in labels:
             nearpt = min(partscan, key = lambda x: abs(x[0] - mz))
@@ -391,13 +400,14 @@ def extract(datafile, outputfile = None, default_charge = 2, centroid = True,
                 scan_values[str(label)] = '0' # Report noise value?
                     
         return scan_values
-    
-    
+        
     inconsistent_precursors = 0
     scans_written = 0
     
     lastMS1 = None
     lastMS1ScanName = None
+    recal_factor = 1
+    calibrant = RAW_CAL_MASS
     for time, mz, scanNum, scanLevel, scanMode in scanInfo:
         scanName = scanNum if isinstance(scanNum, int) else time
         
@@ -405,9 +415,10 @@ def extract(datafile, outputfile = None, default_charge = 2, centroid = True,
             lastMS1ScanName = scanName
             
             possible_precursors = None
-            def calculate_precursors():
+            def calculate_precursors(calibrant):
                 if data.format == 'raw':
                     lastMS1 = data.lscan(lastMS1ScanName)
+                    lastMS1, calibrant = raw_scan_recalibration(lastMS1, calibrant)
                 else:
                     try:
                         lastMS1 = data.scan(lastMS1ScanName,
@@ -416,9 +427,9 @@ def extract(datafile, outputfile = None, default_charge = 2, centroid = True,
                         lastMS1 = centroid_func(data.scan(lastMS1ScanName))      
                         
                 envelopes = peak_pick(lastMS1, tolerance = 0.01, min_peaks = 2,
-                                      enforce_isotopic_ratios=False)[0]
+                                      enforce_isotopic_ratios=True)[0]
                 return sum([[(x[0][0], c) for x in xs]
-                            for c, xs in envelopes.items()], [])
+                            for c, xs in envelopes.items()], []), calibrant
             
             continue
         elif scanLevel == 'MS3':
@@ -426,19 +437,12 @@ def extract(datafile, outputfile = None, default_charge = 2, centroid = True,
         elif lastMS1ScanName == None:
             continue
         
-        #try:
-            #scan = data.scan(scanName, centroid = centroid)
-        #except NotImplementedError as err:
-            ## Currently calls to mzWiff with centroid enabled return
-            ## an error.
-            #if centroid:
-                #scan = centroid_func(data.scan(scanName))
-            #else:
-                #raise err
             
         # Each file type handles centroiding differently (or not at all.)
         if data.format == 'raw':
             scan = data.scan(scanName, centroid = centroid)
+            
+            scan, calibrant = raw_scan_recalibration(scan, calibrant)
         elif data.format == 'wiff':
             # explicit_numbering, of course, can't be active here.
             scan = data.scan(scanName)
@@ -452,6 +456,7 @@ def extract(datafile, outputfile = None, default_charge = 2, centroid = True,
                 scan = centroid_func(data.scan(scanName, centroid = False))
         else:
             raise NotImplementedError, "Extractor does not handle type %s" % data.format
+              
         
             
         if filters and not mz:
@@ -462,19 +467,17 @@ def extract(datafile, outputfile = None, default_charge = 2, centroid = True,
         if "scanPrecursor" in dir(data):
             assert isinstance(scanName, int)
             mzP, chargeP = data.scanPrecursor(scanName)
-        
+            
         if not mzP: # .scanPrecursor sometimes returns charge and not mzP.
             if possible_precursors == None:
-                possible_precursors = calculate_precursors()
+                possible_precursors, calibrant = calculate_precursors(calibrant)
                 
             mzP, chargeP = _get_precursor(mz, possible_precursors, chargeP)
             if not mzP:
                 # Release presumed charge possibly obtained from scanPrecursor.
                 mzP, chargeP = _get_precursor(mz, possible_precursors, None)
                 if mz and chargeP:
-                    inconsistent_precursors += 1
-        
-            
+                    inconsistent_precursors += 1     
 
             
         if mzP and (abs(mz - mzP) < 2 or not mz): 
@@ -485,9 +488,6 @@ def extract(datafile, outputfile = None, default_charge = 2, centroid = True,
         
         if not charge:
             charge = default_charge
-        
-
-
         
         if not mz:
             import warnings
@@ -504,7 +504,11 @@ def extract(datafile, outputfile = None, default_charge = 2, centroid = True,
                                          **scan_labels)
         
             # Should expand extract() call to include arguments to this.
-            scan = deisotope_reduce_scan(scan, tolerance = 0.0001)  
+            if deisotope_and_reduce_charge:
+                if ('tolerance' not in deisotope_reduce_args
+                    or not deisotope_and_reduce_args['tolerance']):
+                    deisotope_and_reduce_args['tolerance'] = precursor_tolerance
+                scan = deisotope_reduce_scan(scan, **deisotope_and_reduce_args)  
             scan = [x for x in scan if x[0] > min_mz]
             assert charge, title
             writer.write(scan, title, mass = mz, charge = charge)
