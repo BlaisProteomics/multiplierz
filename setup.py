@@ -4,8 +4,17 @@ from codecs import open
 from os import path
 
 
+import platform
+if 'windows' in platform.platform().lower():
+    install_requires = ['numpy', 'comtypes', 'matplotlib', 'pypiwin32',
+                          'openpyxl', 'xlrd', 'xlwt', 'requests'], # Removed 'lxml'.
+else:
+    print "Preparing Linux mode installation."
+    install_requires = ['numpy', 'comtypes', 'matplotlib',
+                          'openpyxl', 'xlrd', 'xlwt', 'requests']
+
 setup(name = 'multiplierz',
-      version = '2.0.1',
+      version = '2.0.9',
       description = 'The multiplierz proteomics package',
       author = 'William Max Alexander (et al.)',
       author_email = 'williamM_alexander@dfci.harvard.edu',
@@ -19,11 +28,11 @@ setup(name = 'multiplierz',
       packages = find_packages(),
       package_data = {'multiplierz.mzAPI':['mzAPI/agilentdlls/*',
                                            'mzAPI/t2ddlls/*',
-                                           'mzAPI/wiffdlls/*'],
-                      'multiplierz':['unimod.sqlite', '_msparser.pyd', 'mzAPI/MSFileReader_x86_x64_v3.0SP3.exe']},
+                                           'mzAPI/wiffdlls/*',
+                                           'mzAPI/rawdlls/*'],
+                      'multiplierz':['unimod.sqlite', '_msparser.pyd',]},
       include_package_data=True,
-      install_requires = ['numpy', 'comtypes', 'matplotlib', 'pypiwin32',
-                          'openpyxl', 'xlrd', 'xlwt', 'requests'], # Removed 'lxml'.
+      install_requires = install_requires
       )
 
 

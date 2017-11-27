@@ -1,517 +1,125 @@
-import comtypes
 from comtypes.client import CreateObject
-from ctypes import *
-import _ctypes
-import re
-from win32com.client import Dispatch
-from pywintypes import com_error
-
-def _to_float(x):
-    try :
-        out = float(x)
-    except ValueError :
-        out = str(x)
-    return out
-from multiplierz import vprint
 from multiplierz.mzAPI import mzScan, mzFile as mzAPImzFile
 
 
+__author__ = 'William Max Alexander'
+
 
 class mzFile(mzAPImzFile):
-    """msfilereader-based implementation of mzAPI's mzFile class"""
-
-    def filters(self):
-        if not self._filters :
-            answer = []
-            first = c_long()
-            last  = c_long()
-            scan  = c_long()
-
-            retval = self.source.GetFirstSpectrumNumber(byref(first))
-            if retval :
-                raise IOError, "Could not get spectrum number."
-
-            retval = self.source.GetLastSpectrumNumber(byref(last))
-            if retval :
-                raise IOError, "Could not get spectrum number."
-
-            scan_time = c_double()
-            for scan in range(first.value,last.value+1):
-                filter = comtypes.automation.BSTR(None)
-                retval = self.source.GetFilterForScanNum(scan,byref(filter))
-                if retval :
-                    raise IOError, "Could not get scan number."
-                retval = self.source.RTFromScanNum(scan,byref(scan_time))
-                if retval :
-                    raise IOError, "Could not get retention time."
-                answer.append( (scan_time.value, filter.value) )
-
-            self._filters = answer
-        return self._filters
-
-    def headers(self):
-        '''Doesn't actually store the full headers. Generates the full scan_info
-        list by looking at filter and header values. The results are cached.
-        '''
-
-        if not self._headers:
-            self._headers = []
-
-            first = c_long()
-            last  = c_long()
-            scan_time = c_double()
-
-            mode_re = re.compile(r'\s+(ms(?:\d+)?)\s+')
-            data_re = re.compile(r'\s+([cp])\s+')
-            #mz_re = re.compile(r'(\d+\.\d+)@|Full ms2 (\d+\.\d+) [')
-
-            retval = self.source.GetFirstSpectrumNumber(byref(first))
-            if retval:
-                raise IOError, "Couldn't get spectrum number for headers. %s" % retval
-
-            retval = self.source.GetLastSpectrumNumber(byref(last))
-            if retval:
-                raise IOError, "Couldn't get spectrum number for headers. %s" % retval
-
-            for scan in xrange(first.value, last.value + 1):
-                filter_str = comtypes.automation.BSTR(None)
-                
-                retval = self.source.GetFilterForScanNum(scan, byref(filter_str))
-                if retval:
-                    raise IOError, "Couldn't get filter. %s" % retval
-
-                retval = self.source.RTFromScanNum(scan, byref(scan_time))
-                if retval:
-                    raise IOError, "Couldn't get retention time for headers. %s" % retval
-
-                filterstr = filter_str.value.upper()
-
-                data_m = data_re.search(filter_str.value)
-                #mode_m = mode_re.search(filter_str.value)
-
-                #scan_mode = str(mode_m.group(1)).upper()
-                #if scan_mode == 'MS':
-                    #scan_mode = 'MS1'
-                   
-                 
-                if 'MS1' in filterstr:
-                    scan_mode = 'MS1'
-                elif 'MS2' in filterstr:
-                    scan_mode = 'MS2'
-                elif 'MS3' in filterstr:
-                    scan_mode = 'MS3'
-                elif 'PR' in filterstr:
-                    scan_mode = 'PR'
-                elif ' MS ' in filterstr:
-                    scan_mode = 'MS1' # Some annoying formats.
-                else:
-                    raise IOError, 'Unrecognized scan filter format: %s' % filter_str.value               
-
-                if scan_mode == 'MS1':
-                    mz = 0.0
-                else:
-                    header_fields = comtypes.automation.VARIANT()
-                    num_fields = c_long()
-                    retval = self.source.GetTrailerExtraLabelsForScanNum(scan, header_fields, comtypes.byref(num_fields))
-                    if retval:
-                        raise IOError, "Couldn't get extra labels for scan. %s" % retval
-
-                    if 'Monoisotopic M/Z:' in header_fields.value:
-                        mz_value = comtypes.automation.VARIANT()
-                        retval = self.source.GetTrailerExtraValueForScanNum(scan, u'Monoisotopic M/Z:', mz_value)
-                        if retval:
-                            raise IOError, "Couldn't get extra values for scan. %s" % retval
-                        mz = mz_value.value
-                    else:
-                        if '@' in filterstr:
-                            mz = float(filterstr.split('@')[0].split()[-1])
-                        elif 'SRM' in filterstr or ('SID=' in filterstr and 'FULL ' in filterstr):
-                            mz = float(filterstr.split()[6])
-                        else:
-                            raise IOError, 'Unrecognized filter format: %s' % filterstr
-                        
-                self._headers.append((scan_time.value, # scan time
-                                      mz, # scan m/z from header, or 0 if MS1
-                                      scan, # scan name == scan number
-                                      scan_mode, # MS1 or MS2, referred to as 'scan type' in our API)
-                                      str(data_m.group(1)).lower() if data_m else 'p')) # data mode, 'p' or 'c'
-
-        return self._headers
-
-    def __init__(self, data_file, **kwargs):
-        """Initializes mzAPI and opens a new file
-
-        >>> dataFile = 'C:\\Documents and Settings\\User\\Desktop\\rawFile.RAW'
-        >>> myPeakFile = mzAPI.mzFile(dataFile)
-
-        """
-
+    def __init__(self, file_name, *args, **kwargs):
         self.file_type = 'raw'
-        self.data_file = data_file
-        self.source = None
-
+        self.data_file = file_name
+        
         try:
-            try:
-                obj = CreateObject("MSFileReader.XRawfile")
-                obj.Open("Making sure its really functional.")
-            except WindowsError:
-                obj = CreateObject("XRawfile.XRawfile")
-                vprint("Raw access via XCalibur.")
-        except (_ctypes.COMError, AttributeError, WindowsError):
-            try:
-                from win32com.client import Dispatch
-                obj = Dispatch("MSFileReader.XRawfile")
-            except com_error:
-                from comtypes.client import GetModule
-                import sys
-                if sys.maxsize > 2**32: # If 64-bit version.
-                    GetModule("c:/Program Files/Thermo/MSFileReader/XRawfile2_x64.dll")
-                else:
-                    GetModule("c:/Program Files/Thermo/MSFileReader/XRawfile2.dll")
-                import comtypes.gen.MSFileReaderLib as msf
-                obj = CreateObject(msf.MSFileReader_XRawfile)
-                vprint("Raw access via type library.")
-        #obj = Dispatch("MSFileReader.XRawfile")
-
-        self.source = obj
-
-        retval = obj.Open(data_file)
-        if retval:
-            if int(retval) == 3:
-                raise IOError, "Could not open %s" % data_file
-            else:
-                raise IOError, "Unspecified error code: %s" % retval
-
-        retval = obj.SetCurrentController(c_long(0),c_long(1))
-        if retval:
-            obj.Close()
-            raise IOError, "SetCurrentController error: %s" % retval
-
+            self.source = CreateObject("{10729396-43ee-49e5-aa07-85f02292ac70}")
+        except WindowsError as err:
+            print "RawReader.dll not found in registry."
+            raise err
+        self.source.OpenRawFile(file_name)
+        
         self._filters = None
-        self._headers = None
-
+        self._scaninfo = None
+        
+        # A bunch of functions are pure C#.
+        self.scan_range = self.source.scan_range
+        self.time_range = self.source.time_range
+        self.time_for_scan = self.source.time_from_scan
+        self.scan_for_time = self.source.scan_from_time
+        self.scanForTime = self.source.scan_from_time
+        self.timeForScan = self.source.time_from_scan
+        self.scan_time_from_scan_name = self.source.time_from_scan
+        
+        
+    
+    def scan(self, scan_number, centroid = False):
+        if isinstance(scan_number, float): # Taken as a scan time.
+            scan_number = self.source.scan_from_time(scan_number)
+        if centroid:
+            return [x[:2] for x in self.source.centroid_scan(scan_number)]
+        else:
+            return list(self.source.profile_scan(scan_number))
+    
+    def lscan(self, scan_number):
+        scan = self.source.centroid_scan(scan_number)
+        if len(scan[0]) < 4:
+            raise IOError, "Full lscan data not available for scan %s" % scan_number
+        return [x[:4] for x in scan]
+    
+    def rscan(self, scan):
+        return list(self.source.centroid_scan(scan))
+    
+    def average_scan(self, startscan, stopscan, filter):
+        return list(self.source.average_scan(startscan, stopscan, filter))
+    
+    def filters(self):
+        if not self._filters:
+            filterlist = zip(self.source.GetAllFilterInfoTimes(),
+                             self.source.GetAllFilterInfo())
+            self._filters = [(time, string) for time, string in filterlist
+                             if time and string]
+            
+        return self._filters
+    
+    def extra_info(self, scan):
+        info = {}
+        for key, val in self.source.get_extra_scan_info(scan):
+            try:
+                info[key] = float(val)
+            except ValueError:
+                info[key] = val
+        return info
+    
+    def scanInjectionTime(self, scan):
+        keys, vals = zip(*self.source.get_extra_scan_info(scan))
+        return float(vals[keys.index('Ion Injection Time (ms):')])
+        
+    
+    def scan_info(self, start_time=0, stop_time=None, start_mz=0, stop_mz=None):
+        if not self._scaninfo:
+            self._scaninfo = []
+            for scan in range(*self.scan_range()):
+                info = self.source.GetFilterInfoForScan(scan)
+                time = self.source.time_from_scan(scan)
+                self._scaninfo.append((time, float(info[1]), scan,
+                                       info[0].upper() if info[0].upper() != 'MS' else 'MS1',
+                                       'p' if info[2] == 'Profile' else 'c'))
+        return self._scaninfo
+    
+    def headers(self):
+        return self.scan_info()
+               
+    def xic(self, start_time = -1, stop_time = -1, start_mz = -1, stop_mz = -1, filter=None):
+        if start_time == -1 and stop_time == -1 and start_mz == -1 and stop_mz == -1 and filter==None:
+            return self.tic()
+        if not filter:
+            filter = 'Full ms '
+        if start_time != -1:
+            start_time = self.scanForTime(start_time)
+        if stop_time != -1:
+            stop_time = self.scanForTime(stop_time)
+        return list(self.source.get_xic(start_time, stop_time, start_mz, stop_mz, filter))
+    
+    def tic(self):
+        return list(self.source.get_tic())
+    
     def close(self):
-        """Closes the open MS data file
-
-        Example:
-        >>> myPeakFile.close()
-
-        """
-        self.source.Close()
-
-    def scan_list(self, start_time=None, stop_time=None, start_mz=0, stop_mz=99999):
-        """Gets a list of [(time,mz)] in the time and mz range provided
-
-        All full MS scans that fall within the time range are included.
-        Only MS/MS scans that fall within the mz range (optional) are included
-
-        Example:
-        >>> scan_list = my_peakfile.scan_list(30.0, 35.0, 435.82, 436.00)
-
-        """
-        if not start_time or not stop_time:
-            (file_start_time, file_stop_time) = self.time_range()
-        if not start_time:
-            start_time = file_start_time
-        if not stop_time:
-            stop_time = file_stop_time
-
-        return [(t,mz) for t,mz,sn,st,sm in self.headers()
-                if start_time <= t <= stop_time and (st == 'MS1' or start_mz <= mz <= stop_mz)]
-
-    def scan_info(self, start_time = 0, stop_time=99999, start_mz=0, stop_mz=99999):
-        """Gets a list of [(time, mz, scan_name, scan_type, scan_mode)] in the time and mz range provided
-
-        scan_name = number for RAW files, (cycle, experiment) for WIFF files.
-
-        All full MS scans that fall within the time range are included.
-        Only MS/MS scans that fall within the mz range (optional) are included
-
-        Example:
-        >>> scan_info = my_peakfile.scan_info(30.0, 35.0, 435.82, 436.00)
-        """
-        if stop_time == 0:
-            stop_time = start_time
-
-        return [(t,mz,sn,st,sm) for t,mz,sn,st,sm in self.headers()
-                if start_time <= t <= stop_time and (st == 'MS1' or start_mz <= mz <= stop_mz)]
-
-    def scan_time_from_scan_name(self, scan_name):
-        """Essentially, gets the time for a raw scan number
-
-        Example:
-        >>> #raw
-        >>> scan_time = myPeakFile.scan_time_from_scan_name(2165)
-
-        """
-
-        scan = c_long(scan_name)
-        scantime = c_double()
-        retval = self.source.RTFromScanNum(scan,byref(scantime))
-        if retval :
-            raise IOError, "Could not get scan time. %s" % retval
-
-        return scantime.value
-
-    def average_scan(self, start_scan, end_scan, filter):
-        #first, last, bck1, 2, 3, 4, str filter, icot, icov, max#, cent, (double) peakwidth, (obj) masslist, (obj) pflags, (int) array size
-        start = c_long(start_scan)
-        end = c_long(end_scan)
-        cpw = c_double()
-        bk = c_long(0)
-        peaknum = c_long()
-        filter = comtypes.automation.BSTR(filter)
-        ms = comtypes.automation.VARIANT()
-        flags = comtypes.automation.VARIANT()
-        retval = self.source.GetAverageMassList(start, end, bk,bk,bk,bk, filter ,0,0,0,False,cpw,ms,flags,peaknum)
-        if retval :
-            raise IOError, "Could not get mass list. %s" % retval
-        return zip(ms.value[0],ms.value[1])
-
-    def scan(self, time, centroid=False, mzScanMode = True):
-        """Gets scan based on the specified scan time
-
-        The scan is a list of (mz, intensity) pairs.
-
-        Example:
-        >>> scan = myPeakFile.scan(20.035)
-
-        """
-
-        # Scan can be either an RT value (if float) or a scan number (if int).
-        if isinstance(time, float):
-            scan_num = self.scanForTime(time)
-        else:
-            scan_num = time
-
-        the_scan = c_long(scan_num)
-
-
-        if centroid and 'FTMS' in self.filters()[scan_num-1][1][:5]:
-            return [(mz, ints) for (mz, ints, _, _) in self.lscan(scan_num)]
-        
-
-        cpw = c_double()
-        peaknum = c_long()
-        ms = comtypes.automation.VARIANT()
-        flags = comtypes.automation.VARIANT()
-        retval = self.source.GetMassListFromScanNum(the_scan,None,0,0,0,c_long(centroid),cpw,ms,flags,peaknum)
-        if retval :
-            raise IOError, "Could not get mass list from scan. %s" % retval
-
-        z_value = comtypes.automation.VARIANT()
-        retval = self.source.GetTrailerExtraValueForScanNum(the_scan, u'Charge State:', z_value)
-        if retval:
-            #raise IOError, "Could not get extra values for scan. %s" % retval
-            z = 0.0
-        else:
-            z = z_value.value
-        
-        if mzScanMode:
-            (scan_time,mz,sn,st,scan_mode) = self.headers()[scan_num - 1]
-            return mzScan(zip(ms.value[0],ms.value[1]), scan_time, scan_mode, mz, z)
-        else:
-            return zip(ms.value[0],ms.value[1])
-
-    def centroid(self, time, peakwidth=None, mzScanMode = True):
-        """Gets centroided scan based on the specified scan time
-
-        The scan is a list of (mz, intensity) pairs.
-
-        Example:
-        >>> scan = myPeakFile.centroid(20.035)
-
-        """
-
-        #Sneaky ability to access scans directly by scan_num... Shhhhh....
-        if isinstance(time, float):
-            scan_num = self.scanForTime(time)
-        else:
-            scan_num = time
-
-        (scan_time,mz,sn,st,scan_mode) = self.headers()[scan_num - 1]
-        the_scan = c_long(scan_num)
-
-        if peakwidth:
-            cpw = c_double(peakwidth)
-        else:
-            cpw = c_double()
-
-        peaknum = c_long()
-        ms = comtypes.automation.VARIANT()
-        flags = comtypes.automation.VARIANT()
-        retval = self.source.GetMassListFromScanNum(the_scan,None,0,0,0,True,cpw,ms,flags,peaknum)
-        if retval :
-            raise IOError, "Could not get mass list for centroid. %s" % retval 
-
-        z_value = comtypes.automation.VARIANT()
-        retval = self.source.GetTrailerExtraValueForScanNum(the_scan, u'Charge State:', z_value)
-        if retval:
-            raise IOError, "Could not get extra value for scan. %s" % retval
-        z = z_value.value
-
-        if mzScanMode:
-            return mzScan(zip(ms.value[0],ms.value[1]), scan_time, scan_mode, mz, z)
-        else:
-            return zip(ms.value[0],ms.value[1])
-
-    def xic(self, start_time=None, stop_time=None, start_mz=1, stop_mz=5000, filter=None):
-        """Generates eXtracted Ion Chromatogram (XIC) for given time and mz range;
-        if no parameters are given it gives the total ion current for the whole run.
-
-        The function integrates the precursor intensities for given time and mz range.
-        The xic is a list of (mz,intensity) pairs.
-
-        Example:
-        >>> xic = myPeakFile.xic(31.4, 32.4, 435.82, 436.00)
-
-        """
-
-        if not start_time:
-            start_time = self.time_range()[0]
-        if not stop_time:
-            stop_time = self.time_range()[1]
-
-        assert start_time < stop_time, "XIC start time must be less than end time. %s %s" % (start_time, stop_time)
-        assert start_mz < stop_mz, "XIC start MZ must be less than end MZ. %s %s" % (start_mz, stop_mz)
-
-        if start_mz < 1:
-            start_mz = 1 # Lower makes the XIC function fail for some reason.
-        
-        if filter is None:
-            filter =  "Full ms "
-        massRange = "%s-%s" % (start_mz, stop_mz)
-
-        ftLB = c_double(start_time)
-        ftUB = c_double(stop_time)
-        cdata = comtypes.automation.VARIANT()
-        flags = comtypes.automation.VARIANT()
-        val_num = c_long()
-
-        retval = self.source.GetChroData(0,0,0,filter,massRange,"",0.0,byref(ftLB),byref(ftUB),0,0,cdata,flags,byref(val_num))
-        if retval :
-            raise IOError, "Could not get chromatogram data. %s" % retval
-        
-        # Returned a tuple, previously.  Dunno why.
-        if cdata.value:
-            return list(zip(cdata.value[0],cdata.value[1]))
-        else:
-            return []
+        pass # Check for memory leaks!
     
 
-    def time_range(self):
-        """Returns a pair of times corresponding to the first and last scan time
-
-        Example:
-        >>> time_range = myPeakFile.time_range()
-
-        """
-
-        start = c_double()
-        stop = c_double()
-
-        retval = self.source.GetStartTime(byref(start))
-        if retval :
-            raise IOError, "Could not get start time. %s" % retval
-
-        retval = self.source.GetEndTime(byref(stop))
-        if retval :
-            raise IOError, "Could not get end time. %s" % retval
-        return (start.value,stop.value)
-
-    def scanForTime(self,the_time):
-        the_scan = c_long()
-        retval = self.source.ScanNumFromRT(c_double(the_time),byref(the_scan))
-        if retval :
-            raise IOError, "Could not get scan from retention time. %s" % (retval, the_time)
-        return the_scan.value
-
-    def scan_for_time(self, time):
-        return self.scanForTime(time)
-
-    def timeForScan(self,the_scan):
-        the_time = c_double()
-        retval = self.source.RTFromScanNum(c_long(the_scan),byref(the_time))
-        if retval:
-            raise IOError, "Could not get retention time for scan. %s" % (retval, the_scan)
-        return the_time.value
-
-    def time_for_scan(self, scan):
-        return self.timeForScan(scan)
-
-    def scan_range(self):
-        start = c_long()
-        stop = c_long()
-
-        retval = self.source.GetFirstSpectrumNumber(byref(start))
-        if retval:
-            raise IOError, "Could not get first scan number. %s" % retval
-
-        retval = self.source.GetLastSpectrumNumber(byref(stop))
-        if retval :
-            raise IOError, "Could not get last scan number. %s" % retval
-        return (start.value,stop.value)
-
-    def lscan(self,scanNum):
-        the_scan = c_long(scanNum)
-        ms = comtypes.automation.VARIANT()
-        flags = comtypes.automation.VARIANT()
-        retval = self.source.GetLabelData(ms,flags,the_scan)
-        if retval :
-            raise IOError, "Could not get label data. %s" % retval
-        return zip(ms.value[0],ms.value[1],ms.value[4],ms.value[5])
     
-    def rscan(self,scanNum):
-        #0- mass; 1-inensity; 4-noise, 5-charge, 2-resolution, 3-baseline
-        the_scan = c_long(scanNum)
-        ms = comtypes.automation.VARIANT()
-        flags = comtypes.automation.VARIANT()
-        retval = self.source.GetLabelData(ms,flags,the_scan)
-        if retval :
-            raise IOError, "Could not get label data. %s" % retval
-        return zip(ms.value[0],ms.value[1],ms.value[4], ms.value[5], ms.value[2])    #,ms.value[3] - Leave out baseline
+    def centroid(self, scan, *foo, **bar):
+        print "mzFile.centroid is deprecated, use mzFile.scan(..., centroid = True) instead."
+        return self.scan(scan, centroid = True)
+    
 
-    def cscan(self,scanNum):
-        return self.lscan(scanNum)
-
-    def extra_info(self,scanNum):
-        the_scan = c_long(scanNum)
-        labels = comtypes.automation.VARIANT()
-        values = comtypes.automation.VARIANT()
-        val_num = c_long()
-
-        retval = self.source.GetTrailerExtraForScanNum(the_scan,labels,values,val_num)
-        if retval:
-            raise IOError, "Could not get data for scans. %s" % retval
-        return dict(zip( map(lambda x: str(x[:-1]), labels.value) , map(_to_float, values.value) ))
-
-    def scanInjectionTime(self,scanNum):
-        the_scan = c_long(scanNum)
-        labels = comtypes.automation.VARIANT()
-        values = comtypes.automation.VARIANT()
-        val_num = c_long()
-
-        retval = self.source.GetTrailerExtraForScanNum(the_scan,labels,values,val_num)
-        if retval :
-            raise IOError, "Could not get data for scans. %s" % retval
-        vals = dict(zip( map(lambda x: str(x[:-1]), labels.value) , map(_to_float, values.value) ))
-        try:
-            return vals["Ion Injection Time (ms)"]
-        except KeyError:
-            return 1
-
-    def scanPrecursor(self,scanNum):
-        if isinstance(scanNum, float):
-            the_scan = c_long(self.scanForTime(scanNum))
-        else:
-            the_scan = c_long(scanNum)
-
-        labels = comtypes.automation.VARIANT()
-        values = comtypes.automation.VARIANT()
-        val_num = c_long()
-
-        retval = self.source.GetTrailerExtraForScanNum(the_scan,labels,values,val_num)
-        if retval :
-            raise IOError, "Could not get data for scans. %s" % retval
-        vals = dict(zip( map(lambda x: str(x[:-1]), labels.value) , map(_to_float, values.value) ))
-        return (vals["Monoisotopic M/Z"],int(vals["Charge State"]))
+                
+    
+#if __name__ == '__main__':
+    #import os
+    #import glob
+    #import subprocess
+    #os.chdir(r'C:\Users\Max\Documents\Visual Studio 2017\Projects\ConsoleApp3\ConsoleApp3\bin\Debug')
+    
+    #netDir = sorted(glob.glob('c:/Windows/Microsoft.NET/Framework%s/v[34]*/RegAsm.exe' % '64'))[-1]
+    #dllpath = r'C:\Users\Max\Documents\Visual Studio 2017\Projects\ConsoleApp3\ConsoleApp3\bin\Debug\ConsoleApp3.dll'
+    #ret = subprocess.call([netDir, dllpath, "/tlb", "/codebase"])    
