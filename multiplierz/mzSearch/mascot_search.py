@@ -65,8 +65,11 @@ class MascotSearch(object):
             # This will perform extraction, but currently without much control.
             # Add this to parameters files?
             from multiplierz.mgf import extract
+            expected_charge = self.values['CHARGE']
+            if len(expected_charge) > 3 or not int(expected_charge.strip('+-')):
+                raise RuntimeError, "%s is not a valid default charge value for extraction to MGF." % expected_charge
             self.values['FILE'] = extract(self.values['FILE'],
-                                          default_charge = self.values['CHARGE'])
+                                          default_charge = int(expected_charge.strip('+-')))
             
         if 'mascot_server' in self.values:
             mascot_server = self.values['mascot_server']
