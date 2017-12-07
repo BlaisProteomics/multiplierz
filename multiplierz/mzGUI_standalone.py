@@ -429,7 +429,7 @@ class NumValidator(wx.PyValidator):
             elif v < 0.0:
                 wx.MessageBox("%s must be non-negative" % nm, "Error")
             else:
-                tc.SetBackgroundColour(wx.SystemSettings_GetColour(wx.SYS_COLOUR_WINDOW))
+                tc.SetBackgroundColour(wx.SystemSettings.GetColour(wx.SYS_COLOUR_WINDOW))
                 tc.Refresh()
                 return True
         except ValueError:
@@ -490,7 +490,7 @@ def alerts(message='multiplierz', title='multiplierz', method='popup'):
 
 
 def file_chooser(title='Choose a file:', default_path = '', default_file = '',
-                 mode='r', wildcard='*'):
+                 mode='r', wildcard='*', parent_obj = None):
     """Provides a file chooser dialog and returns the file path(s) when the file(s) is selected.
     mode option provides file dialog type: read single, read multiple, or save single.
     mode = 'r' creates an 'Open' file dialog for single file read.
@@ -511,12 +511,12 @@ def file_chooser(title='Choose a file:', default_path = '', default_file = '',
               'w': wx.FD_SAVE|wx.FD_OVERWRITE_PROMPT }[mode]
 
     try:
-        file_chooser = wx.FileDialog(None, title, wildcard=wildcard, style=style,
+        file_chooser = wx.FileDialog(parent_obj, title, wildcard=wildcard, style=style,
                                      defaultDir = default_path, defaultFile = default_file)
     except wx._core.PyNoAppError:
         app = mzApp()
         app.launch()
-        file_chooser = wx.FileDialog(None, title, wildcard=wildcard, style=style,
+        file_chooser = wx.FileDialog(parent_obj, title, wildcard=wildcard, style=style,
                                      defaultDir = default_path, defaultFile = default_file)
 
 
