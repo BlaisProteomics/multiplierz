@@ -119,7 +119,7 @@ def parse_mgf(mgffile, labelType = (lambda x: x), header = False, rawStrings = F
                     field, value = splitOnFirst(line, '=')
                     
                     if (not rawStrings) and field == 'CHARGE':
-                        value = int(value.strip('\n+ '))
+                        value = int(value.strip('\n+ .0'))
                     elif (not rawStrings) and field == "PEPMASS":
                         value = float(value.split()[0].strip())
                     else:
@@ -257,6 +257,7 @@ class MGF_Writer(object):
         self.file.write('BEGIN IONS\n')
         self.file.write('TITLE=%s\n' % title)
         if charge: # Don't even bother with 0 charge, either.
+            charge = str(int(charge))
             self.file.write('CHARGE=%s\n' % charge)
         if mass: # 0 mass gives errors, and is usually due to null values.
             self.file.write('PEPMASS=%s\n' % mass)
