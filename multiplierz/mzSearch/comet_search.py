@@ -17,7 +17,7 @@ import csv
 __all__ = ['CometSearch']
 
 
-parameterPreamble = ['# comet_version 2016.01 rev. 2\n',
+parameterPreamble = ['# comet_version 2017.01 rev. 2\n',
                      '# Comet MS/MS search engine parameters file.\n',
                      "# Everything following the '#' symbol is treated as a comment.\n"]
 
@@ -176,7 +176,8 @@ defaultEnzymes = {'0': {'active': 0, 'name': 'No_enzyme', 'p': '-', 'specificity
                   '7': {'active': 1, 'name': 'CNBr', 'p': '-', 'specificity': 'M'},
                   '8': {'active': 1, 'name': 'Glu_C', 'p': 'P', 'specificity': 'DE'},
                   '9': {'active': 1, 'name': 'PepsinA', 'p': 'P', 'specificity': 'FL'},
-                  '10': {'active': 1, 'name': 'Chymotrypsin', 'p': 'P', 'specificity': 'FWYL'}}
+                  '10': {'active': 1, 'name': 'Chymotrypsin', 'p': 'P', 'specificity': 'FWYL'},
+                  '11': {'active': 1, 'name': 'Glu_C/Tryp', 'p': 'P', 'specificity': 'DEKR'}}
 
 defaultVarmods = [{'mass' : 15.994915,
                    'residues' : 'M',
@@ -218,7 +219,8 @@ toStandardPSMConversions = {'scan':'Query',
                             'ions_matched':'Ions Matched',
                             'ions_total':'Total Predicted Ions',
                             'plain_peptide':'Peptide Sequence',
-                            'peptide_modifications':'Variable Modifications',
+                            'peptide_modifications':'Variable Modifications', # Old version.
+                            'modified_peptide':'Variable Modifications', # New version.
                             'prev_aa':'Preceeding Residue',
                             'next_aa':'Following Residue',
                             'protein':'Accession Number',
@@ -533,7 +535,8 @@ class CometSearch(dict):
                                           'p' : p
                                           }
                                 self.enzymes[num.strip('.')] = enzyme
-                    
+                            continue # Should be done; could be a return.
+                        
                     if field[:12] == 'variable_mod' :
                         words = value.split()
                         if len(words) == 4:
@@ -604,7 +607,7 @@ class CometSearch(dict):
             
 
         
-    def run_search(self, data_file, outputfile = None, most_rank = None, most_exp = None):
+    def run_search(self, data_file, outputfile = None, most_rank = None, most_exp = None, verbose = False):
         #assert self.enzyme_selection != None, "Must specify enzyme selection (attribute .enzyme_selection)!" 
         
         self['digest_mass_range'] = '450.0 6000.0' # Remove this if this parameter gets added to the GUI!
@@ -613,7 +616,11 @@ class CometSearch(dict):
         ext = data_file.split('.')[-1]
         if ext.lower() in ['raw', 'wiff', 'd', 'mzml']:
             from multiplierz.mgf import extract
+            if verbose:
+                print "Extracting to MGF..."
             data_file = extract(data_file)
+            if verbose:
+                print "Extracted %s" % datafile
         
         #if not data_file.lower().endswith('ms2'):
             #ms2_file = mgf_to_ms2(data_file)
