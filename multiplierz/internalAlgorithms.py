@@ -769,6 +769,8 @@ class ProximityIndexedSequence(object):
             output += self.lookup[index]
         return output
     
+    def rebalance(self, *args, **kwargs):
+        pass
         
         
     
