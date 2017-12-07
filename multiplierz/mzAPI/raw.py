@@ -63,6 +63,7 @@ class mzFile(mzAPImzFile):
     def extra_info(self, scan):
         info = {}
         for key, val in self.source.get_extra_scan_info(scan):
+            key = key.strip(':')
             try:
                 info[key] = float(val)
             except ValueError:
@@ -72,6 +73,11 @@ class mzFile(mzAPImzFile):
     def scanInjectionTime(self, scan):
         keys, vals = zip(*self.source.get_extra_scan_info(scan))
         return float(vals[keys.index('Ion Injection Time (ms):')])
+    
+    def scanPrecursor(self, scan):
+        keys, vals = zip(*self.source.get_extra_scan_info(scan))
+        return (float(vals[keys.index('Monoisotopic M/Z:')]),
+                float(vals[keys.index('Charge State:')]))
         
     
     def scan_info(self, start_time=0, stop_time=None, start_mz=0, stop_mz=None):
