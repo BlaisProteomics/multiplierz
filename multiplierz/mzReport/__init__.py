@@ -240,10 +240,6 @@ class ReportReader(object):
         '''For closing the report before all rows have been read'''
         raise NotImplementedError, "Subclasses must override this method"
 
-    def Close(self, *args, **kwargs):
-        logger_message(50, 'This method is deprecated, use close() instead')
-        self.close(*args, **kwargs)
-
 
 class ReportWriter(object):
     """Base class for writing multiplierz reports"""
@@ -274,10 +270,6 @@ class ReportWriter(object):
         """
         raise NotImplementedError, "Subclasses must override this method"
 
-    def WriteRow(self, *args, **kwargs):
-        logger_message(50, 'This method is deprecated, use write() instead')
-        self.write(*args, **kwargs)
-
     def add_image(self, column, image):
         """Adds an image associated with the specified column to the last row
         of the report. Not supported by CSV.
@@ -285,17 +277,9 @@ class ReportWriter(object):
         """
         raise NotImplementedError, "Subclasses must override this method"
 
-    def AddImage(self, *args, **kwargs):
-        logger_message(50, 'This method is deprecated, use add_image() instead')
-        self.add_image(*args, **kwargs)
-
     def close(self):
         """Closes the file."""
         raise NotImplementedError, "Subclasses must override this method"
-
-    def Close(self, *args, **kwargs):
-        logger_message(50, 'This method is deprecated, use close() instead')
-        self.close(*args, **kwargs)
 
 
 # imports are down here to prevent circular import problem
@@ -304,10 +288,10 @@ class ReportWriter(object):
 if sys.platform == 'win32':
     import mzSpreadsheet
 
-import mzCSV
-import mzDB
 
-from multiplierz import logger_message, myData, myTemp
+
+
+#from multiplierz import myData, myTemp
 
 # reader factory returns a ReportReader
 def reader(report_file, **kwargs):
@@ -326,8 +310,10 @@ def reader(report_file, **kwargs):
     if file_type == 'xls' or file_type == 'xlsx':
         return mzSpreadsheet.XLSheetReader(report_file, **kwargs)
     elif file_type == 'csv':
+        import mzCSV
         return mzCSV.CSVReportReader(report_file, **kwargs)
     elif file_type == 'mzd':
+        import mzDB
         return mzDB.SQLiteReader(report_file, **kwargs)
     elif file_type == 'mzid':
         import mzIdentML
@@ -365,11 +351,13 @@ def writer(report_file, columns=None, default_columns=False, delayed_write = Fal
                                            default_columns=default_columns,
                                            **kwargs)
     elif file_type == 'csv':
+        import mzCSV
         return mzCSV.CSVReportWriter(report_file,
                                      columns=columns,
                                      default_columns=default_columns,
                                      **kwargs)
     elif file_type == 'mzd':
+        import mzDB
         return mzDB.SQLiteWriter(report_file,
                                  columns=columns,
                                  default_columns=default_columns,
@@ -408,161 +396,3 @@ class delayedWriter(ReportWriter):
         for args, kwargs in self.data:
             trueWriter.write(*args, **kwargs)
         trueWriter.close()
-        
-        
-
-
-# conversion methods--convert any report
-def toXLS(report_file, xlsx=False):
-    '''Takes any report and converts it to an xls'''
-    rep_path, rep_base = os.path.split(report_file)
-    rep_base = os.path.splitext(rep_base)[0]
-
-    ext = '.xlsx' if xlsx else '.xls'
-
-    if os.path.exists(os.path.join(rep_path, rep_base + ext)):
-        if os.path.exists(os.path.join(rep_path, 'Copy of %s%s' % (rep_base, ext))):
-            i = 2
-            rep_out = 'Copy (%d) of %s%s' % (i, rep_base, ext)
-            while os.path.exists(os.path.join(rep_path, rep_out)):
-                i += 1
-                rep_out = 'Copy (%d) of %s%s' % (i, rep_base, ext)
-        else:
-            rep_out = 'Copy of %s%s' % (rep_base, ext)
-    else:
-        rep_out = rep_base + ext
-
-    xlfile_name = os.path.join(rep_path, rep_out)
-
-    report = reader(report_file)
-
-    if report:
-        xlfile = mzSpreadsheet.XLSheetWriter(xlfile_name,
-                                             columns=report.columns)
-        for row in report:
-            xlfile.write(row)
-
-        if isinstance(report, mzDB.SQLiteReader):
-            import tempfile
-
-            col_indices = dict((col,i+1) for i,col in enumerate(report.columns))
-
-            cursor = report.conn.execute("SELECT RowID,Col,PlotData from ImageData where tag='image'")
-            for (lastID,col,plotdata) in cursor:
-                (h, pngpath) = tempfile.mkstemp(suffix='.png', dir=myTemp)
-
-                fh = os.fdopen(h, 'wb')
-                fh.write(plotdata)
-                fh.close()
-
-                xlfile.sheet.metadata.append((lastID+1,col_indices[col], 'image', pngpath))
-
-            cursor = report.conn.execute("SELECT RowID,Col,tag,PlotData as 'PlotData [pickled]' from ImageData where tag!='image'")
-            for (lastID,col,tag,plotdata) in cursor:
-                if tag == 'ms1':
-                    (h, pngpath) = tempfile.mkstemp(suffix='.png', dir=myTemp)
-                    fh = os.fdopen(h, 'wb')
-
-                    (mz, xy, scan_mode, pm_scanDot) = plotdata
-
-                    mzTools.mz_image.make_ms1_im(fh, mz, xy, scan_mode, pm_scanDot)
-                    fh.close()
-
-                    xlfile.sheet.metadata.append((lastID+1,col_indices[col],'image',pngpath))
-                elif tag == 'xic' or tag == 'ric': # backwards compatible
-                    (h, pngpath) = tempfile.mkstemp(suffix='.png', dir=myTemp)
-                    fh = os.fdopen(h, 'wb')
-
-                    (mz, xic_time, xic_int, scan_dot, bin_times, bin_int) = plotdata
-
-                    mzTools.mz_image.make_xic_im(fh, mz, xic_time, xic_int, scan_dot, bin_times, bin_int)
-                    fh.close()
-
-                    xlfile.sheet.metadata.append((lastID+1,col_indices[col],'image',pngpath))
-                elif tag == 'ms2':
-                    (h, pngpath) = tempfile.mkstemp(suffix='.png', dir=myTemp)
-                    fh = os.fdopen(h, 'wb')
-
-                    (ms_ms_scan, scan_mode, peptide,
-                     labels, ion_list, charge, score) = plotdata
-                    mzTools.mz_image.make_ms2_im(fh, ms_ms_scan, scan_mode, peptide,
-                                                 labels, ion_list, charge, score)
-
-                    fh.close()
-
-                    xlfile.sheet.metadata.append((lastID+1,col_indices[col],'image',pngpath))
-
-        xlfile.close()
-        report.close()
-
-    return xlfile_name
-
-def toCSV(report_file):
-    '''Takes any report and converts it to a csv'''
-    rep_path, rep_base = os.path.split(report_file)
-    rep_base = os.path.splitext(rep_base)[0]
-
-    if os.path.exists(os.path.join(rep_path, rep_base + '.csv')):
-        if os.path.exists(os.path.join(rep_path, 'Copy of %s.csv' % rep_base)):
-            i = 2
-            rep_out = 'Copy (%d) of %s.csv' % (i,rep_base)
-            while os.path.exists(os.path.join(rep_path, rep_out)):
-                i += 1
-                rep_out = 'Copy (%d) of %s.csv' % (i,rep_base)
-        else:
-            rep_out = 'Copy of %s.csv' % rep_base
-    else:
-        rep_out = rep_base + '.csv'
-
-    csvfile_name = os.path.join(rep_path, rep_out)
-
-    report = reader(report_file)
-
-    if report:
-        csvfile = mzCSV.CSVReportWriter(csvfile_name,
-                                        columns=report.columns)
-        for row in report:
-            csvfile.write(row)
-
-        csvfile.close()
-        report.close()
-        
-    return csvfile_name
-
-
-def toMZD(report_file):
-    '''Takes any report and converts it to an mzd'''
-    rep_path, rep_base = os.path.split(report_file)
-    rep_base = os.path.splitext(rep_base)[0]
-
-    if os.path.exists(os.path.join(rep_path, rep_base + '.mzd')):
-        if os.path.exists(os.path.join(rep_path, 'Copy of %s.mzd' % rep_base)):
-            i = 2
-            rep_out = 'Copy (%d) of %s.mzd' % (i,rep_base)
-            while os.path.exists(os.path.join(rep_path, rep_out)):
-                i += 1
-                rep_out = 'Copy (%d) of %s.mzd' % (i,rep_base)
-        else:
-            rep_out = 'Copy of %s.mzd' % rep_base
-    else:
-        rep_out = rep_base + '.mzd'
-
-    mzdfile_name = os.path.join(rep_path, rep_out)
-
-    report = reader(report_file)
-
-    if report:
-        mzdfile = mzDB.SQLiteWriter(mzdfile_name,
-                                    columns=report.columns)
-        for row in report:
-            mzdfile.write(row)
-
-        if isinstance(report, mzDB.SQLiteReader):
-            cursor = report.conn.execute('select * from ImageData')
-            mzdfile.conn.executemany('INSERT into ImageData values (?,?,?,?)',
-                                     ((lastID,col,tag,plotdata) for (lastID,col,tag,plotdata) in cursor))
-
-        mzdfile.close()
-        report.close()
-        
-    return mzdfile_name
