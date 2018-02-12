@@ -42,6 +42,21 @@ isotopicRatios = {(0, 1) : (0.5, 16.2),
                   (9, 10) : (3.4, 17.0),
                   (10, 11) : (3.6, 15.0)
                   }
+# Tolerances widened even further, for chlorine atoms.
+isotopicRatios_permissive = {(0, 1) : (0.5, 16.2),
+                             (1, 2) : (1.0, 9.7),
+                             (2, 3) : (1.0, 20.7),
+                             (3, 4) : (1.0, 21.2),
+                             (4, 5) : (1.0, 30.0),
+                             (5, 6) : (1.5, 25.2),
+                             (6, 7) : (1.5, 24.0),
+                             (7, 8) : (2.0, 22.2),
+                             (8, 9) : (3.0, 20.0),
+                             (9, 10) : (3.4, 17.0),
+                           (10, 11) : (3.6, 15.0)
+                           }
+# Dev note: "First, do no harm"- all peaks from the input scan should be
+# represented somewhere in the output (and no new peaks, obviously.)
 def peak_pick(scan, tolerance = 0.005, max_charge = 8, min_peaks = 3, correction = None,
               cleanup = False, recover_peaks = True,
               enforce_isotopic_ratios = True):
@@ -59,8 +74,10 @@ def peak_pick(scan, tolerance = 0.005, max_charge = 8, min_peaks = 3, correction
         if all([(scan[i+1][0] - scan[i][0]) < 0.3 for i in range(0, 100)]):
             raise NotImplementedError, "Called scan_features on a profile-mode spectrum."
 
-    if enforce_isotopic_ratios:
+    if enforce_isotopic_ratios == True:
         global isotopicRatios
+    elif enforce_isotopic_ratios == 'permissive':
+        isotopicRatios = isotopicRatios_permissive
     else:
         isotopicRatios = defaultdict(lambda: (-1000000, 1000000))
     lowC13Rat, highC13Rat = isotopicRatios[0, 1]
@@ -95,13 +112,20 @@ def peak_pick(scan, tolerance = 0.005, max_charge = 8, min_peaks = 3, correction
                     if len(finishedSet['envelope']) >= min_peaks:
                         envelopes[chg].append(finishedSet['envelope'])
                     else:
-                        #unassigned += finishedSet['envelope']
-                        # Give these peaks a second chance.
-                        if chg < max_charge and recover_peaks:
-                            for oldPt in finishedSet['envelope']:
-                                possibleNexts = [(z, oldPt[0] + cF) for z, cF in chargeFractions if oldPt[0] + cF > pmz]
-                                if possibleNexts:
-                                    activePts[oldPt] = possibleNexts
+                        # The envelope hasn't managed to accumulate enough
+                        # peaks to meet requirements, but some of it's
+                        # constituent peaks could still go on to be members
+                        # of other, lower-charge envelopes.
+                        if recover_peaks:
+                            if chg < max_charge:
+                                for oldPt in finishedSet['envelope']:
+                                    possibleNexts = [(z, oldPt[0] + cF) for z, cF in chargeFractions if oldPt[0] + cF > pmz]
+                                    if possibleNexts:
+                                        activePts[oldPt] = possibleNexts
+                                    else:
+                                        unassigned.append(oldPt)
+                            else:
+                                unassigned += finishedSet['envelope']
 
             if chargeSet and chargeSet[0]['next'] - pmz < tolerance: # Too-low has already been eliminated?
                 iso = chargeSet[0]
