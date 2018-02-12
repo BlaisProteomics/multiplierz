@@ -80,16 +80,28 @@ class mzFile(mzAPImzFile):
                 float(vals[keys.index('Charge State:')]))
         
     
-    def scan_info(self, start_time=0, stop_time=None, start_mz=0, stop_mz=None):
+    def scan_info(self, start_time=0, stop_time=None, start_mz=0, stop_mz=100000):
         if not self._scaninfo:
             self._scaninfo = []
+            
             for scan in range(*self.scan_range()):
                 info = self.source.GetFilterInfoForScan(scan)
                 time = self.source.time_from_scan(scan)
                 self._scaninfo.append((time, float(info[1]), scan,
                                        info[0].upper() if info[0].upper() != 'MS' else 'MS1',
                                        'p' if info[2] == 'Profile' else 'c'))
-        return self._scaninfo
+                
+        if start_time:
+            start_scan = self.scanForTime(start_time)
+        else:
+            start_scan = self.scan_range()[0]
+        if stop_time:
+            stop_scan = self.scanForTime(stop_time)
+        else:
+            stop_scan = self.scan_range()[1]        
+        return [x for x in self._scaninfo if 
+                start_scan <= x[2] <= stop_scan and
+                start_mz <= x[1] <= stop_mz]
     
     def headers(self):
         return self.scan_info()
