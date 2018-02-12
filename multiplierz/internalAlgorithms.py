@@ -12,6 +12,42 @@ except ImportError:
         return sum(xs) / float(len(xs))
 
 
+def assign_multiprocess(function, data, **pool_args):
+    # Pool.map() is convenient, but leads to situations where one last
+    # job-batch takes way longer than the others, or each iteration leaves
+    # all but one process waiting for the last to finish. Distributing jobs
+    # one-by-one is much more efficient in some cases.
+    #
+    # WARNING- RESULTS ARE NOT RETURNED IN ANY PARTICULAR ORDER.
+    import multiprocessing
+    from time import sleep
+    
+    process_count = pool_args.get('processes', multiprocessing.cpu_count()-1)
+    
+    workforce = multiprocessing.Pool(**pool_args)
+    tasks = data
+    jobs = []
+    results = []
+    while tasks or jobs:
+        done = [x for x in jobs if x.ready()]
+        if done:
+            jobs = [x for x in jobs if not x.ready()]
+            for done_thing in done:
+                done_thing.successful()
+                results.append(done_thing.get())
+        while tasks and len(jobs) < process_count:
+            newtask = tasks.pop()
+            if len(newtask) == 1:
+                newtask = (newtask,)
+            jobs.append(workforce.apply_async(function, args = newtask))
+        sleep(1)
+    
+    workforce.close()
+    workforce.join()
+    
+
+
+
 
 
 def floatrange(start, stop, step = 1):
@@ -21,6 +57,36 @@ def floatrange(start, stop, step = 1):
         cur += step
 
 
+# For converting profile data or XIC to an "official"
+# index-corresponds-to-physical-position intensity vector.
+def pts_to_bins(pts, bincount):
+    pts.sort()
+    startpt, stoppt = pts[0][0], pts[-1][0]
+    binwidth = (stoppt - startpt)/float(bincount)
+    bins = defaultdict(float)
+    prevpt = pts.pop(0)
+    nextpt = pts.pop(0)
+    for lmz in floatrange(startpt, stoppt, binwidth):
+        rmz = lmz + binwidth
+        if rmz > nextpt[0] and lmz < nextpt[0]:
+            # In-between- could be more complicated.
+            bins[lmz] += nextpt[1]
+        else: #rmz < nextpt[0]:
+            while pts and rmz > nextpt[0]:
+                bins[lmz] += prevpt[0]
+                prevpt = nextpt
+                nextpt = pts.pop(0)                
+            bins[lmz] += prevpt[1]
+            
+    
+    return sorted(bins.items())
+        
+            
+            
+            
+def psm_assignment(psm):
+    return psm['Peptide Sequence'], psm['Variable Modifications'], psm['Charge']
+    
 
 def splitOnFirst(string, char):
     """
@@ -81,12 +147,15 @@ def typeInDir(directory, ext, recursive = False):
     import os
     if not recursive:
         return [os.path.join(directory, x) for x in
-                os.listdir(directory) if x.lower().endswith(ext.lower())]
+                os.listdir(directory) if x.lower().endswith(ext.lower())
+                and x[0] != '~']
     else:
         output = []
         for path, subdirs, files in os.walk(directory):
             for filename in files:
                 if filename.lower().endswith(ext.lower()):
+                    if 'xls' in ext.lower() and '~' in filename: # Obnoxious Excel thing.
+                        continue
                     output.append(os.path.join(path, filename))
         return output
 
@@ -773,7 +842,7 @@ class ProximityIndexedSequence(object):
         pass
         
         
-    
+ProxSeq = ProximityIndexedSequence # Less of a mouthful.
 
 
 
