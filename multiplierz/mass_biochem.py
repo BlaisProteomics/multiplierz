@@ -962,11 +962,16 @@ def fragment(peptide, mods = [], charges = [1],
              neutralPhosLoss = False,
              neutralLossDynamics = {},
              waterLoss = False,
-             use_monoisotopic = True):
+             use_monoisotopic = True,
+             special_AAs = {}):
     # Currently only records one neutral loss even if there's more than
     # one loss-inducing mod.  Simplicity is a virtue?
 
+   
+
     massType = 0 if use_monoisotopic else 1
+    aminoMasses = dict((aa,AminoAcidMasses[aa][massType]) for aa in AminoAcidMasses.keys())
+    aminoMasses.update(special_AAs)
     
     for key, value in neutralLossDynamics.items():
         if isinstance(key, basestring):
@@ -1077,6 +1082,12 @@ def fragment(peptide, mods = [], charges = [1],
             fragmentSetsByIonType['z'] = zfrags
                 
     # Similar for z and w and whatever, I guess.
+    
+    if 'by-int' in ions:
+        int_frags = []
+        for bsite in range(1, len(peptide)):
+            sub_intfrags = []
+            bMass = b
     
     
     chargedFragmentSets = {}
@@ -1727,3 +1738,12 @@ def findIonsInData(datafile, targetIons, tolerance = 0.01,
     else:
         return output, ['Scan Number'] + ["%s Int" % x for x in targetIons] + ['Total Int']
     
+
+
+
+
+def add_protons(mass, charge):
+    return (mass + (protonMass * charge)) / float(charge)
+
+def remove_protons(mass, charge):
+    return (mass * charge) - (charge * protonMass)
