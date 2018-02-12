@@ -1,6 +1,7 @@
 import gzip
 from mass_biochem import digest
 from multiplierz.internalAlgorithms import gzOptOpen
+import re
 
 __all__ = ['Writer', 'parse_to_dict', 'parse_to_generator', 'write_fasta',
            'partial_database', 'reverse_database', 'combine', 'pseudo_reverse']
@@ -143,11 +144,21 @@ def write_fasta(fasta, save_file, write_mode='w'):
 
 
 
-def partial_database(fasta, output = None, search = ''):
+def partial_database(fasta, output = None, search = '',
+                     use_regex = False, include_matches = True):
     """
-    Creates a new fasta database by copying each entry from the original where
-    the entry header contains either the string search, or any string in the list
-    search.
+    fasta -> A target FASTA-format file
+    output -> The output file (input file is overwritten if this is not specified.)
+    search -> Either a string or a list of strings.
+    use_regex -> If this is set to True, strings in search will be interpreted
+    as regular expressions.  Otherwise, a search string "matches" if it is contained
+    by the header.
+    include_matches -> If this is True (the default,) FASTA entries are included in
+    the output if they match a search string; if False, FASTA entries are included
+    if they match NONE of the search strings.
+    
+    Creates a new fasta database by copying each entry from the original, according
+    to the rules outlined above.
     """
 
     if not output:
@@ -155,15 +166,24 @@ def partial_database(fasta, output = None, search = ''):
 
     if isinstance(search, basestring):
         search = [search]
-
+    if use_regex:
+        search = map(re.compile, search)
+        
+    
     fastaGen = parse_to_generator(fasta)
 
     out = gzOptOpen(output, mode = 'w')
 
-    for header, sequence in fastaGen:
-        if any([x in header for x in search]):
-            out.write('>' + header + '\n')
-            out.write(sequence + '\n')
+    if use_regex:
+        for header, sequence in fastaGen:
+            if any([x.search(header) for x in search]) == include_matches:
+                out.write('>' + header + '\n')
+                out.write(sequence + '\n')                
+    else:
+        for header, sequence in fastaGen:
+            if any([x in header for x in search]) == include_matches:
+                out.write('>' + header + '\n')
+                out.write(sequence + '\n')
 
     out.close()
     
