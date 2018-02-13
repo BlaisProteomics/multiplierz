@@ -44,10 +44,10 @@ class MascotSearch(object):
     def write(self, filename):
         with open(filename, 'w') as output:
             for field in self.fields:
-                output.write('%s\%s' % (field, self.values[field]))
+                output.write('%s=%s\n' % (field, self.values[field]))
             
             for field in [x for x in self.values.keys() if x not in self.fields]:
-                output.write('%s\%s' % (field, self.values[field]))
+                output.write('%s=%s\n' % (field, self.values[field]))
     
     
     def run_search(self, data_file = None, user = None, password = None,
