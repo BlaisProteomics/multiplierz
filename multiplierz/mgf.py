@@ -179,7 +179,7 @@ def parse_to_generator(mgffile, labelType = (lambda x: x), header = False, rawSt
                     field, value = line.split('=')
                     
                     if (not rawStrings) and field == 'CHARGE':
-                        value = int(value.strip('\n+ '))
+                        value = int(value.strip('\n\r+ '))
                     elif (not rawStrings) and field == "PEPMASS":
                         value = float(value.split()[0].strip())
                     else:
@@ -296,8 +296,7 @@ def extract(datafile, outputfile = None, default_charge = 2, centroid = True,
             scan_type = None, deisotope_and_reduce_charge = True,
             deisotope_and_reduce_args = {},
             min_mz = 140, precursor_tolerance = 0.005,
-            isobaric_labels = None, label_tolerance = 0.01,
-            deisotope_reduce_args = {}):
+            isobaric_labels = None, label_tolerance = 0.01):
     """
     Converts a mzAPI-compatible data file to MGF.
     
@@ -505,8 +504,8 @@ def extract(datafile, outputfile = None, default_charge = 2, centroid = True,
                                          **scan_labels)
         
             # Should expand extract() call to include arguments to this.
-            if deisotope_and_reduce_charge:
-                if ('tolerance' not in deisotope_reduce_args
+            if deisotope_and_reduce_charge and centroid:
+                if ('tolerance' not in deisotope_and_reduce_args
                     or not deisotope_and_reduce_args['tolerance']):
                     deisotope_and_reduce_args['tolerance'] = precursor_tolerance
                 scan = deisotope_reduce_scan(scan, **deisotope_and_reduce_args)  
