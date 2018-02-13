@@ -162,11 +162,14 @@ def create_fasta_index(fasta_file, outputfile = None, labelParser = (lambda x: x
     return outputfile
     
     
-def add_gene_ids(target_file, p2g_database,
+def add_gene_ids(target_files, p2g_database,
                  target_sheet = None,
                  outputfile = None, inPlace = False, leucine_equals_isoleucine = True,
                  legacy_columns = True):
     starttime = time.clock()
+    
+    if isinstance(target_files, basestring):
+        target_files = [target_files]
     
     dataRdr = open(p2g_database, 'rb')
     data = pickle.load(dataRdr)
@@ -206,111 +209,114 @@ def add_gene_ids(target_file, p2g_database,
     print "P2G database loaded: %.2f\n\n" % (time.clock() - starttime)
     prevtime = time.clock()
     
-    rdr = reader(target_file, sheet_name = target_sheet)
-    
-    
-    add_legacy_cols = ["pro_count","pro_list",
-                       "gene_count","gene_symbols",]
-
-    add_cols = ["Protein Count", "Proteins",
-                "Gene Count", "Gene Symbols"]
-    if legacy_columns:
-        new_cols = add_legacy_cols
-        colname = dict(zip(add_cols, add_legacy_cols))
-    else:
-        new_cols = add_cols
-        colname = dict(zip(add_cols, add_cols))
+    outputfiles = []
+    for target_file in target_files:
+        rdr = reader(target_file, sheet_name = target_sheet)
         
-    iso_legacy_cols = ['IL Ambiguity pro_count', 'IL Ambiguity pro_list', 
-                       "IL Ambiguity gene_count", "IL Ambiguity gene_symbols"]
-    iso_cols = ['I<->L Protein Count', 'I<->L Proteins', 'I<->L Gene Count',
-                'I<->L Gene Symbols']
-    if legacy_columns and leucine_equals_isoleucine:
-        new_cols += iso_legacy_cols
-        colname.update(dict(zip(iso_cols, iso_legacy_cols)))
-    elif leucine_equals_isoleucine:
-        new_cols += iso_cols
-        colname.update(dict(zip(iso_cols, iso_cols)))
-    
         
-    if not outputfile:
-        ext = target_file.split('.')[-1]
-        outputfile = '.'.join(target_file.split('.')[:-1] + ['GENES', ext])
-    output = writer(outputfile,
-                    columns = rdr.columns + new_cols)
+        add_legacy_cols = ["pro_count","pro_list",
+                           "gene_count","gene_symbols",]
     
-    pepToProts = {}
-    isoPepToProts = {}
-    for counter, row in enumerate(rdr):
-        if counter%1000 == 0:
-            print_progress(counter)
-        try:
-            pep = row['Peptide Sequence'].upper()
-        except KeyError:
-            pep = row['peptide sequence'].upper()
+        add_cols = ["Protein Count", "Proteins",
+                    "Gene Count", "Gene Symbols"]
+        if legacy_columns:
+            new_cols = add_legacy_cols
+            colname = dict(zip(add_cols, add_legacy_cols))
+        else:
+            new_cols = add_cols
+            colname = dict(zip(add_cols, add_cols))
+            
+        iso_legacy_cols = ['IL Ambiguity pro_count', 'IL Ambiguity pro_list', 
+                           "IL Ambiguity gene_count", "IL Ambiguity gene_symbols"]
+        iso_cols = ['I<->L Protein Count', 'I<->L Proteins', 'I<->L Gene Count',
+                    'I<->L Gene Symbols']
+        if legacy_columns and leucine_equals_isoleucine:
+            new_cols += iso_legacy_cols
+            colname.update(dict(zip(iso_cols, iso_legacy_cols)))
+        elif leucine_equals_isoleucine:
+            new_cols += iso_cols
+            colname.update(dict(zip(iso_cols, iso_cols)))
         
-        pep = ''.join([x for x in pep if x.isalpha()])
             
-        if len(pep) < K:
-            continue # No 4-mers in a 3-mer!
+        if (not outputfile) or len(target_files) > 1:
+            ext = target_file.split('.')[-1]
+            outputfile = '.'.join(target_file.split('.')[:-1] + ['GENES', ext])
+        output = writer(outputfile,
+                        columns = rdr.columns + new_cols)
+        
+        pepToProts = {}
+        isoPepToProts = {}
+        for counter, row in enumerate(rdr):
+            if counter%1000 == 0:
+                print_progress(counter)
+            try:
+                pep = row['Peptide Sequence'].upper()
+            except KeyError:
+                pep = row['peptide sequence'].upper()
             
-        isoPep = pep.replace('I', 'L')
-        if pep not in pepToProts:
-            candidate_prots = reduce(set.intersection,
-                                     (fmerLookup[pep[x:x+K]] for x in range(len(pep)-K)))
-            # pep_find could be replaced by giving the p2g database a pre-made set of
-            # hashes of all tryptic peptides in a protein, and seeing if the hash of the
-            # pep is present in the set.
-            pep_find = re.compile('((^M?)|[KR](?=[^P]))%s(((?<=[KR])[^P])|$)' % pep)
-            pepToProts[pep] = set(prot for prot in candidate_prots
-                                  if pep_find.search(seqLookup[prot]))
-            
-            if leucine_equals_isoleucine and isoPep not in isoPepToProts:
-                iso_candidate_prots = reduce(set.intersection,
-                                             (isoFmerLookup[isoPep[x:x+K]] for x
-                                              in range(len(isoPep)-K)))
-                pep_find = re.compile('((^M?)|[KR](?=[^P]))%s(((?<=[KR])[^P])|$)' % isoPep)
-                isoPepToProts[isoPep] = set(prot for prot in iso_candidate_prots
-                                            if pep_find.search(isoSeqLookup[prot]))
+            pep = ''.join([x for x in pep if x.isalpha()])
                 
+            if len(pep) < K:
+                continue # No 4-mers in a 3-mer!
                 
-        
-        proteins = '; '.join(pepToProts[pep])
-        proteinCount = len(pepToProts[pep])
-        
-        geneList = set(geneLookup[x] for x in pepToProts[pep] if x in geneLookup)
-        geneIds = '; '.join(set(g for g in geneList))
-        #geneSymbols = '; '.join(set(s for _, s in geneList))
-        geneCount = len(geneList)
-        
-        row[colname['Protein Count']] = proteinCount
-        row[colname['Proteins']] = proteins
-        row[colname['Gene Count']] = geneCount
-        row[colname['Gene Symbols']] = geneIds
-        #row[colname['Gene IDs']] = 
-        
-        if leucine_equals_isoleucine:
-            isoProteins = '; '.join(isoPepToProts[isoPep])
-            isoProteinCount = len(isoPepToProts[isoPep])
+            isoPep = pep.replace('I', 'L')
+            if pep not in pepToProts:
+                candidate_prots = reduce(set.intersection,
+                                         (fmerLookup[pep[x:x+K]] for x in range(len(pep)-K)))
+                # pep_find could be replaced by giving the p2g database a pre-made set of
+                # hashes of all tryptic peptides in a protein, and seeing if the hash of the
+                # pep is present in the set.
+                pep_find = re.compile('((^M?)|[KR](?=[^P]))%s(((?<=[KR])[^P])|$)' % pep)
+                pepToProts[pep] = set(prot for prot in candidate_prots
+                                      if pep_find.search(seqLookup[prot]))
+                
+                if leucine_equals_isoleucine and isoPep not in isoPepToProts:
+                    iso_candidate_prots = reduce(set.intersection,
+                                                 (isoFmerLookup[isoPep[x:x+K]] for x
+                                                  in range(len(isoPep)-K)))
+                    pep_find = re.compile('((^M?)|[KR](?=[^P]))%s(((?<=[KR])[^P])|$)' % isoPep)
+                    isoPepToProts[isoPep] = set(prot for prot in iso_candidate_prots
+                                                if pep_find.search(isoSeqLookup[prot]))
+                    
+                    
             
-            isoGeneList = set(geneLookup[x] for x in isoPepToProts[isoPep] if x in geneLookup)
-            isoGeneIds = '; '.join(set(g for g in isoGeneList))
-            #isoGeneSymbols = '; '.join(set(s for _, s in isoGeneList))
-            isoGeneCount = len(isoGeneList)
+            proteins = '; '.join(pepToProts[pep])
+            proteinCount = len(pepToProts[pep])
             
-            row[colname['I<->L Protein Count']] = isoProteinCount
-            row[colname['I<->L Proteins']] = isoProteins
-            row[colname['I<->L Gene Count']] = isoGeneCount
-            row[colname['I<->L Gene Symbols']] = isoGeneIds
-            #row[colname['I<->L Gene IDs']] = 
+            geneList = set(geneLookup[x] for x in pepToProts[pep] if x in geneLookup)
+            geneIds = '; '.join(set(g for g in geneList))
+            #geneSymbols = '; '.join(set(s for _, s in geneList))
+            geneCount = len(geneList)
+            
+            row[colname['Protein Count']] = proteinCount
+            row[colname['Proteins']] = proteins
+            row[colname['Gene Count']] = geneCount
+            row[colname['Gene Symbols']] = geneIds
+            #row[colname['Gene IDs']] = 
+            
+            if leucine_equals_isoleucine:
+                isoProteins = '; '.join(isoPepToProts[isoPep])
+                isoProteinCount = len(isoPepToProts[isoPep])
+                
+                isoGeneList = set(geneLookup[x] for x in isoPepToProts[isoPep] if x in geneLookup)
+                isoGeneIds = '; '.join(set(g for g in isoGeneList))
+                #isoGeneSymbols = '; '.join(set(s for _, s in isoGeneList))
+                isoGeneCount = len(isoGeneList)
+                
+                row[colname['I<->L Protein Count']] = isoProteinCount
+                row[colname['I<->L Proteins']] = isoProteins
+                row[colname['I<->L Gene Count']] = isoGeneCount
+                row[colname['I<->L Gene Symbols']] = isoGeneIds
+                #row[colname['I<->L Gene IDs']] = 
+            
+            output.write(row)
         
-        output.write(row)
-    
-    print "\nGene lookup completed: %.2f" % (time.clock() - prevtime)
-    prevtime = time.clock()
-    rdr.close()
-    output.close()
-    print "Output written: %.2f" % (time.clock() - prevtime)
+        print "\nGene lookup completed: %.2f" % (time.clock() - prevtime)
+        prevtime = time.clock()
+        rdr.close()
+        output.close()
+        print "Output written: %.2f" % (time.clock() - prevtime)
+        outputfiles.append(outputfile)
     return outputfile
     
 #if __name__ == '__main__':
@@ -339,6 +345,8 @@ def add_gene_ids(target_file, p2g_database,
             #print "Failed on %s" % fastafile
 
 if __name__ == '__main__':
-    add_gene_ids(r'C:\Users\Max\Desktop\Projects\allCyscapTMTRatios\CD34_GCSF_d11_summary_filt_nogenes.xlsx',
+    from multiplierz.internalAlgorithms import typeInDir
+    
+    add_gene_ids(typeInDir(r'\\rc-data1\blaise\ms_data_share\Max\backburner_pipeline\serum_results', 'pep_combined.xlsx'),
                  r'\\rc-data1\blaise\ms_data_share\Databases\CURRENT_UNIPROT_DBS\UP000005640_9606.fasta.pep2gene',
                  legacy_columns = False)
