@@ -6,7 +6,7 @@ import multiplierz.mzReport as mzReport
 import os
 import cPickle as pickle
 import re
-from multiplierz.internalAlgorithms import ProximityIndexedSequence, inPPM, average
+from multiplierz.internalAlgorithms import ProximityIndexedSequence, inPPM, average, pts_to_bins
 from multiplierz import vprint, verbose_mode
 
 from multiplierz.mzTools.featureUtilities import save_feature_database, FeatureInterface
@@ -15,7 +15,11 @@ import multiprocessing
 
 from multiplierz.mgf import standard_title_parse
 
-
+try:
+    from scipy.stats import kurtosis, skew
+except ImportError:
+    kurtosis = lambda x: 'NA'
+    skew = lambda x: 'NA'
 
 __all__ = ['feature_analysis', 'detect_features']
 
@@ -121,6 +125,13 @@ class Feature():
             avgC12 = average(minMZs)
         self.mz = avgC12
         
+        xic = pts_to_bins([(x[0], min(x[1], key = lambda pt: (pt[0] - avgC12))[1]) for x in self.regions],
+                          100)
+        ints = [0.0] + list(zip(*xic)[1]) + [0.0]
+        self.skewness = skew(ints)
+        self.kurtosis = kurtosis(ints)
+        
+        
   
     def containsPoint(self, mz, scan, charge):
         return (charge == self.charge and abs(mz - self.mz) < featureMatchupTolerance
@@ -225,9 +236,9 @@ def binByFullFeature(datafile, featureDB, results):
     
     scans = data.scan_info(0, 999999)
     ms2toms1 = {}
-    ms1 = scans[0][2]
+    ms1 = None
     ms2s = []
-    assert scans[0][3] == 'MS1'
+    # MS2s are dropped until the first MS1.
     for scan in scans:
         if scan[3] == 'MS1':
             for ms2 in ms2s:
@@ -235,7 +246,8 @@ def binByFullFeature(datafile, featureDB, results):
             ms1 = scan[2]
             ms2s = []
         elif scan[3] == 'MS2':
-            ms2s.append(scan[2])
+            if ms1 != None:
+                ms2s.append(scan[2])
         else:
             raise Exception, "Unidentified scan type of %s" % scan[3]
     for ms2 in ms2s:
@@ -263,7 +275,9 @@ def binByFullFeature(datafile, featureDB, results):
             index, feature = min(features, key = lambda x: abs(x[1].mz - mz))
             scans = min(feature.scans), max(feature.scans)
             intensity = feature.c12Intensity()
-            featureItems[index].append((result, scans, intensity))
+            kurtosis = feature.kurtosis
+            skew = feature.skewness
+            featureItems[index].append((result, scans, intensity, kurtosis, skew))
         else:
             features = [(i, x) for i, x in featureDB.mz_range(mz - 1, mz + 1)
                         if x.bordersPoint(mz, scan, charge)]
@@ -272,7 +286,9 @@ def binByFullFeature(datafile, featureDB, results):
                 edge = feature.bordersPoint(mz, scan, charge)
                 scans = min(feature.scans), max(feature.scans)
                 intensity = feature.c12Intensity()
-                edgeItems[index].append((result, edge, scans, intensity))
+                kurtosis = feature.kurtosis
+                skew = feature.skewness                
+                edgeItems[index].append((result, edge, scans, intensity, kurtosis, skew))
             else:
                 inexplicableItems.append(result)
                 
@@ -283,15 +299,15 @@ def binByFullFeature(datafile, featureDB, results):
     for feature, results in featureItems.items():
         try:
             pep = results[0][0]['Peptide Sequence']
-            if not all([x['Peptide Sequence'] == pep for x, s, i in results]):
+            if not all([x['Peptide Sequence'] == pep for x, s, i, k, sk in results]):
                 overFitCount += 1            
         except KeyError:
             pep = results[0][0]['Annotated Sequence']
-            if not all([x['Annotated Sequence'] == pep for x, s, i in results]):
+            if not all([x['Annotated Sequence'] == pep for x, s, i, k, sk in results]):
                 overFitCount += 1               
 
         
-        for result, scans, intensity in results:
+        for result, scans, intensity, kurtosis, skew in results:
             result['Feature'] = feature
             result['feature error'] = '-'
             result['feature start scan'] = scans[0]
@@ -299,9 +315,11 @@ def binByFullFeature(datafile, featureDB, results):
             result['feature start time'] = data.timeForScan(scans[0])  if scans[0] else '-'
             result['feature end time'] = data.timeForScan(scans[1])  if scans[1] else '-'
             result['feature intensity'] = intensity
+            result['feature kurtosis'] = kurtosis
+            result['feature skewness'] = skew
             groupedResults.append(result)
     for feature, resultEdges in edgeItems.items():
-        for result, edge, scans, intensity in resultEdges:
+        for result, edge, scans, intensity, kurtosis, skew in resultEdges:
             result['Feature'] = '-'
             result['feature error'] = str(feature) + " " + edge
             result['feature start scan'] = scans[0]
@@ -309,6 +327,8 @@ def binByFullFeature(datafile, featureDB, results):
             result['feature start time'] = data.timeForScan(scans[0]) if scans[0] else '-'
             result['feature end time'] = data.timeForScan(scans[1]) if scans[1] else '-'    
             result['feature intensity'] = intensity
+            result['feature kurtosis'] = kurtosis
+            result['feature skewness'] = skew
             groupedResults.append(result)
     for result in inexplicableItems:
         result['Feature'] = '-'
@@ -318,126 +338,12 @@ def binByFullFeature(datafile, featureDB, results):
         result['feature start time'] = '-'
         result['feature end time'] = '-'
         result['feature intensity'] = '-'
+        result['feature kurtosis'] = '-'
+        result['feature skewness'] = '-'
         groupedResults.append(result)
 
     data.close()
     return groupedResults
-
-
-
-def falseCoverTest(datafile, searchResults, features):
-    import numpy as np
-    from scipy.optimize import curve_fit
-    import random
-
-    acqPoints = []
-    data = mzFile(datafile)
-    scans = data.scan_info(0, 999999)
-    ms2toms1 = {}
-    ms1 = scans[0][2]
-    ms2s = []
-    assert scans[0][3] == 'MS1'
-    for scan in scans:
-        if scan[3] == 'MS1':
-            for ms2 in ms2s:
-                ms2toms1[ms2] = ms1
-                ms2toms1[ms1] = ms1
-            ms1 = scan[2]
-            ms2s = []
-        elif scan[3] == 'MS2':
-            ms2s.append(scan[2])
-        else:
-            raise Exception, "Unidentified scan type of %s" % scan[3]
-    for ms2 in ms2s:
-        ms2toms1[ms2] = ms1    
-    
-    for result in searchResults:
-        mz = spectrumDescriptionToMZ(result['Spectrum Description'])
-        scan = spectrumDescriptionToScanNumber(result['Spectrum Description'])           
-        
-        charge = int(result['Charge'])
-        scan = ms2toms1[scan]
-        acqPoints.append((mz, scan, charge))
-
-    mzAcq, timeAcq, chargeAcq = unzip(acqPoints)
-        
-    def gauss(x, *p):
-        A, mu, sigma = p
-        return A*np.exp(-(x-mu)**2/(2.*sigma**2))
-    
-    def deriveGaussian(points):  
-        initialP = [0.5, 0.5, 0.5]  
-
-        hist, bin_edges = np.histogram(points)
-        bin_centres = (bin_edges[:-1] + bin_edges[1:])/2
-        
-        coeff, var_mat = curve_fit(gauss, bin_centres.astype(np.float64), hist.astype(np.float64), p0=initialP)
-        
-        return coeff[1], coeff[2]
-    
-    rescale = 10000.0
-    
-    mzMu, mzSig = deriveGaussian(np.array(mzAcq) / rescale)
-    timeMu, timeSig = deriveGaussian(np.array(timeAcq) / rescale)
-    
-    chargeCounts = defaultdict(int)
-    for chg in chargeAcq:
-        chargeCounts[chg] += 1
-    total = 0
-    for chg, count in chargeCounts.items():
-        proportion = float(count) / float(len(chargeAcq))
-        chargeCounts[chg] = proportion + total
-        total += proportion
-    chargeCounts = sorted(chargeCounts.items(), key = lambda x: x[1])
-        
-    def randomCharge():
-        roll = random.random()
-        return (x[0] for x in chargeCounts if roll < x[1]).next()
-    
-    def randomMS1():
-        try:
-            return ms2toms1[int(random.gauss(timeMu, timeSig) * rescale)]
-        except KeyError:
-            return randomMS1()
-    
-    randomPoints = []
-    for _ in range(0, len(acqPoints)):
-        mz = random.gauss(mzMu, mzSig) * rescale
-        #time = ms2toms1[int(random.gauss(timeMu, timeSig) * rescale)]
-        time = randomMS1()
-        chg = randomCharge()
-        randomPoints.append((mz, time, chg))     
-        
-        
-    acqCoverage = 0
-    randomCoverage = 0
-    randomAdjacency = 0
-    acqSet = set()
-    randomSet = set()
-    adjacentSet = set()
-    for ptMZ, ptS, ptChg in acqPoints:
-        for feature in features:
-            if feature.containsPoint(ptMZ, ptS, ptChg):
-                acqCoverage += 1
-                acqSet.add(feature)
-                break
-    for ptMZ, ptS, ptChg in randomPoints:
-        for feature in features:
-            if feature.containsPoint(ptMZ, ptS, ptChg):
-                randomCoverage += 1
-                randomSet.add(feature)
-                break
-    for ptMZ, ptS, ptChg in randomPoints:
-        for feature in features:
-            if feature.bordersPoint(ptMZ, ptS, ptChg):
-                randomAdjacency += 1
-                adjacentSet.add(feature)
-                break
-
-    data.close()
-    print "Valid %s, invalid %s, invalid edges %s" % (acqCoverage, randomCoverage, randomAdjacency)
-    print "Completed."
-
         
         
   
@@ -449,6 +355,7 @@ def runSearch(datafile, resultFiles):
   
 
 def feature_analysis(datafile, resultFiles,
+                     featureFile = None,
                      tolerance = None,
                      mzRegex = None, scanRegex = None,
                      **constants):
@@ -499,7 +406,10 @@ def feature_analysis(datafile, resultFiles,
         assert os.path.exists(resultfile), "%s not found!" % resultfile
     assert datafile.lower().endswith('.raw'), "Only .raw files are currently supported."
     
-    featureFile = detect_features(datafile, tolerance = tolerance, **constants)
+    if featureFile:
+        assert os.path.exists(featureFile), "Specified feature data file %s not found!" % featureFile
+    else:
+        featureFile = detect_features(datafile, tolerance = tolerance, **constants)
     features = FeatureInterface(featureFile)
     
     outputfiles = []
@@ -522,7 +432,9 @@ def feature_analysis(datafile, resultFiles,
                                                                        'feature end scan',
                                                                        'feature start time',
                                                                        'feature end time',
-                                                                       'feature intensity'])
+                                                                       'feature intensity',
+                                                                       'feature kurtosis',
+                                                                       'feature skewness'])
             
             for result in resultsByFeature:
                 output.write(result)
@@ -574,7 +486,10 @@ def detect_features(datafile, **constants):
     """
     
     
-    featurefile = datafile + '.features'
+    if 'outputfile' in constants:
+        featurefile = constants['outputfile']
+    else:
+        featurefile = datafile + '.features'
     
     if 'tolerance' in constants and constants['tolerance']:
         global tolerance
