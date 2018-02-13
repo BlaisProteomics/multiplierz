@@ -4,9 +4,15 @@ import xlwt # Older Excel support (.xls files), writing only
 import os
 from numbers import Number
 
-from multiplierz import vprint
+#from multiplierz import vprint
+def vprint(thing):
+    print thing
 from multiplierz.mzReport import ReportReader, ReportWriter, ReportEntry, default_columns
 
+
+
+default_overwrite_corrupt = False
+default_ignore_extra_columns = False
 
 
 def get_sheet_names(filename):
@@ -92,10 +98,10 @@ class XLSheetWriter(ReportWriter):
                                                         columns, default_columns)   
         elif file_name.lower().endswith('.xls'):
             self.__class__ = XLSWriter
-            XLSWriter.__init__(self, file_name, sheet_name, self.columns)
+            XLSWriter.__init__(self, file_name, sheet_name, self.columns, **etc)
         elif file_name.lower().endswith('.xlsx'):
             self.__class__ = XLSXWriter
-            XLSXWriter.__init__(self, file_name, sheet_name, self.columns)
+            XLSXWriter.__init__(self, file_name, sheet_name, self.columns, **etc)
         else:
             raise IOError, "Invalid extension on filename %s given to XLSheetWriter." % file_name
         
@@ -147,21 +153,31 @@ class XLSXReader(XLSheetReader):
         
         
 class XLSXWriter(XLSheetReader):
-    def __init__(self, file_name, sheet_name = 'Data', columns = None):
+    def __init__(self, file_name, sheet_name = 'Data', columns = None,
+                 overwrite_corrupt = default_overwrite_corrupt, **etc):
         if not columns: raise IOError, "No columns!  Also, use XLSheetReader instead of XLSXWriter directly."
         
         self.file_name = file_name
         self.sheet_name = sheet_name
         
         if os.path.exists(file_name):
-            self.wb = openpyxl.load_workbook(file_name)
-            
+            from zipfile import BadZipfile
             try:
-                self.wb.remove_sheet(self.wb.get_sheet_by_name(sheet_name))
-            except (ValueError, KeyError):
-                pass
-            
-            self.sheet = self.wb.create_sheet(title = sheet_name)
+                self.wb = openpyxl.load_workbook(file_name)
+                
+                try:
+                    self.wb.remove_sheet(self.wb.get_sheet_by_name(sheet_name))
+                except (ValueError, KeyError):
+                    pass
+                
+                self.sheet = self.wb.create_sheet(title = sheet_name)
+            except BadZipfile as err: # I don't really like this structure but okay.
+                if overwrite_corrupt:
+                    self.wb = openpyxl.Workbook()
+                    self.wb.remove_sheet(self.wb.get_sheet_by_name('Sheet'))
+                    self.sheet = self.wb.create_sheet(title = sheet_name)
+                else:
+                    raise err
         else:
             self.wb = openpyxl.Workbook()
             self.wb.remove_sheet(self.wb.get_sheet_by_name('Sheet'))
@@ -171,22 +187,20 @@ class XLSXWriter(XLSheetReader):
         self.currentRow = 1
         self.write(self.columns)
     
-    def write(self, row, metadata = None):
+    def write(self, row, metadata = None, ignore_extra = default_ignore_extra_columns):
         if metadata:
             raise NotImplementedError, "Non-comtypes Excel interface can't handle Excel metadata."
         
-        if len(row) > len(self.columns):
-            missing = set([str(x).lower() for x in row.keys()]) - set([str(x).lower() for x in self.columns])
-            raise ValueError, "Row has extra columns: %s" % missing 
-        # It should be impossible for this error to show an empty set!
+        if (not ignore_extra) and len(row) > len(self.columns):
+            if isinstance(row, dict):
+                missing = set([str(x).lower() for x in row.keys()]) - set([str(x).lower() for x in self.columns])
+                raise ValueError, "Row has extra columns: %s" % missing 
+            # It should be impossible for this error to show an empty set!
+            else:
+                raise ValueError, "Row has extra columns."
         
         if isinstance(row, dict):
-            row = dict(row)
-            for key in row.keys(): # There's probably a better way to do that.
-                lKey = key
-                if lKey != key and (key in row): row[lKey] = row[key]
             row = [row[x] for x in self.columns]
-            
         
         for index, value in enumerate(row, start = 1):
             cell = self.sheet.cell(row = self.currentRow, column = index)
@@ -214,7 +228,8 @@ class XLSXWriter(XLSheetReader):
         
         
 class XLSWriter(XLSheetWriter):
-    def __init__(self, file_name, sheet_name = 'Data', columns = None):
+    def __init__(self, file_name, sheet_name = 'Data', columns = None, 
+                 overwrite_corrupt = default_overwrite_corrupt, **etc):
         if not columns: raise IOError, "No columns!  Also, use XLSheetReader instead of XLSWriter directly."
         
         self.file_name = file_name
@@ -225,11 +240,16 @@ class XLSWriter(XLSheetWriter):
         # will have the object carry the old file data while it exists.  The file can't
         # be too large, right?
         if os.path.exists(file_name):
-            oldWB = xlrd.open_workbook(file_name)
-            for oldSheetName in [s for s in oldWB.sheet_names() if s != sheet_name]:
-                oldSheet = oldWB.sheet_by_name(oldSheetName)
-                #self.previous_data = (oldSheetName, list(oldSheet.iter_rows()))
-                self.previous_data.append((oldSheetName, [oldSheet.row(x) for x in range(0, oldSheet.nrows)]))
+            try:
+                oldWB = xlrd.open_workbook(file_name)
+                for oldSheetName in [s for s in oldWB.sheet_names() if s != sheet_name]:
+                    oldSheet = oldWB.sheet_by_name(oldSheetName)
+                    #self.previous_data = (oldSheetName, list(oldSheet.iter_rows()))
+                    self.previous_data.append((oldSheetName, [oldSheet.row(x) for x in range(0, oldSheet.nrows)]))
+            except xlrd.biffh.XLRDError as err:
+                if not overwrite_corrupt:
+                    raise err
+                    
         
         self.wb = xlwt.Workbook()
         self.sheet = self.wb.add_sheet(sheet_name)
@@ -238,18 +258,20 @@ class XLSWriter(XLSheetWriter):
         self.currentRow = 0
         self.write(self.columns)
         
-    def write(self, row, metadata = None):
+    def write(self, row, metadata = None, ignore_extra = default_ignore_extra_columns):
         if metadata:
             raise NotImplementedError, "Non-comtypes Excel interface can't handle Excel metadata."
         
         if len(row) > len(self.columns):
             raise ValueError, "Row is missing values for some columns."
-        elif len(row) < len(self.columns):
+        elif (not ignore_extra) and len(row) < len(self.columns):
             raise ValueError, "Row is too long for sheet columns."
         
         if isinstance(row, dict):
             row = dict(row)
-            row = [row[x] for x in self.columns]         
+            row = [row[x] for x in self.columns]
+        else:
+            row = row[:len(self.columns)]
     
         for index, value in enumerate(row):
             self.sheet.write(self.currentRow, index, value if (isinstance(value, Number) or value == None) else str(value))
