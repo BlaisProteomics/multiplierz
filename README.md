@@ -2,7 +2,7 @@
 The *Multiplierz* Proteomics Library
 
 
-*mutiplierz* is a Python software library and associated GUI desktop environment for managing proteomic mass spectrometry workflows and data analysis.  Using the mzAPI interface to native instrument data formats, *multiplierz* is provides a complete toolset for a variety methods for peptide identification, quantitation, and experimental reporting.
+*multiplierz* is a Python software library and associated GUI desktop environment for managing proteomic mass spectrometry workflows and data analysis.  Using the mzAPI interface to native instrument data formats, *multiplierz* is provides a complete toolset for a variety of methods for peptide identification, quantitation, and experimental reporting.
 
 See [the wiki for installation instructions and documentation](https://github.com/MaxAlex/multiplierz/wiki/Installation).
 
