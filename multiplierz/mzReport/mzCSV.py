@@ -66,6 +66,12 @@ class CSVReportWriter(ReportWriter):
         else:
             self.columns = columns
 
+        for i, col in enumerate(self.columns):
+            if not all(map(lambda x: ord(x) < 128, col)):
+                newcol = ''.join([x for x in col if ord(x) < 128])
+                print "WARNING: %s has non-utf-8 characters; changing to %s" % (col, newcol)
+                self.columns[i] = newcol
+
         if len(self.columns) > len(set(c.lower() for c in self.columns)):
             raise ValueError("Redundant columns: column headers must be unique")
 
