@@ -37,7 +37,7 @@ def assign_multiprocess(function, data, **pool_args):
                 results.append(done_thing.get())
         while tasks and len(jobs) < process_count:
             newtask = tasks.pop()
-            if len(newtask) == 1:
+            if isinstance(newtask, basestring) or len(newtask) == 1:
                 newtask = (newtask,)
             jobs.append(workforce.apply_async(function, args = newtask))
         sleep(1)
@@ -45,6 +45,7 @@ def assign_multiprocess(function, data, **pool_args):
     workforce.close()
     workforce.join()
     
+    return results
 
 
 
@@ -68,15 +69,15 @@ def pts_to_bins(pts, bincount):
     nextpt = pts.pop(0)
     for lmz in floatrange(startpt, stoppt, binwidth):
         rmz = lmz + binwidth
-        if rmz > nextpt[0] and lmz < nextpt[0]:
-            # In-between- could be more complicated.
-            bins[lmz] += nextpt[1]
-        else: #rmz < nextpt[0]:
-            while pts and rmz > nextpt[0]:
-                bins[lmz] += prevpt[0]
-                prevpt = nextpt
-                nextpt = pts.pop(0)                
+        #if rmz > nextpt[0] and lmz < nextpt[0]:
+            ## In-between- could be more complicated.
+            #bins[lmz] += nextpt[1]
+        #else: #rmz < nextpt[0]:
+        while pts and rmz > nextpt[0]:
             bins[lmz] += prevpt[1]
+            prevpt = nextpt
+            nextpt = pts.pop(0)                
+        bins[lmz] += prevpt[1]
             
     
     return sorted(bins.items())

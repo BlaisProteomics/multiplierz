@@ -254,26 +254,37 @@ def sum_formula(formulas):
             totals[atom] += count
     return totals
 
+#formula_parser = re.compile(r'([A-Z][0-9]{0,3})')
 def parse_chemical_formula(formstring):
+    assert re.match(r'(([A-Z][a-z]?)([0-9]{0,3}))*$', formstring), '%s is not a valid chemical formula.' % formstring
     formdict = {}
     i = 0
-    while i < len(formstring):
-        x = formstring[i]
-        if x.isalpha():
-            try:
-                y = formstring[i+1]
-                if y.isdigit():
-                    formdict[x] = int(y)
-                    i += 1
-                else:
-                    formdict[x] = 1                    
-            except IndexError:
-                formdict[x] = 1
-            i += 1
+    for atom, count in re.findall(r'([A-Z][a-z]?)([0-9]{0,3})', formstring):
+        if count:
+            count = int(count)
         else:
-            raise NotImplementedError, "Unable to parse chemical formula %s" % formstring    
-    
+            count = 1
+        formdict[atom] = count
     return formdict
+        
+    
+    #while i < len(formstring):
+        #x = formstring[i]
+        #if x.isalpha():
+            #try:
+                #y = formstring[i+1]
+                #if y.isdigit():
+                    #formdict[x] = int(y)
+                    #i += 1
+                #else:
+                    #formdict[x] = 1                    
+            #except IndexError:
+                #formdict[x] = 1
+            #i += 1
+        #else:
+            #raise NotImplementedError, "Unable to parse chemical formula %s" % formstring    
+    
+    #return formdict
 
 chemicalMassMemo = {}
 def chemicalFormulaMass(formula):    
