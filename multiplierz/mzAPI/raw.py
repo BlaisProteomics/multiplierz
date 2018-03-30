@@ -72,7 +72,10 @@ class mzFile(mzAPImzFile):
     
     def scanInjectionTime(self, scan):
         keys, vals = zip(*self.source.get_extra_scan_info(scan))
-        return float(vals[keys.index('Ion Injection Time (ms):')])
+        try:
+            return float(vals[keys.index('Ion Injection Time (ms):')])
+        except ValueError:
+            return float(vals[keys.index('Ion Injection Time (ms):')].replace(',', ''))
     
     def scanPrecursor(self, scan):
         keys, vals = zip(*self.source.get_extra_scan_info(scan))
