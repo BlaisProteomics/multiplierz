@@ -284,12 +284,6 @@ class ReportWriter(object):
 
 # imports are down here to prevent circular import problem
 
-# make this conditional to prevent importing on *nix
-if sys.platform == 'win32':
-    import mzSpreadsheet
-
-
-
 
 #from multiplierz import myData, myTemp
 
@@ -308,6 +302,7 @@ def reader(report_file, **kwargs):
     if not os.path.exists(report_file): raise IOError, "%s not found." % report_file
 
     if file_type == 'xls' or file_type == 'xlsx':
+        import mzSpreadsheet
         return mzSpreadsheet.XLSheetReader(report_file, **kwargs)
     elif file_type == 'csv':
         import mzCSV
@@ -346,6 +341,7 @@ def writer(report_file, columns=None, default_columns=False, delayed_write = Fal
         return delayedWriter(report_file, columns, default_columns, **kwargs)
 
     if file_type == 'xls' or file_type == 'xlsx':
+        import mzSpreadsheet
         return mzSpreadsheet.XLSheetWriter(report_file,
                                            columns=columns,
                                            default_columns=default_columns,
