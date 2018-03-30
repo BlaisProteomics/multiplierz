@@ -14,7 +14,7 @@ else:
                         'openpyxl', 'xlrd', 'xlwt', 'requests']
 
 setup(name = 'multiplierz',
-      version = '2.0.10',
+      version = '2.0.12',
       description = 'The multiplierz proteomics package',
       author = 'William Max Alexander (et al.)',
       author_email = 'williamM_alexander@dfci.harvard.edu',
