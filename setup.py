@@ -4,17 +4,14 @@ from codecs import open
 from os import path
 
 
-import platform
-if 'windows' in platform.platform().lower():
-    install_requires = ['numpy', 'comtypes', 'matplotlib', 'pypiwin32',
-                          'openpyxl', 'xlrd', 'xlwt', 'requests'], # Removed 'lxml'.
-else:
-    print "Preparing Linux mode installation."
-    install_requires = ['numpy', 'comtypes', 'matplotlib',
-                        'openpyxl', 'xlrd', 'xlwt', 'requests']
+
+install_requires = ['numpy', 'comtypes', 'matplotlib',
+                    'pypiwin32; sys_platform == "Windows"',
+                    'openpyxl', 'xlrd', 'xlwt', 'requests']
+
 
 setup(name = 'multiplierz',
-      version = '2.0.12',
+      version = '2.0.13',
       description = 'The multiplierz proteomics package',
       author = 'William Max Alexander (et al.)',
       author_email = 'williamM_alexander@dfci.harvard.edu',
