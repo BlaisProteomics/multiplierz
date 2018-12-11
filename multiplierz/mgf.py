@@ -4,7 +4,7 @@ from multiplierz import protonMass, __version__, vprint
 import os
 from numpy import average, std
 
-
+from multiplierz.mass_biochem import add_protons
 
 __all__ = ['parse_mgf', 'write_mgf', 'MGF_Writer', 'extract', 'apply_spectral_process']
            #'charge_reduce', 'top_n_peaks', 'exclusion_radius', 'signal_noise', 'intensity_threshold']
@@ -53,15 +53,19 @@ def standard_title_write(filename, mz = None, scan = None, **info):
         if any(x.isupper() for x in field):
             assert field.lower() not in info, ("Title data should not be case "
                                                "sensitive. (%s <-> %s)") % (field, field.lower())
-            
-        try:
+   
+        try: # For field.
             assert '|' not in field and ':' not in field, "| and : cannot appear in field strings.  E.g. %s" % field
         except TypeError:
-            pass
-        try:
-            assert '|' not in value and ':' not in value, "| and : cannot appear in value strings.  E.g. %s" % value
-        except TypeError:
-            pass
+            pass   
+        if isinstance(value, float):
+            value = '%.3f' % value if value else '0'
+        else:
+            try: # For value.
+                assert '|' not in value and ':' not in value, "| and : cannot appear in value strings.  E.g. %s" % value
+            except TypeError:
+                pass
+        
         
         title += '|%s:%s' % (field, value)
     
@@ -129,7 +133,8 @@ def parse_mgf(mgffile, labelType = (lambda x: x), header = False, rawStrings = F
                     if field == 'TITLE':
                         key = value.strip()    
                 elif any(line):
-                    spectrum.append(tuple(map(float, line.split())))
+                    # Ignores fragment charge values.
+                    spectrum.append(tuple(map(float, line.split()[:2]))) 
 
             entry["spectrum"] = spectrum
 
@@ -176,7 +181,7 @@ def parse_to_generator(mgffile, labelType = (lambda x: x), header = False, rawSt
                 if 'END IONS' in line:
                     break
                 elif '=' in line:
-                    field, value = line.split('=')
+                    field, value = line.split('=')[:2]
                     
                     if (not rawStrings) and field == 'CHARGE':
                         value = int(value.strip('\n\r+ '))
@@ -189,16 +194,19 @@ def parse_to_generator(mgffile, labelType = (lambda x: x), header = False, rawSt
                     if field == 'TITLE':
                         key = value.strip()    
                 elif any(line):
-                    spectrum.append(tuple(map(float, line.split())))
+                    spectrum.append(tuple(map(float, line.split()[:2])))
 
             entry["spectrum"] = spectrum
 
             key = labelType(key)
             yield entry
         elif topMatter and '=' in line:
-            field, value = line.split('=')
-            if field in MGFTopMatter:
-                #data['header'][field.lower()] = value
+            try:
+                field, value = line.split('=')
+                if field in MGFTopMatter:
+                    #data['header'][field.lower()] = value
+                    continue
+            except ValueError:
                 continue
         elif 'SEARCH=' in line or 'MASS=' in line:
             continue
@@ -272,6 +280,10 @@ class MGF_Writer(object):
         
         self.file.write("END IONS\n")
     
+    def add(self, entry):
+        self.write(entry['spectrum'], entry['title'],
+                   entry['pepmass'], entry.get('charge', None))
+    
     def close(self):
         self.file.close()
     
@@ -290,13 +302,46 @@ def raw_scan_recalibration(scan, calibrant):
         return [(x[0] * cal_factor, x[1]) for x in scan], cal_mz
     else:
         return scan, calibrant
-    
+
+
+# 6plex from classic extractor.
+example_6plex_dict = {'126':{'127':8.9, '128':0.4},
+                      '127':{'126':0.6, '128':8.0, '129':0.4},
+                      '128':{'127':1.1, '129':6.5, '130':0.2},
+                      '129':{'128':1.6, '130':5.6, '131':0.2},
+                      '130':{'128':0.1, '129':1.8, '131':4.8, 'other':0.1},
+                      '131':{'129':0.1, '130':3.3, 'other':4.3}}   
+
+example_10plex_dict = {'126':{'127C':5},
+                       '127N':{'128N':5.8, 'other':0.2},
+                       '127C':{'126':0.3, '128C':4.8},
+                       '128N':{'127N':0.3, '129N':4.1},
+                       '128C':{'127C':0.6, '129C':3.0},
+                       '129N':{'128N':0.8, '130N':3.5},
+                       '129C':{'128C':1.4, '130C':2.4},
+                       '130N':{'128N':0.1, '129N':1.5, '131':2.4, 'other':3.2},
+                       '130C':{'129C':1.8, 'other':2.1},
+                       '131':{'130N':1.8, 'other':1.7}}
+
+def compile_correction_matrix(channel_corrections, labels):
+    assert labels, "No isobaric tag specified, but correction matrix given."
+    from numpy import zeros
+    cormat = zeros(shape = (len(labels), len(labels)))
+    for i, froml in enumerate(labels):
+        for j, tol in enumerate(labels):
+            cormat[j, i] += channel_corrections.get(froml, {}).get(tol, 0)
+        if froml not in channel_corrections[froml]:
+            cormat[i, i] += 100.0 - sum(channel_corrections.get(froml, {}).values())
+    return cormat.transpose() / 100
+        
     
 def extract(datafile, outputfile = None, default_charge = 2, centroid = True,
             scan_type = None, deisotope_and_reduce_charge = True,
+            derive_precursor_via = 'All',
             deisotope_and_reduce_args = {},
             min_mz = 140, precursor_tolerance = 0.005,
-            isobaric_labels = None, label_tolerance = 0.01):
+            isobaric_labels = None, label_tolerance = 0.01,
+            channel_corrections = None):
     """
     Converts a mzAPI-compatible data file to MGF.
     
@@ -311,8 +356,15 @@ def extract(datafile, outputfile = None, default_charge = 2, centroid = True,
     # Currently doesn't compensate for injection time! Would be required in
     # order to deal with iTRAQ/TMT labels.
     
+    # "Channel corrections" should be a double-layer dict of each channel
+    # to what it contributes to each other channel.
+    
     from multiplierz.spectral_process import deisotope_reduce_scan, peak_pick
     from multiplierz.spectral_process import centroid as centroid_func # Distinct from 'centroid' argument.
+    
+    if channel_corrections:
+        from numpy.linalg import solve
+        
     
     def _get_precursor(mz, possible_prec, charge):
         try:
@@ -346,14 +398,19 @@ def extract(datafile, outputfile = None, default_charge = 2, centroid = True,
         # scan type.  (It would be more efficient in many cases to
         # actually split files in a single run, though.)
         if scan_type:    
-            scan_type = scan_type
-            assert (scan_type.lower() in
-                    ['cid', 'hcd', 'etd', 'etdsa']), ("Invalid scan type %s, must be one"
-                                                      "of (CID, HCD, ETD, ETDSA).") % scan_type
-            typestr = "@%s" % scan_type.lower()
+            if isinstance(scan_type, basestring):
+                scan_type = scan_type
+                #assert (scan_type.lower() in
+                        #['cid', 'hcd', 'etd', 'etdsa']), ("Invalid scan type %s, must be one"
+                                                          #"of (CID, HCD, ETD, ETDSA).") % scan_type
+                typestr = "@%s" % scan_type.lower()
+                def scan_type(filt):
+                    return typestr in filt
             
+            assert callable(scan_type)
+                
             scanInfo = [x for x in scanInfo if x[3] == 'MS1' or
-                        typestr in filters[x[0]]]
+                        scan_type(filters.get(x[0], ''))]
     else:
         filters = None
         assert not scan_type, "Scan type filtering only enabled with .RAW format files."
@@ -365,12 +422,12 @@ def extract(datafile, outputfile = None, default_charge = 2, centroid = True,
     if not isobaric_labels:
         labels = []
     elif isobaric_labels == 4 or isobaric_labels == '4plex':
-        labels = zip([114, 115, 116, 117], [114.11, 115.11, 116.11, 117.12])
+        labels = zip(['114', '115', '116', '117'], [114.11123, 115.10826, 116.11162, 117.11497])
     elif isobaric_labels == 6 or isobaric_labels == '6plex':
-        labels = zip([126, 127, 128, 129, 130, 131],
+        labels = zip(['126', '127', '128', '129', '130', '131'],
                      [126.127, 127.131, 128.134, 129.138, 130.141, 131.138])
     elif isobaric_labels == 8 or isobaric_labels == '8plex':
-        labels = zip([113, 114, 115, 116, 117, 118, 119, 121],
+        labels = zip(['113', '114', '115', '116', '117', '118', '119', '121'],
                      [113.11, 114.11, 115.11, 116.11, 117.12, 118.12, 119.12, 121.12])
     elif isobaric_labels == 10 or isobaric_labels == '10plex':
         labels = zip(['126', '127N', '127C', '128N', '128C', 
@@ -384,6 +441,9 @@ def extract(datafile, outputfile = None, default_charge = 2, centroid = True,
         raise NotImplementedError, ("Labels of type %s not recognized.\n"
                                     "Should be one of [4,6,8,10] or None.")
             
+    if channel_corrections:
+        correction_matrix = compile_correction_matrix(channel_corrections, zip(*labels)[0])
+            
     def read_labels(scan):
         partscan = [x for x in scan if x[0] < labels[-1][1] + 3]
         if not partscan:
@@ -395,11 +455,16 @@ def extract(datafile, outputfile = None, default_charge = 2, centroid = True,
         for label, mz in labels:
             nearpt = min(partscan, key = lambda x: abs(x[0] - mz))
             if abs(nearpt[0] - mz) < label_tolerance:
-                scan_values[str(label)] = '%.3f' % nearpt[1]
+                scan_values[str(label)] = nearpt[1]
             else:
-                scan_values[str(label)] = '0' # Report noise value?
-                    
-        return scan_values
+                scan_values[str(label)] = 0 # Report noise value?  (Easier to determine bad reads this way though.)
+        
+        if channel_corrections:
+            reporter_vector = [scan_values[x[0]] for x in labels]
+            corrected_vector = solve(correction_matrix, reporter_vector)
+            return dict(zip(zip(*labels)[0], [max(x, 0) for x in corrected_vector.flatten()]))
+        else:
+            return scan_values
         
     inconsistent_precursors = 0
     scans_written = 0
@@ -464,11 +529,12 @@ def extract(datafile, outputfile = None, default_charge = 2, centroid = True,
         
         mzP = None
         chargeP = None
-        if "scanPrecursor" in dir(data):
+        if "scanPrecursor" in dir(data) and derive_precursor_via in ['All', 'Thermo']:
             assert isinstance(scanName, int)
             mzP, chargeP = data.scanPrecursor(scanName)
             
-        if not mzP: # .scanPrecursor sometimes returns charge and not mzP.
+        if (not mzP) or derive_precursor_via in ['Direct']:
+            # .scanPrecursor sometimes returns charge and not mzP.
             if possible_precursors == None:
                 possible_precursors, calibrant = calculate_precursors(calibrant)
                 
