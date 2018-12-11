@@ -199,7 +199,7 @@ class mascot(object):
         Logs in to mascot. Returns "success" or "error" based on login success
         """
 
-        login_url = (os.path.join(self.server, r'cgi/login.pl'))
+        login_url = self.server.strip(r'\/') + r'//cgi/login.pl'
         login_form = CurlForm()
 
         # URL encodings of form data
@@ -1411,6 +1411,7 @@ class MascotSearcher(object):
         
         search_form = dict(search_form)
         search_form.update([('FORMVER','1.01'), ('SEARCH','MIS'), ('MULTI_SITE_MODS', '1')])
+        #search_form.update([('LIBRARY_SEARCH', '1')])
         if target_file:
             filename = target_file
         else:

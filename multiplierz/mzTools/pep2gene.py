@@ -30,7 +30,7 @@ def convertAccessionsViaUniprot(accessions):
         accessions = [x.split('.')[0] for x in accessions]
         fromKey = 'P_REFSEQ_AC'    
 
-    url = 'http://www.uniprot.org/uploadlists/'
+    url = 'https://www.uniprot.org/uploadlists/'
     
     geneNames = defaultdict(list)
     for i in range(0, len(accessions), 1000):
@@ -169,7 +169,10 @@ def add_gene_ids(target_files, p2g_database,
     starttime = time.clock()
     
     if isinstance(target_files, basestring):
+        return_list = False
         target_files = [target_files]
+    else:
+        return_list = True
     
     dataRdr = open(p2g_database, 'rb')
     data = pickle.load(dataRdr)
@@ -211,7 +214,10 @@ def add_gene_ids(target_files, p2g_database,
     
     outputfiles = []
     for target_file in target_files:
-        rdr = reader(target_file, sheet_name = target_sheet)
+        try:
+            rdr = reader(target_file, sheet_name = target_sheet)
+        except TypeError:
+            rdr = reader(target_file) # Not an Excel file.
         
         
         add_legacy_cols = ["pro_count","pro_list",
@@ -238,7 +244,7 @@ def add_gene_ids(target_files, p2g_database,
             colname.update(dict(zip(iso_cols, iso_cols)))
         
             
-        if (not outputfile) or len(target_files) > 1:
+        if (not outputfile) or return_list:
             ext = target_file.split('.')[-1]
             outputfile = '.'.join(target_file.split('.')[:-1] + ['GENES', ext])
         output = writer(outputfile,
@@ -256,7 +262,7 @@ def add_gene_ids(target_files, p2g_database,
             
             pep = ''.join([x for x in pep if x.isalpha()])
                 
-            if len(pep) < K:
+            if len(pep) <= K:
                 continue # No 4-mers in a 3-mer!
                 
             isoPep = pep.replace('I', 'L')
@@ -317,36 +323,8 @@ def add_gene_ids(target_files, p2g_database,
         output.close()
         print "Output written: %.2f" % (time.clock() - prevtime)
         outputfiles.append(outputfile)
-    return outputfile
+    if return_list:
+        return outputfiles
+    else:
+        return outputfile
     
-#if __name__ == '__main__':
-    ##from multiplierz.internalAlgorithms import typeInDir
-    ##for filename in typeInDir(r'C:\Users\Max\Downloads\Pep2gene_files', '.xlsx'):
-    #add_gene_ids(r'C:\Users\Max\Downloads\Parsed Peptide and cys site.xlsx',
-                 #r'\\rc-data1\blaise\ms_data_share\Databases\Human_Uniprot_Full_8-4-16_newMode.pep2gene')
-#if __name__ == '__main__':
-    #create_fasta_index(r'\\rc-data1\blaise\ms_data_share\Databases\Updated_Marto_F_Human.fasta',
-                       #labelParser = lambda x: x.split('|')[3])
-
-
-#if __name__ == '__main__':
-    #mapping = r'\\rc-data1\blaise\ms_data_share\Databases\pep2gene_uniprot_mapper_versionless.pickle'
-    
-    #from multiplierz.internalAlgorithms import typeInDir
-    #fastas = typeInDir(r'\\rc-data1\blaise\ms_data_share\Databases\CURRENT_UNIPROT_DBS',
-                       #'fasta',
-                       #True)
-    #for fastafile in fastas:
-        #try:
-            #create_fasta_index(fastafile,
-                               #labelParser = lambda x: x.split('|')[1],
-                               #local_mapping_file = mapping)
-        #except ValueError:
-            #print "Failed on %s" % fastafile
-
-if __name__ == '__main__':
-    from multiplierz.internalAlgorithms import typeInDir
-    
-    add_gene_ids(typeInDir(r'\\rc-data1\blaise\ms_data_share\Max\backburner_pipeline\serum_results', 'pep_combined.xlsx'),
-                 r'\\rc-data1\blaise\ms_data_share\Databases\CURRENT_UNIPROT_DBS\UP000005640_9606.fasta.pep2gene',
-                 legacy_columns = False)
