@@ -19,21 +19,57 @@
 import csv
 #csv.field_size_limit(100000000)
 import os
+import re # For basic type inference of read values.
 
 from multiplierz.mzReport import ReportReader, ReportWriter, ReportEntry, default_columns
 from multiplierz import logger_message
+from multiplierz.internalAlgorithms import insert_tag
+
+
+float_pattern = re.compile('-?[0-9]*\.[0-9]*$') # Caution- also matches .
+int_pattern = re.compile('-?[0-9]+$')
+exp_pattern = re.compile('-?[0-9]+\.?[0-9]*[Ee]-?[0-9]+$')
+
+def infer_and_convert_type(value):
+    if float_pattern.match(value):
+        return float(value)
+    elif exp_pattern.match(value):
+        return float(value)
+    elif int_pattern.match(value):
+        return int(value)
+    else:
+        return value
+
+
+
+
+import gzip
+def gzOptOpen(filename, mode = 'r'):
+    '''
+    Utility function for opening files that may be compressed
+    via gzip ('fasta.gz' files.)
+    '''
+    
+    if filename.lower().endswith('.gz'):
+        return gzip.open(filename, mode = mode)
+    else:
+        return open(filename, mode = mode)     
 
 class CSVReportReader(ReportReader):
     '''The CSV implementation of the mzReport class. Python's CSV module
     is actually fine for what we need, so this is mostly a wrapper of
     its functionality.'''
-    def __init__(self, file_name):
+    def __init__(self, file_name, infer_types = True):
         if not os.path.exists(file_name):
             raise IOError("No such file: '%s'" % os.path.basename(file_name))
         self.file_name = file_name
-        self.fh = open(self.file_name, 'rb')
+        self.fh = gzOptOpen(self.file_name, 'rb')
         self.csv = csv.reader(self.fh)
-        self.columns = self.csv.next()
+        try:
+            self.columns = self.csv.next()
+        except StopIteration:
+            raise IOError, "CSV file contains no header, is empty: %s" % file_name
+        self.infer_types = infer_types
         
         if len(self.columns) == 1 and '\t' in self.columns[0]:
             # Retry with tab-delimiting dialect
@@ -49,7 +85,15 @@ class CSVReportReader(ReportReader):
         self.fh.seek(0) # start at beginning of the file
         self.csv.next() # ignore headers
         for row in self.csv:
-            # will convert default column values to correct type
+            if self.infer_types:
+                row = map(infer_and_convert_type, row)
+            if not len(row):
+                continue
+            elif len(row) != len(self.columns):
+                import warnings
+                warnings.warn('Incomplete row encountered in CSV: %s' %
+                              ','.join(map(str, row)))
+                row += [''] * (len(self.columns) - len(row))
             yield ReportEntry(columns=self.columns, values=row)
 
     def close(self):
@@ -75,23 +119,40 @@ class CSVReportWriter(ReportWriter):
         if len(self.columns) > len(set(c.lower() for c in self.columns)):
             raise ValueError("Redundant columns: column headers must be unique")
 
-        self.file_name = file_name
-        self.fh = open(self.file_name, 'wb')
-        self.csv = csv.writer(self.fh)
-
-        self.csv.writerow(self.columns)
-
-    def write(self, row, metadata=None):
+        try:
+            self.file_name = file_name
+            if self.file_name.lower().endswith('gz'):
+                self.fh = gzip.open(self.file_name, 'wb')
+            else:
+                self.fh = open(self.file_name, 'wb')
+            self.csv = csv.writer(self.fh)
+    
+            self.csv.writerow(self.columns)
+            
+        except IOError as err:
+            print err
+            print "WARNING- could not write %s." % file_name
+            self.file_name = insert_tag(file_name, 'OVERWRITE')
+            if self.file_name.lower().endswith('gz'):
+                self.fh = gzip.open(self.file_name, 'wb')
+            else:
+                self.fh = open(self.file_name, 'wb')
+            self.csv = csv.writer(self.fh)
+    
+            self.csv.writerow(self.columns)
+            print "Writing to %s" % self.file_name
+            
+    def write(self, row, metadata=None, ignore_extra = False):
         # error checking: want one value per column and nothing more
         # if row is a dict, keys should be in lower-case
         if len(row) < len(self.columns):
             raise ValueError('Must have values for each column')
-        elif len(row) > len(self.columns):
+        elif (not ignore_extra) and len(row) > len(self.columns):
             raise ValueError('Too many values')
         elif isinstance(row,dict):
             row = dict((k.lower(),v) for k,v in row.items())
-            if not all(k.lower() in row for k in self.columns):
-                raise ValueError('Value dictionary does not match column headers')
+            #if not all(k.lower() in row for k in self.columns):
+                #raise ValueError('Value dictionary does not match column headers')
 
         if isinstance(row,dict):
             self.csv.writerow([row[col.lower()] for col in self.columns])
