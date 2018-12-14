@@ -167,3 +167,4 @@ class CSVReportWriter(ReportWriter):
 
     def close(self):
         self.fh.close()
+
