@@ -1,18 +1,23 @@
 from collections import defaultdict
 from internalAlgorithms import average
 from multiplierz import protonMass
-from collections import deque
+from collections import deque, Iterator
 from numpy import std
 
 def centroid(scan, threshold = None):
     """
     Centroids profile-mode data given in [(M/Z, intensity)] format.
     """
+    from internalAlgorithms import average
     
     if not scan:
         return scan
     
     if not threshold:
+        assert not isinstance(scan, Iterator), ("centroid() requires explicit "
+                                                "threshold value if given an "
+                                                "Iterator argument.")
+
         threshold = average(zip(*scan)[1])
         
     peaks = []
@@ -21,8 +26,14 @@ def centroid(scan, threshold = None):
         if pt[1] > threshold:
             peak.append(pt)
         elif peak:
-            centroid = average(zip(*peak)[0], weights = zip(*peak)[1]), max(zip(*peak)[1])
-            peaks.append(centroid)
+            centMZ = average(zip(*peak)[0], weights = zip(*peak)[1])
+            centInt = max(zip(*peak)[1])
+            if len(pt) == 4:
+                centNoise = average(zip(*peak)[2], weights = zip(*peak)[1])
+                centCharge = max(zip(*peak)[3])
+                peaks.append((centMZ, centInt, centNoise, centCharge))
+            else:
+                peaks.append((centMZ, centInt))
             peak = []
     return peaks
 
@@ -53,7 +64,7 @@ isotopicRatios_permissive = {(0, 1) : (0.5, 16.2),
                              (7, 8) : (2.0, 22.2),
                              (8, 9) : (3.0, 20.0),
                              (9, 10) : (3.4, 17.0),
-                           (10, 11) : (3.6, 15.0)
+                             (10, 11) : (3.6, 15.0)
                            }
 # Dev note: "First, do no harm"- all peaks from the input scan should be
 # represented somewhere in the output (and no new peaks, obviously.)
@@ -64,15 +75,13 @@ def peak_pick(scan, tolerance = 0.005, max_charge = 8, min_peaks = 3, correction
     Scans a scan and gives back a by-charge dict of lists of isotopic sequences
     found in the scan, as well as a list of the unassigned peaks.
 
+    The input scan must be centroided!
+
     tolerance - MZ range two points can be that are the "same" mass.
     max_charge - Maximum charge of peptides that are searched for.
     min_peaks - Minimum isotopic peaks required for an isotopic feature to be recorded.
     correction - Advanced feature; recalibration factor used for repeated calls on the same file.
     """
-
-    if len(scan) > 10000:
-        if all([(scan[i+1][0] - scan[i][0]) < 0.3 for i in range(0, 100)]):
-            raise NotImplementedError, "Called scan_features on a profile-mode spectrum."
 
     if enforce_isotopic_ratios == True:
         global isotopicRatios
@@ -199,7 +208,7 @@ def peak_pick(scan, tolerance = 0.005, max_charge = 8, min_peaks = 3, correction
 
 
     # Cleanup phase- each envelope checks for unassigned peaks that
-    # would correctly extend it.
+    # would correctly extend it.  This *usually* does not find anything new.
     if cleanup:
         unProx = ProximityIndexedSequenceAgain(unassigned, indexer = lambda x: x[0],
                                                dynamic = False)        

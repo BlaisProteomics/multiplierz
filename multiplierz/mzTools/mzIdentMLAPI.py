@@ -190,7 +190,11 @@ class mzIdentML(object):
 
         spectCVs = self.giveCVs(spectEl)
         # Annoying that these fields are Mascot specific.
-        spectrum_score = spectCVs['Mascot:score']
+        try:
+            spectrum_score = spectCVs['Mascot:score']
+        except KeyError:
+            # Mascot spectral library search result.
+            spectrum_score = spectCVs['MSPepSearch:score']
         spectrum_expect = spectCVs['Mascot:expectation value']
 
         resultCVs = self.giveCVs(resultEl)

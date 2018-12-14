@@ -504,7 +504,7 @@ def file_chooser(title='Choose a file:', default_path = '', default_file = '',
 
     """
 
-    wildcard = "%s|%s" % (wildcard, wildcard)
+    #wildcard = "%s|%s" % (wildcard, wildcard)
 
     style = { 'r': wx.FD_OPEN,
               'm': wx.FD_MULTIPLE,

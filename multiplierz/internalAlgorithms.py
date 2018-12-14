@@ -4,48 +4,321 @@ import gzip
 
 import sys
 
+import bisect
+from itertools import chain
+
 try:
     from numpy import average
 except ImportError:
     # Someday, hopefully, numpy will no longer be a multiplierz dependency.        
-    def average(xs):
-        return sum(xs) / float(len(xs))
+    def average(xs, weights = None):
+        if weights:
+            assert len(weights) == len(xs), "Weights must be same length as input sequence."
+            return (sum([x*w for x, w in zip(xs, weights)]) 
+                    / 
+                    float(len(xs)) * reduce((lambda x, y: x * y), weights, 1))
+        else:
+            return sum(xs) / float(len(xs))
 
 
-def assign_multiprocess(function, data, **pool_args):
+
+def average_scan(scans):
+    # Probably move to spectral_processing.py when I'm more sure about it.
+    
+    dists = list(chain(*[[s[i+1][0] - s[i][0] for i in range(len(s)-1)]
+                         for s in scans]))
+    max_width = min(dists) - 0.000001
+    aggregated_scan = aggregate_points(list(chain(*scans)), 
+                                       MAX_WIDTH = max_width)
+    
+    
+    avg_scan = []
+    for agg_pts in aggregated_scan:
+        avg_mz = average([x[0] for x in agg_pts])
+        
+        avg_int = sum([x[1] for x in agg_pts]) / len(scans)
+        # So that points only in a few scans aren't preferentially treated.
+        
+        avg_scan.append((avg_mz, avg_int))
+    
+    return sorted(avg_scan)
+    
+    
+
+
+def aggregate_points(pointlist, distance_function = None, MAX_WIDTH = 0.025):
+    """
+    Given a list of points (which may be floats or tuples with the
+    position-relevant value in the first position), returns a list of
+    grouped points such that all points within a group are within MAX_WIDTH
+    of each other.
+    """
+    peaks = []
+    agg = []
+    
+    if distance_function is not None:
+        distance = distance_function
+    elif isinstance(pointlist[0], tuple):
+        def distance(x, y):
+            return x[0] - y[0]
+        pointlist.sort()
+    else:
+        def distance(x, y):
+            return x - y
+        pointlist.sort()
+
+    def hard_case(group):
+        # Should be refactored so that the distance function is only called
+        # once per consecutive pair, in case this is being used on objects with
+        # expensive distance calculations.
+        if len(group) <= 2:
+            return [group] # Within limit by construction.
+        elif distance(group[-1], group[0]) < MAX_WIDTH:
+            return [group]
+        else:
+            splitpt = max(xrange(len(group)-1),
+                          key = lambda x: distance(group[x+1], group[x])) + 1
+            assert group[splitpt:] and group[:splitpt]
+            return chain(hard_case(group[splitpt:]), hard_case(group[:splitpt]))
+        
+ 
+    for pt in pointlist:
+        if (not agg) or distance(pt, agg[-1]) < MAX_WIDTH:
+            agg.append(pt)
+        else:
+            if distance(agg[-1], agg[0]) < MAX_WIDTH:
+                peaks.append(agg) # The simple case.
+            else:
+                peaks += list(hard_case(agg))
+            agg = [pt]
+    if agg:
+        if distance(agg[-1], agg[0]) < MAX_WIDTH:
+            peaks.append(agg)
+        else:
+            peaks += hard_case(agg)
+    
+    return peaks
+        
+
+def peak_in(spectrum, low_mz, high_mz):
+    # Returns biggest peak within given range, or None if there are no peaks in range.
+    # Uses that bisect follows standard sort-by-first-item conventions.
+    low_i = bisect.bisect_left(spectrum, low_mz)
+    high_i = bisect.bisect_right(spectrum, hi_mz)
+    try:
+        return max(spectrum[low_i:high_i], key = lambda x: x[1])
+    except ValueError:
+        return None
+
+def peak_at(spectrum, mz, tol):
+    # Returns biggest peak within given range, or None if there are no peaks in range.
+    # Uses that bisect follows standard sort-by-first-item conventions.    
+    low_i = bisect.bisect_left(spectrum, (mz-tol, None))
+    high_i = bisect.bisect_right(spectrum, (mz+tol, None))
+    try:
+        return max(spectrum[low_i:high_i], key = lambda x: x[1])
+    except ValueError:
+        return None
+
+def table_lookup(rows, key):
+    return dict((row[key], row) for row in rows)
+
+# Even dill can't pickle generators, though, so this doesn't work.
+def async_generator(generator, backlog_size = 10):
+    from multiprocess import Process, Queue
+    pipe = Queue(maxsize = backlog_size)
+    done_flag = 'FO0B@R'
+    def gen_reader(pipe):
+        for thing in generator:
+            pipe.put(thing) # And smoke it.
+        pipe.put(done_flag)
+    
+    reader_proc = Process(target = gen_reader, args = (pipe,))    
+    reader_proc.start()
+    
+    while True:
+        next_thing = pipe.get()
+        if next_thing == done_flag:
+            break
+        yield next_thing
+        
+    reader_proc.join()
+
+# Overhead from task management/external loops can be a slowdown if the
+# same thread is handling outside stuff and tasks at the same time; new
+# version that spawns a separate process to manage the process pool?
+# (Or a separate thread, possibly?)
+# Try to have subtasks return their data directly to the main process
+# without passing through the manager process; inter-thread communication of
+# large data is also a slowdown.
+def assign_multiprocess_ext(function, data, pool_args = {}, **task_args):
+    from multiprocess import Queue, Process, cpu_count
+    from Queue import Full, Empty
+    from time import sleep
+    process_count = pool_args.get('processes', cpu_count()-1)
+    input_pipe, output_pipe, control_pipe = (Queue(process_count), Queue(process_count),
+                                             Queue(process_count))
+    stop_signal = hash('OK STOP NAO.')
+    def multiprocessor(inpipe, outpipe, controlpipe):
+        def returner_process(inp, outp, task):
+            args, kwargs = inp.get()
+            outpipe.put(task(*args, **kwargs))
+            return True
+            
+        jobs = []
+        while True:
+            done = [x for x in jobs if x.ready()]
+            if done:
+                jobs = [x for x in jobs if x not in done] # Avoids race condition!       
+            else:
+                sleep(0.1)
+                
+            for thing in done:
+                thing.successful()
+                assert thing.get()
+            while len(jobs) < process_count:
+                cmd = controlpipe.get()
+                if cmd == stop_signal:
+                    break
+                elif cmd == True:
+                    newjob = Process(target = returner_process, 
+                                        args = (inpipe, outpipe))
+                    newjob.start()
+                    jobs.append(newjob)
+                                # I *think* the pipes have to be passed explicitly,
+                                # but I haven't checked.
+                else:
+                    raise Exception
+        outpipe.put(stop_signal)
+    
+    multiproc_proc = Process(target = multiprocessor,
+                             args = (input_pipe, output_pipe, control_pipe))
+    multiproc_proc.start()
+
+    if isinstance(data, list):
+        data = (x for x in data)
+    nexttask = data.next()
+    while True:
+        try:
+            input_pipe.put_nowait(nexttask)
+            control_pipe.put_nowait(True)
+            nexttask = data.next()
+        except Full:
+            pass
+        except StopIteration:
+            break
+        try:
+            yield output_pipe.get_nowait()
+        except Empty:
+            sleep(0.1)
+
+    control_pipe.put(stop_signal)
+    while True:
+        try:
+            out = output_pipe.get()
+            if out == stop_signal:
+                break
+            else:
+                yield out
+        except Empty:
+            sleep(0.1)
+    
+    multiproc_proc.join()
+        
+            
+        
+                
+            
+                
+
+def assign_multiprocess(function, data, pool_args = {}, **task_args):
     # Pool.map() is convenient, but leads to situations where one last
     # job-batch takes way longer than the others, or each iteration leaves
     # all but one process waiting for the last to finish. Distributing jobs
     # one-by-one is much more efficient in some cases.
     #
     # WARNING- RESULTS ARE NOT RETURNED IN ANY PARTICULAR ORDER.
-    import multiprocessing
+    # 
+    # Because I've been reading about Haskell, "function" can now be a list of
+    # functions that will be applied as a single composed function.
+    #import multiprocessing
     from time import sleep
+    
+    if 'processes' in task_args:
+        import warnings
+        warnings.warn("You probably meant to put 'processes' in pool_args.")
+    
+    if isinstance(function, list):
+        # Allows multiprocessing over non-base-level functions.
+        import pathos.multiprocessing as multiprocessing
+        import traceback
+        
+        assert all(map(callable, function)), "[Function/list of functions], [list of data objects]!"
+        assert not task_args, "Can't include kwargs to composed functions!"
+        function_list = function
+        def composed_function(*data_item):
+            for func in function_list:
+                if isinstance(data_item, basestring):
+                    data_item = (data_item,)
+                try:
+                    data_item = func(*data_item)
+                except Exception as err:
+                    print '\n\n\n################'
+                    traceback.format_exc()
+                    print '################\n\n\n'
+                    print "In: " + str(func) + '\n'
+                    raise err
+            return data_item
+        function = composed_function
+    else:
+        import multiprocessing
     
     process_count = pool_args.get('processes', multiprocessing.cpu_count()-1)
     
     workforce = multiprocessing.Pool(**pool_args)
-    tasks = data
+    try:
+        tasks = data[:]
+    except TypeError:
+        tasks = data
     jobs = []
     results = []
+    try:
+        returnquota = len(data)
+    except TypeError:
+        returnquota = None
+    returncount = 0
     while tasks or jobs:
+        # Should launch new jobs *before* yielding.
         done = [x for x in jobs if x.ready()]
         if done:
-            jobs = [x for x in jobs if not x.ready()]
-            for done_thing in done:
-                done_thing.successful()
-                results.append(done_thing.get())
+            jobs = [x for x in jobs if x not in done] # Avoids race condition!
         while tasks and len(jobs) < process_count:
-            newtask = tasks.pop()
+            if isinstance(tasks, list):
+                newtask = tasks.pop()
+            else:
+                newtask = tasks.next()
             if isinstance(newtask, basestring) or len(newtask) == 1:
                 newtask = (newtask,)
-            jobs.append(workforce.apply_async(function, args = newtask))
+            jobs.append(workforce.apply_async(function, args = newtask,
+                                              kwds = task_args))
+            
+        for done_thing in done:
+            done_thing.successful()
+            try:
+                yield done_thing.get(10) 
+                returncount += 1
+            except multiprocessing.TimeoutError:
+                print "Failure to return in 10 seconds!"
+                jobs.append(done_thing)
         sleep(1)
+    
+    if returnquota:
+        assert returncount == returnquota
     
     workforce.close()
     workforce.join()
     
-    return results
+    #return results
 
 
 
@@ -86,7 +359,10 @@ def pts_to_bins(pts, bincount):
             
             
 def psm_assignment(psm):
-    return psm['Peptide Sequence'], psm['Variable Modifications'], psm['Charge']
+    try:
+        return psm['Peptide Sequence'], psm['Variable Modifications'], psm['Charge']
+    except KeyError:
+        return psm['Peptide']
     
 
 def splitOnFirst(string, char):
@@ -105,7 +381,10 @@ def splitOnFirst(string, char):
         
 def insert_tag(filename, tag):
     words = filename.split('.')
-    return '.'.join(words[:-1] + [tag, words[-1]])
+    if words[-1].lower() in ['gz']:
+        return '.'.join(words[:-2] + [tag, words[-2], words[-1]])
+    else:
+        return '.'.join(words[:-1] + [tag, words[-1]])
         
 
 def print_progress(step, total = None):
@@ -146,6 +425,8 @@ def unzip(thing): return [list(t) for t in zip(*thing)]
 
 def typeInDir(directory, ext, recursive = False):
     import os
+    if not os.path.exists(directory):
+        raise IOError, '%s not found.' % directory
     if not recursive:
         return [os.path.join(directory, x) for x in
                 os.listdir(directory) if x.lower().endswith(ext.lower())
@@ -223,173 +504,6 @@ def parseClassicSpectrumDesc(desc):
             'corrected':corrected,
             'uncorrected':uncorrected}
 
-
-
-class old_ProximityIndexedSequence(object):
-    def __init__(self, sequence, indexer = lambda x: x, 
-                 binCount = None, binSequence = None,
-                 dynamic = True, **kwargs):
-     
-        
-        if dynamic:
-            self.indexer = indexer
-        
-        if sequence:
-            indSeq = [(indexer(x), x) for x in sequence]
-            self.bins = {(max([x[1] for x in indSeq]), min([x[1] for x in indSeq])):indSeq}
-        else:
-            self.bins = {}
-            
-        self.dynamic = dynamic
-        
-        self.rebalance()
-
-    def tidyBins(self):
-        print "ProximityIndexedSequence.tidyBins() is deprecated, because it sounds silly."
-        self.rebalance()
-        
-    def rebalance(self):
-        if not self.bins:
-            return
-        
-        sequence = sum(self.bins.values(), [])
-        self.bins = {}
-        sequence.sort(reverse = True)
-        
-        binCount = floor(sqrt(len(sequence)))
-        binLength = ceil(len(sequence)/binCount)
-        
-        newBin = []
-        while sequence:
-            newvals = [sequence.pop()]
-            while sequence and sequence[-1] == newvals[-1]:
-                newvals.append(sequence.pop())
-            newBin += newvals
-            
-            if len(newBin) >= binLength:
-                maxVal = max(newBin)[0]
-                minVal = min(newBin)[0]
-                self.bins[minVal, maxVal] = newBin[:]
-                newBin = []
-        if newBin:
-            maxVal = max(newBin)[0]
-            minVal = min(newBin)[0]
-            self.bins[minVal, maxVal] = newBin[:]
-        
-        
-    def seal(self):
-        self.dynamic = False
-        try:
-            del self.indexer
-        except NameError:
-            pass
-    
-    def add(self, value):
-        assert self.dynamic
-        
-        if not self.bins:
-            ind = self.indexer(value)
-            self.bins[ind, ind] = [(ind, value)]
-            return
-        
-        el = (self.indexer(value), value)
-        try:
-            key = next(x for x in self.bins.keys() if x[0] <= el[0] <= x[1])
-            self.bins[key].append(el)
-        except StopIteration:
-            # Add is often used to iteratively build the list; rebalance()
-            # *ought* to be called if things are being used correctly, but
-            # its still faster if the bins are made in some reasonable size.
-            maxbinlimit = max([x[1] for x in self.bins.keys()])
-            minbinlimit = min([x[0] for x in self.bins.keys()])
-            binwidth = average([x[1] - x[0] for x in self.bins.keys()])
-            if not binwidth:
-                binwidth = 1
-            if el[0] > maxbinlimit:
-                if maxbinlimit + binwidth > el[0]:
-                    newbin = maxbinlimit, maxbinlimit + binwidth
-                else:
-                    while maxbinlimit + binwidth <= el[0]:
-                        binwidth *= 2
-                    newbin = maxbinlimit, maxbinlimit + binwidth
-            elif el[0] < minbinlimit:
-                if minbinlimit - binwidth < el[0]:
-                    newbin = minbinlimit - binwidth, minbinlimit
-                else:
-                    while minbinlimit - binwidth >= el[0]:
-                        binwidth *= 2
-                    newbin = minbinlimit - binwidth, minbinlimit
-            else:
-                raise Exception, "Add new bin error."
-            
-            self.bins[newbin] = [el]
-            
-    
-    def remove(self, value):
-        assert self.dynamic
-        
-        index = self.indexer(value)
-        key = next(x for x in self.bins.keys() if x[0] <= index <= x[1])
-        del self.bins[key][self.bins[key].index((index, value))]
-        
-        if not self.bins[key]:
-            del self.bins[key]
-        elif index in key:
-            indexes = [x[0] for x in self.bins[key]]
-            newKey = min(indexes), max(indexes)
-            self.bins[newKey] = self.bins[key]
-            del self.bins[key]
-            
-        #try:
-            #del self.bins[key][self.bins[key].index((index, value))]
-        #except ValueError:
-            #print "Failed removing %s, performing correction." % value
-            #for key in self.bins.keys():
-                #self.bins[key] = [x for x in self.bins[key] if x != (index, value)]    
-        
-        #for key in self.bins.keys():
-            #if not self.bins[key]:
-                #del self.bins[key]
-                
-    def __getitem__(self, index):
-        # Which option is actually better seems complicated.  So far going with the least-code option.
-        #try:
-            #key = next((x for x in self.bins.keys() if x[0] <= index <= x[1]))
-        #except StopIteration:
-        key = min(self.bins.keys(), key = lambda x: min(abs(x[0] - index), abs(x[1] - index)))
-
-        return min(self.bins[key], key = lambda x: abs(x[0] - index))[1]
-    
-    def asList(self):
-        return [x[1] for x in sum(self.bins.values(), [])]
-    
-    def __iter__(self):
-        for key in self.bins.keys():
-            for index, thing in self.bins[key]:
-                yield thing
-                
-    def returnRange(self, begin, stop):
-        #raise NotImplementedError, "This has to be fixed!"
-        #keys = [k for k in self.bins.keys() if begin <= k[0] <= stop or begin <= k[1] <= stop]
-        keys = [k for k in self.bins.keys() 
-                if (k[0] >= begin and k[1] <= stop) # Key range is within given range.
-                or (k[0] <= begin and k[1] >= stop) # Given range is within key range.
-                or (begin <= k[1] and stop >= k[1]) # Given range overlaps end of key range.
-                or (stop >= k[0] and begin <= k[0])] # Given range overlaps beginning of key range.
-        
-        output = []
-        for key in keys:
-            if begin <= key[0] and stop >= key[1]:
-                output += [x[1] for x in self.bins[key]]
-            else:
-                output += [x[1] for x in self.bins[key] if begin <= x[0] <= stop]
-                
-        return output
-
-
-
-        
-    
     
 class NaiveProximitySequence(object):
     def __init__(self, sequence, indexer = (lambda x: x)):
@@ -788,8 +902,7 @@ def peak_pick_PPM(scan, tolerance = 10, max_charge = 8, min_peaks = 3, correctio
 
 
 
-import bisect
-from itertools import chain
+
 class ProximityIndexedSequence(object):
     # Turns out there's a python recipe to do just about this but better, but
     # now I have a bunch of legacy code that uses this interface!  Ah well.
@@ -917,41 +1030,3 @@ def deisocompare(envelopes1, unassigned1, envelopes2, unassigned2):
     
     
 
-
-
-if __name__ == '__main__':
-    from random import uniform, seed
-    seed(1)
-    
-    noise = [float(uniform(0, 10)) for _ in range(10000)]
-    import numpy
-    indexer = lambda x: float(numpy.log(x))
-    
-    oldver = NaiveProximitySequence(noise, indexer)
-    newver = ProximityIndexedSequence(noise, indexer)
-    
-    subnoise = [float(uniform(0, 10)) for _ in range(10000)]
-    #for x in subnoise:
-        #assert oldver[indexer(x)] == newver[indexer(x)]
-    
-    #assert oldver.asList() == newver.asList()
-    
-    "Static test done."
-    
-    #oldver = old_ProximityIndexedSequence([], indexer, dynamic = True)
-    newver = ProximityIndexedSequence([], indexer)    
-    
-    for x in noise:
-        #oldver.add(x)
-        newver.add(x)
-    
-    for x in subnoise:
-        assert oldver[indexer(x)] == newver[indexer(x)]    
-    #assert oldver.asList() == newver.asList()
-    
-    print "Done!"
-        
-        
-        
-        
-        
