@@ -166,7 +166,7 @@ ModificationFormulae = {'Phospho':{'H':1, 'O':3, 'P':1},
                         'Methyl' : {'C':1, 'H':2},
                         'iTRAQ4plex' : {'H':12, 'C':4, '13C':3, 'N':1, '15N':1, 'O':1},
                         'iTRAQ8plex' : {'H':24, 'C':7, '13C':7, 'N':3, '15N':1, 'O':3},
-                        'TMT6plex': {'H':24, 'C':7, '13C':7, 'N':3, '15N':1}, 
+                        'TMT6plex' : {'H':20,'C':8, '13C':4, 'N':1, 'O':2, '15N':1},
                         'Label:13C(6)': {'13C':6, 'C':-6},
                         'Label:13C(6)15N(4)':{'13C':6, 'C':-6, '15N':4, 'N':-4}}
 
@@ -241,7 +241,7 @@ AminoAcidFormulas = {'A': {'C': 3, 'H': 7, 'N': 1, 'O': 2},
                      'Y': {'C': 9, 'H': 11, 'N': 1, 'O': 3}}
 
 H2Omass = 18.010565
-
+NH3mass = 17.026549
 
 
 formula_form = re.compile('([A-Z][0-9]*)*$')
@@ -256,6 +256,7 @@ def sum_formula(formulas):
 
 #formula_parser = re.compile(r'([A-Z][0-9]{0,3})')
 def parse_chemical_formula(formstring):
+    formstring = formstring.strip()
     assert re.match(r'(([A-Z][a-z]?)([0-9]{0,3}))*$', formstring), '%s is not a valid chemical formula.' % formstring
     formdict = {}
     i = 0
@@ -971,8 +972,9 @@ knownNeutralLosses = {'Phospho':chemicalFormulaMass('H3PO4')}
 def fragment(peptide, mods = [], charges = [1], 
              ions = ['b', 'y'], 
              neutralPhosLoss = False,
-             neutralLossDynamics = {},
+             neutralLossDynamics = None,
              waterLoss = False,
+             ammoniaLoss = False,
              use_monoisotopic = True,
              special_AAs = {}):
     # Currently only records one neutral loss even if there's more than
@@ -984,9 +986,15 @@ def fragment(peptide, mods = [], charges = [1],
     aminoMasses = dict((aa,AminoAcidMasses[aa][massType]) for aa in AminoAcidMasses.keys())
     aminoMasses.update(special_AAs)
     
-    for key, value in neutralLossDynamics.items():
-        if isinstance(key, basestring):
-            neutralLossDynamics[mod_masses[key]] = value
+    if neutralLossDynamics is None:
+        neutralLossDynamics = {}
+    assert not (neutralPhosLoss and neutralLossDynamics)
+    if neutralPhosLoss:
+        neutralLossDynamics[mod_masses['Phospho']] = 97.9769
+    elif neutralLossDynamics:
+        for key, value in neutralLossDynamics.items():
+            if isinstance(key, basestring):
+                neutralLossDynamics[mod_masses[key]] = value
     
     #assert not neutralPhosLoss, "Not currently set up for phos loss!"
     #czLoss = 15.010899035
@@ -1124,19 +1132,29 @@ def fragment(peptide, mods = [], charges = [1],
                 
     
     # Water-loss duplicates of ALL ions!
-    if waterLoss:
+    if waterLoss or ammoniaLoss:
         for fragtype, labelions in chargedFragmentSets.items():
             waterlosses = []
+            ammonialosses = []
             for label, ion in labelions:
-                newlabel = list(label)
-                newlabel.insert(1, '0')
-                newlabel = ''.join(newlabel)
                 chg = label.count('+') if '+' in label else 1
-                mass = (ion * chg) - (chg * protonMass)
-                mass -= H2Omass
-                newion = (mass + (chg * protonMass)) / chg
-                waterlosses.append((newlabel, newion))
+                mass = (ion * chg) - (chg * protonMass)                
+                if waterLoss:
+                    newlabel = list(label)
+                    newlabel.insert(1, '0')
+                    newlabel = ''.join(newlabel)
+                    newmass = mass - H2Omass
+                    newion = (newmass + (chg * protonMass)) / chg
+                    waterlosses.append((newlabel, newion))
+                if ammoniaLoss:
+                    newlabel = list(label)
+                    newlabel.insert(1, '*')
+                    newlabel = ''.join(newlabel)
+                    newmass = mass - NH3mass
+                    newion = (newmass + (chg * protonMass)) / chg
+                    ammonialosses.append((newlabel, newion))
             chargedFragmentSets[fragtype] += waterlosses
+            chargedFragmentSets[fragtype] += ammonialosses
     
     #if 1 not in charges:
         #for iontype in ions:
