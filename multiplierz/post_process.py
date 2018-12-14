@@ -71,7 +71,7 @@ def calculate_FDR(reportfile, outputfile = None, threshold = 0.01,
             row['FDR'] = fdr      
 
             if float(row['Peptide Score']) > highRev:
-                highRev = int(row['Peptide Score'])
+                highRev = float(row['Peptide Score'])
 
             seenSpectra[specDesc] = fdr
             reverseRows.append(row)
@@ -96,13 +96,17 @@ def calculate_FDR(reportfile, outputfile = None, threshold = 0.01,
         passedRows += recovered
 
     if not outputfile: 
-        outputfile = insert_tag(reportfile, 'FDR_filtered')
+        # Output format must support sheets.
+        if reportfile.lower().endswith('xlsx') or reportfile.lower().endswith('xls'):
+            outputfile = insert_tag(reportfile, 'FDR_filtered')
+        else:
+            outputfile = '.'.join(reportfile.split('.')[:-1] + ['FDR_filtered.xlsx'])
 
     percentage = round(threshold * 100)
 
     if includeFailedSheet:
         failedOutput = writer(outputfile, columns = columns,
-                              sheet_name = "Under %s%% FDR" % percentage)
+                              sheet_name = "Failed %s%% FDR" % percentage)
         for row in failedRows:
             failedOutput.write(row)
         failedOutput.close()
@@ -190,11 +194,22 @@ def combine_accessions(reportfile, outputfile = None):
     
     
     
-    return outputfile if outputfile else reportfile
+    return outputfile
 
 
-
-
+def concatenate_reports(reportfiles, outputfile):
+    from multiplierz.mzReport import reader, writer
+    readers = map(reader, reportfiles)
+    allcols = sorted(set.intersection(*map(set, [x.columns for x in readers])),
+                     key = lambda x: readers[0].columns.index(x))
+    if not all(x.columns == allcols for x in readers):
+        print "Warning- concatenation drops some columns!"
+    output = writer(outputfile, columns = allcols)
+    for report in readers:
+        for row in report:
+            output.write(row, ignore_extra = True)
+    output.close()
+    return outputfile
 
 
 def fractionation_plot(fractions, outputfile = None, fig_size = None, **kwargs):
