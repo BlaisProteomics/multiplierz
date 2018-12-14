@@ -1,4 +1,5 @@
 from comtypes.client import CreateObject
+from _ctypes import COMError
 from multiplierz.mzAPI import mzScan, mzFile as mzAPImzFile
 
 
@@ -15,6 +16,11 @@ class mzFile(mzAPImzFile):
         except WindowsError as err:
             print "RawReader.dll not found in registry."
             raise err
+        except COMError:
+            # As far as I know, this should only happen if you're trying to 
+            # run this in Python 3.
+            self.source = CreateObject("{10729396-43ee-49e5-aa07-85f02292ac70}",
+                                       dynamic = True)
         self.source.OpenRawFile(file_name)
         
         self._filters = None
@@ -134,13 +140,3 @@ class mzFile(mzAPImzFile):
     
 
                 
-    
-#if __name__ == '__main__':
-    #import os
-    #import glob
-    #import subprocess
-    #os.chdir(r'C:\Users\Max\Documents\Visual Studio 2017\Projects\ConsoleApp3\ConsoleApp3\bin\Debug')
-    
-    #netDir = sorted(glob.glob('c:/Windows/Microsoft.NET/Framework%s/v[34]*/RegAsm.exe' % '64'))[-1]
-    #dllpath = r'C:\Users\Max\Documents\Visual Studio 2017\Projects\ConsoleApp3\ConsoleApp3\bin\Debug\ConsoleApp3.dll'
-    #ret = subprocess.call([netDir, dllpath, "/tlb", "/codebase"])    
