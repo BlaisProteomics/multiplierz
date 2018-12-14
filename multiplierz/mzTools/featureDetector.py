@@ -196,6 +196,14 @@ def setGlobals(constants):
         global signalToNoiseThreshold
         signalToNoiseThreshold = constants['signalNoiseThreshold']
         
+            
+    if 'featureAbsenceTolerance' in constants:
+        global featureAbsenceTolerance
+        featureAbsenceTolerance = constants['featureAbsenceTolerance']
+    
+    if 'dropoutTimeTolerance' in constants:
+        global dropoutTimeTolerance
+        dropoutTimeTolerance = constants['dropoutTimeTolerance']
     
     
     
