@@ -57,7 +57,7 @@ def convertAccessionsViaUniprot(accessions):
             # The gene field seems to be a list of synonymous names,
             # which should be considered as a unit.
             try:
-                geneNames[acc].append(row[6])
+                geneNames[acc].append(row[5])
             except IndexError as err:
                 print row
                 raise err
