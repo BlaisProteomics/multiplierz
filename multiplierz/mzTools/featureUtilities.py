@@ -1,10 +1,10 @@
 from multiplierz.mzAPI import mzFile
 from multiplierz.mzReport import reader
 from collections import defaultdict
-from multiplierz.internalAlgorithms import ProximityIndexedSequence
+from multiplierz.internalAlgorithms import ProximityIndexedSequence, collectByCriterion
 from multiplierz import vprint
 
-import cPickle as pickle
+import pickle
 import sqlite3
 import os
 import base64
@@ -100,7 +100,7 @@ heavyR = "Label:13C(6)15N(4)"
 def featureToPSM(resultFile, featureData, groupSILAC = False):
     results = reader(resultFile)
     if 'Feature' not in results.columns:
-        raise IOError, "Not a feature-annotated file!"
+        raise IOError("Not a feature-annotated file!")
     
     featureToPSMs = defaultdict(list)
     if groupSILAC:
@@ -138,17 +138,17 @@ def featureToPSM(resultFile, featureData, groupSILAC = False):
     
 
 
-def save_feature_database(features, outputfile, overwrite = False):
+def save_feature_database(features, outputfile, overwrite = None):
     """
     Saves a SQLite-mode feature database. Result file will have the
     extension '.features' .
     """
     
     if os.path.exists(outputfile):
-        if overwrite:
+        if overwrite != True:
             os.remove(outputfile)
         else:
-            raise IOError, "Target file %s already exists!" % outputfile
+            raise IOError("Target file %s already exists!" % outputfile)
     
     conn = sqlite3.connect(outputfile)
     cur = conn.cursor()
@@ -160,13 +160,18 @@ def save_feature_database(features, outputfile, overwrite = False):
     for index, feature in enumerate(features):
         mz = feature.mz
         startscan, endscan = feature.scanrange
-        featureData = base64.b64encode(pickle.dumps(feature))
+        featureData = base64.b64encode(pickle.dumps(feature, protocol = 2))
         addFeature = ('INSERT INTO features VALUES (%s, %s, %s, %s, "%s")' 
-                      % (index, mz, startscan, endscan, featureData))
+                      % (index, mz, startscan, endscan, featureData.decode()))
         cur.execute(addFeature)
     
         if index % 100 == 0:
             conn.commit()
+            
+    #print("TEST MODE")
+    #sidechannel = open(outputfile + "SIDECHANNEL.pickle", 'wb')
+    #pickle.dump(list(enumerate(features)), sidechannel)
+    #sidechannel.close()
     
     vprint("Indexing...")
     createIndex = "CREATE INDEX mzindex ON features(mz, startscan)"
@@ -218,13 +223,14 @@ class FeatureInterface(object):
             self.data = self.connection.cursor()
             self.mode = 'sql'
             
-            self.data.execute("SELECT data FROM features WHERE ind=1")
-            testfeature = str(self.data.fetchone()[0])
-            if '\n' in testfeature:
-                # Old non-base64 encoded feature file!
-                self.decoder = oldMarshal
-            else:
-                self.decoder = newMarshal
+            self.decoder = newMarshal
+            #self.data.execute("SELECT data FROM features WHERE ind=1")
+            #testfeature = str(self.data.fetchone()[0])
+            #if '\n' in testfeature:
+                ## Old non-base64 encoded feature file!
+                #self.decoder = oldMarshal
+            #else:
+                #self.decoder = newMarshal
             
             
         
@@ -238,40 +244,48 @@ class FeatureInterface(object):
         feature = self.decoder(str(self.data.fetchone()[0]))
         return feature
         
+    def __iter__(self):
+        assert self.mode == 'sql'
+        self.data.execute('SELECT ind, data FROM features')
+        sublist = self.data.fetchmany()
+        while sublist:
+            for i_f in sublist:
+                yield i_f[0], self.decoder(str(i_f[1]))
+            sublist = self.data.fetchmany()        
     
     def mz_range(self, start_mz, end_mz):
         assert self.mode == 'sql', 'Requires SQLite mode!'
         
         command = "SELECT ind, data FROM features WHERE mz >= %s AND mz <= %s" % (start_mz, end_mz)
         self.data.execute(command)
-        
-
-        #feature = self.data.fetchone()
-        #while feature:
-            #yield feature[0], pickle.loads(str(feature[1]))
-            #feature = self.data.fetchone()
-        return [(x[0], self.decoder(str(x[1]))) for x in self.data.fetchall()]
-
-        
+ 
+        sublist = self.data.fetchmany()
+        while sublist:
+            for i_f in sublist:
+                yield i_f[0], self.decoder(str(i_f[1]))
+            sublist = self.data.fetchmany()
     
     def scan_range(self, start_scan, end_scan):
-        raise NotImplementedError, "Haven't bothered to work out the query logic yet, sorry."
-        #assert self.mode == 'sql', 'Requires SQLite mode!'
-        
-        #command = "SELECT ind, data FROM features WHERE startscan >= %s OR endscan >= %s" % (start_scan, end_scan)
-        #self.data.execute(command)
-        
-        ##feature = pickle.loads(str(self.data.fetchone()[0]))
-        ##while feature:
-            ##yield feature
-            ##feature = pickle.loads(str(self.data.fetchone()[0]))
-        #feature = self.data.fetchone()
-        #while feature:
-            #yield feature[0], pickle.loads(str(feature[1]))
-            #feature = self.data.fetchone() 
+        # Returns features fully enclosed in the specified scan range.
+        command = "SELECT ind, data FROM features where start_scan >= %s AND end_scan <= %s" % (start_scan, end_scan)
+        sublist = self.data.fetchmany()
+        while sublist:
+            for i_f in sublist:
+                yield i_f[0], self.decoder(str(i_f[1]))
+            sublist = self.data.fetchmany()                
         
     def close(self):
         if self.mode == 'sql':
             self.conection.close()
+    
+
+
+class FeatureInterface_preload(object):
+    def __init__(self, filename):
+        source = FeatureInterface(filename)
+        self.features = source.mz_range(0, 5000)
+        
+        
+    
             
 

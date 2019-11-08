@@ -29,7 +29,7 @@ import sys
 def arghash(method, args):
     """Argh!"""
     foo, bar = args
-    bar = tuple((x, y) for x, y in bar.items())
+    bar = tuple((x, y) for x, y in list(bar.items()))
     return hash((method, foo, bar))
 
 def async_mzFile_internal(datafile, size_cap, input, output):
@@ -86,7 +86,7 @@ def async_mzFile_internal(datafile, size_cap, input, output):
     except Exception as err:
         import traceback
         traceback.print_exc()
-        print '------------------'
+        print('------------------')
         raise err        
             
             
@@ -111,8 +111,8 @@ class async_mzFile(object):
     def proxycall(self, method, *args, **kwargs):
         if not self.source.is_alive():
             err, returnval = self.source.get()
-            print "Data retrieval thread crashed with the following error:\n\n"
-            print returnval
+            print("Data retrieval thread crashed with the following error:\n\n")
+            print(returnval)
             raise err
             
         
@@ -129,8 +129,8 @@ class async_mzFile(object):
     def preorder(self, method, *args, **kwargs):
         if not self.source.is_alive():
             err, returnval = self.source.get()
-            print "Data retrieval thread crashed with the following error:\n\n"
-            print returnval
+            print("Data retrieval thread crashed with the following error:\n\n")
+            print(returnval)
             raise err        
         
         allargs = args, kwargs
@@ -172,11 +172,11 @@ if __name__ == '__main__':
     foo = async_mzFile('example_file.raw')
     start = clock()
     foo.preorder('xic', 0, 999999)
-    print clock() - start
+    print((clock() - start))
     
     sleep(3)
     start = clock()
     bar = foo.xic(0, 999999)
-    print clock() - start
+    print((clock() - start))
     
     foo.close()

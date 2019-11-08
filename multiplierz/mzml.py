@@ -6,7 +6,7 @@ import tempfile, sqlite3
 import struct
 import zlib
 import sqlite3 as sqlite
-import cPickle as pickle
+import pickle
 import multiprocessing
 import base64
 import sys, os
@@ -91,7 +91,7 @@ def makeSpectrumXML(specData):
     elif specData['MS Level'] == 'MS2':
         cvp(specEl, accession='MS:1000580', name = 'MSn spectrum')
     else:
-        raise NotImplementedError, specData['MS Level']
+        raise NotImplementedError(specData['MS Level'])
     
 
     # I'm assuming there's only one scan.
@@ -138,7 +138,7 @@ def makeSpectrumXML(specData):
         elif specData['dissociation mode'] == 'etd':
             cvp(activationEl, accession="MS:1000250", name="electron capture dissociation")
         else:
-            raise NotImplementedError, "Can't encode dissociation mode %s" % specData['dissociation mode']
+            raise NotImplementedError("Can't encode dissociation mode %s" % specData['dissociation mode'])
         
     
     encodedMZs = encodeBinaryFloats(x[0] for x in specData['spectrum'])
@@ -207,9 +207,9 @@ def readSpectrumXML(spectrumEl):
         elif 'intensity array' in arraycvps:
             intspectrum = spectrum
         else:
-            raise Exception, 'Unidentified array type: %s' % arraycvps
+            raise Exception('Unidentified array type: %s' % arraycvps)
 
-    specdata['spectrum'] = zip(mzspectrum, intspectrum)
+    specdata['spectrum'] = list(zip(mzspectrum, intspectrum))
 
 
     return specdata
@@ -221,7 +221,7 @@ def readChromatoXML(chromatoEl):
     if 'total ion current chromatogram' in cvparams:
         span = 'total'
     else:
-        raise NotImplementedError, "Non-total XIC element."
+        raise NotImplementedError("Non-total XIC element.")
 
     for array in list(child(chromatoEl, 'binaryDataArrayList')):
         assert array.tag == ns('binaryDataArray')
@@ -235,10 +235,10 @@ def readChromatoXML(chromatoEl):
         elif 'intensity array' in arraycvps:
             intpts = decodeBinaryFloats(binary.text, doublefloats, compression = decompress)
         else:
-            raise Exception, 'Unidentified array type: %s' % arraycvps
+            raise Exception('Unidentified array type: %s' % arraycvps)
 
     # This may want to be a more inclusive return type.
-    return span, zip(timepts, intpts)
+    return span, list(zip(timepts, intpts))
 
 
             
@@ -281,7 +281,7 @@ def readSpectrumData(data):
             elif '@etd' in filter:
                 specData['dissociation mode'] = 'etd'
             else:
-                raise NotImplementedError, "Can't extract dissociation mode from '%s'." % filter
+                raise NotImplementedError("Can't extract dissociation mode from '%s'." % filter)
         
         specData['spectrum'] = data.scan(scanNum)
         
@@ -355,7 +355,7 @@ def mzmlToSqlite_writer(sqlitefile, inputs):
         elif task == 'stop':
             break
         else:
-            raise NotImplementedError, task
+            raise NotImplementedError(task)
     
         if i > 100:
             connection.commit()

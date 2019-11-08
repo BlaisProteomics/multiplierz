@@ -7,7 +7,7 @@ class mzIdentMLReader(ReportReader):
         self.file_name = file_name
         self.datafile = mzIdentML(file_name)
         self.data = self.datafile.peptideSummary()
-        self.columns = self.data[0].keys()
+        self.columns = list(self.data[0].keys())
         
     
     #def __iter__(self):

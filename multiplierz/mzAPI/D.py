@@ -1,4 +1,11 @@
-from comtypes.client import CreateObject, GetModule
+try:
+    from comtypes.client import CreateObject, GetModule
+except ImportError as err:
+    import platform
+    if 'Windows' not in platform.platform():
+        pass
+    else:
+        raise err
 
 from multiplierz import myHome, vprint
 from multiplierz.mzAPI import mzFile as baseFile
@@ -110,7 +117,7 @@ class mzFile(baseFile):
         
         s = self.source.OpenDataFile(datafile)
         if not s:
-            raise IOError, "Error opening %s" % datafile
+            raise IOError("Error opening %s" % datafile)
         
     def close(self):
         self.source.CloseDataFile()
@@ -129,7 +136,7 @@ class mzFile(baseFile):
     
     def scan_range(self):
         # There's probably a more efficient way of doing this.
-        info = zip(*self.scan_info())[2]
+        info = list(zip(*self.scan_info()))[2]
         return min(info), max(info)
     
     
@@ -195,13 +202,13 @@ class mzFile(baseFile):
         
         if centroid == None:
             mode = desiredModeDict['PeakElseProfile'.lower()]
-        elif isinstance(centroid, basestring):
+        elif isinstance(centroid, str):
             mode = desiredModeDict[centroid.lower()] # Usually 'profile' or 'centroid'.
         else:
             mode = desiredModeDict['centroid' if centroid else 'profile']
         
         scanObj = self.source.GetSpectrum_8(scan, self.noFilter, self.noFilter, mode)
-        return zip(scanObj.XArray, scanObj.YArray)
+        return list(zip(scanObj.XArray, scanObj.YArray))
     
     
     def cscan(self, scan):
@@ -216,7 +223,7 @@ class mzFile(baseFile):
         scanObj = self.source.GetSpectrum_8(scan, self.noFilter, self.noFilter, mode)        
         mzs, ints = scanObj.XArray, scanObj.YArray
         if not mzs:
-            raise IOError, "Profile data for scan %s not available." % scan
+            raise IOError("Profile data for scan %s not available." % scan)
         
         threshold = average(ints)
         peaks = []
@@ -226,7 +233,7 @@ class mzFile(baseFile):
                 peak.append(pt)
             elif peak:
                 #centroid = average(zip(*peak)[0]), average(zip(*peak)[1])
-                centroid = average(zip(*peak)[0], weights = zip(*peak)[1]), max(zip(*peak)[1])
+                centroid = average(list(zip(*peak))[0], weights = list(zip(*peak))[1]), max(list(zip(*peak))[1])
                 peaks.append(centroid)
                 peak = []
                 
@@ -237,7 +244,7 @@ class mzFile(baseFile):
     def scan_info(self, start_time = 0, stop_time = 999999, start_mz = 0, stop_mz = 99999):
         if self.info == None:
             self.info = []
-            for index in xrange(1000000): # Largenum.
+            for index in range(1000000): # Largenum.
                 infoObj = self.source.GetScanRecord(index)
                 rt = infoObj.RetentionTime
                 mz = infoObj.MZOfInterest # I *think* this is MZ when applicable?
@@ -253,7 +260,7 @@ class mzFile(baseFile):
                 self.info.append((rt, mz, index, level,
                                   ionPolarityDict[polarity]))
             if index == 1000000:
-                raise IOError, "File too large for constant!"
+                raise IOError("File too large for constant!")
             
         return self.info
     
@@ -264,7 +271,7 @@ class mzFile(baseFile):
         # A full XIC can be performed with the TIC object that may have been
         # retrieved regardless.
         if self.ticObj and not any([start_time, stop_time, start_mz, stop_mz]):
-            return zip(self.ticObj.XArray, self.ticObj.YArray)
+            return list(zip(self.ticObj.XArray, self.ticObj.YArray))
         
         if stop_time == None:
             stop_time = 999999
@@ -296,7 +303,7 @@ class mzFile(baseFile):
 
         
         xic = self.source.GetChromatogram(chromFilter)[0].QueryInterface(bda.IBDAChromData)
-        return zip(xic.XArray, xic.YArray)
+        return list(zip(xic.XArray, xic.YArray))
     
     
     def uv_trace(self):
@@ -337,7 +344,7 @@ class mzFile(baseFile):
             
         self.source.Deisotope(scanObj, deisoFilter) # Void type, not even a success return value.
         
-        return zip(scanObj.XArray, scanObj.YArray)
+        return list(zip(scanObj.XArray, scanObj.YArray))
         
         
 if __name__ == '__main__':

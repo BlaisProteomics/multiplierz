@@ -23,6 +23,7 @@ from collections import defaultdict
 
 from multiplierz import mzReport
 from multiplierz.mzReport import reader, writer
+from functools import reduce
 
 
 __all__ = ['filterJoin']
@@ -49,7 +50,7 @@ def detect_matches(file_names, fields=[], tol_field=None, tolerance=0.0, save_fi
 
     detect_gen = _detect_matches(file_names, fields, tol_field, tolerance)
 
-    cols = detect_gen.next()
+    cols = next(detect_gen)
     match_out = [cols]
 
     if save_file:
@@ -160,7 +161,7 @@ def _detect_matches(file_names, fields, tol_field, tolerance=0.0):
 
                     rows[t][tol_val].add(name)
 
-                    for k in rows[t].keys():
+                    for k in list(rows[t].keys()):
                         if abs(k - tol_val) <= tolerance:
                             rows[t][tol_val].update(rows[t][k])
                             rows[t][k].add(name)
@@ -202,7 +203,7 @@ def filter_join(file_names, key_source_file, exclude=False,
     #if not filtered_files:
         #return
 
-    cols = filtered_files.next()
+    cols = next(filtered_files)
 
     #Convert csv files to xls and append to manipulations log
     if append:
@@ -323,7 +324,7 @@ def _filter_join(file_names, key_source_file, exclude, save_file_suffix = '_filt
                 yield (f, t_cols,
                        (dict([('Filter Key', '|'.join(str(row[res_dict[c]])
                                                       for c in cols if c in t_set))]
-                             + zip(t_cols,(v for i,v in enumerate(row) if res_cols[i] in t_cols)))
+                             + list(zip(t_cols,(v for i,v in enumerate(row) if res_cols[i] in t_cols))))
                         for row in cur))
 
                 conn.execute('detach database %s' % t)
@@ -425,7 +426,7 @@ def filterJoin(filenames, matchColumns, returnMode, outputKeyFile,
     
     if toleranceColumn:
         toldatadict = {}
-        for signature, sigGroup in datadict.items():
+        for signature, sigGroup in list(datadict.items()):
             subGroups = []
             for psm in sigGroup:
                 match = False
@@ -448,7 +449,7 @@ def filterJoin(filenames, matchColumns, returnMode, outputKeyFile,
     if outputKeyFile:
         keyfile = writer(outputKeyFile,
                          columns = ['PSM Key'] + filenames)
-        for signature, psmGroup in datadict.items():
+        for signature, psmGroup in list(datadict.items()):
             line = {}
             line['PSM Key'] = '|'.join([str(x) for x in signature])
             line.update([(x, len([y for y in psmGroup if y['Source'] == x])) for x in filenames])
@@ -462,7 +463,7 @@ def filterJoin(filenames, matchColumns, returnMode, outputKeyFile,
         #outputFileName = outputFileBase + '_matchedPSMs' + outputFileType
         #outputfile = writer(outputFileName, columns = ['Source'] + columnLists[0])
         
-        for psmGroup in datadict.values():
+        for psmGroup in list(datadict.values()):
             if len(psmGroup) > 1:
                 exemplar = psmGroup[0]
                 sourceFiles = '; '.join(set([x['Source'] for x in psmGroup]))
@@ -475,7 +476,7 @@ def filterJoin(filenames, matchColumns, returnMode, outputKeyFile,
         #outputFileName = outputFileBase + '_uniquePSMs' + outputFileType
         #outputfile = writer(outputFileName, columns = ['Source'] + columnLists[0])
         
-        for psmGroup in datadict.values():
+        for psmGroup in list(datadict.values()):
             if len(psmGroup) == 1:
                 #outputfile.write(psmGroup[0])
                 outputpsms.append(psmGroup[0])

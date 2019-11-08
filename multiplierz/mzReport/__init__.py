@@ -205,7 +205,7 @@ class ReportEntry(dict):
         if isinstance(values, dict):
             self.update(values)
         else:
-            self.update(zip(columns, values))
+            self.update(list(zip(columns, values)))
 
 
 # A report is a fairly arbitrary set of data--any way of representing a list of
@@ -226,7 +226,7 @@ class ReportReader(object):
         # other methods can access it
 
     def __iter__(self):
-        raise NotImplementedError, "Subclasses must override this method"
+        raise NotImplementedError("Subclasses must override this method")
 
     def __enter__(self):
         # returns the open reader, no other set up necessary
@@ -238,7 +238,7 @@ class ReportReader(object):
 
     def close(self):
         '''For closing the report before all rows have been read'''
-        raise NotImplementedError, "Subclasses must override this method"
+        raise NotImplementedError("Subclasses must override this method")
 
 
 class ReportWriter(object):
@@ -268,18 +268,18 @@ class ReportWriter(object):
         the column name, type is one of 'image', 'prot coverage', 'formula'.
         Not all types will be supported in all formats (csv won't support any)
         """
-        raise NotImplementedError, "Subclasses must override this method"
+        raise NotImplementedError("Subclasses must override this method")
 
     def add_image(self, column, image):
         """Adds an image associated with the specified column to the last row
         of the report. Not supported by CSV.
 
         """
-        raise NotImplementedError, "Subclasses must override this method"
+        raise NotImplementedError("Subclasses must override this method")
 
     def close(self):
         """Closes the file."""
-        raise NotImplementedError, "Subclasses must override this method"
+        raise NotImplementedError("Subclasses must override this method")
 
 
 # imports are down here to prevent circular import problem
@@ -299,19 +299,19 @@ def reader(report_file, **kwargs):
 
     report_file = os.path.abspath(report_file)
         
-    if not os.path.exists(report_file): raise IOError, "%s not found." % report_file
+    if not os.path.exists(report_file): raise IOError("%s not found." % report_file)
 
     if file_type == 'xls' or file_type == 'xlsx':
-        import mzSpreadsheet
+        import multiplierz.mzReport.mzSpreadsheet as mzSpreadsheet
         return mzSpreadsheet.XLSheetReader(report_file, **kwargs)
-    elif file_type == 'csv':
-        import mzCSV
+    elif file_type == 'csv' or file_type == 'gz':
+        import multiplierz.mzReport.mzCSV as mzCSV
         return mzCSV.CSVReportReader(report_file, **kwargs)
     elif file_type == 'mzd':
-        import mzDB
+        import multiplierz.mzReport.mzDB as mzDB
         return mzDB.SQLiteReader(report_file, **kwargs)
     elif file_type == 'mzid':
-        import mzIdentML
+        import multiplierz.mzReport.mzIdentML as mzIdentML
         return mzIdentML.mzIdentMLReader(report_file, **kwargs)
     else:
         raise IOError('File extension %s is not supported.' % file_type)
@@ -333,27 +333,27 @@ def writer(report_file, columns=None, default_columns=False, delayed_write = Fal
 
     file_type = os.path.splitext(report_file)[1][1:].lower()
 
-    if file_type not in ('xls', 'xlsx', 'csv', 'mzd'):
-        raise NotImplementedError, "Multiplierz cannot write file of type %s" % file_type
+    if file_type not in ('xls', 'xlsx', 'csv', 'mzd', 'gz'):
+        raise NotImplementedError("Multiplierz cannot write file of type %s" % file_type)
         
         
     if delayed_write == True:
         return delayedWriter(report_file, columns, default_columns, **kwargs)
 
     if file_type == 'xls' or file_type == 'xlsx':
-        import mzSpreadsheet
+        import multiplierz.mzReport.mzSpreadsheet as mzSpreadsheet
         return mzSpreadsheet.XLSheetWriter(report_file,
                                            columns=columns,
                                            default_columns=default_columns,
                                            **kwargs)
-    elif file_type == 'csv':
-        import mzCSV
+    elif file_type == 'csv' or file_type == 'gz':
+        import  multiplierz.mzReport.mzCSV as mzCSV
         return mzCSV.CSVReportWriter(report_file,
                                      columns=columns,
                                      default_columns=default_columns,
                                      **kwargs)
     elif file_type == 'mzd':
-        import mzDB
+        import  multiplierz.mzReport.mzDB as mzDB
         return mzDB.SQLiteWriter(report_file,
                                  columns=columns,
                                  default_columns=default_columns,
@@ -380,7 +380,7 @@ class delayedWriter(ReportWriter):
             for col in self.columns:
                 counts[col] += 1
                 
-            raise ValueError, "Column titles appear more than once: %s" % [k for (k, v) in counts.items() if v > 1]
+            raise ValueError("Column titles appear more than once: %s" % [k for (k, v) in list(counts.items()) if v > 1])
     
         self.data = []
         

@@ -2,10 +2,11 @@ from math import floor, ceil, sqrt
 from collections import defaultdict, deque
 import gzip
 
-import sys
+import os, sys
 
 import bisect
 from itertools import chain
+from functools import reduce
 
 try:
     from numpy import average
@@ -21,6 +22,36 @@ except ImportError:
             return sum(xs) / float(len(xs))
 
 
+
+  
+
+def iselect(i, sequence):
+    return (x[i] for x in sequence)
+def select(i, sequence):
+    return [x[i] for x in sequence]
+
+
+
+def counts(sequence):
+    return [(x, sequence.count(x)) for x in sorted(set(sequence))]
+
+def matching_file(filename, directory = None, tag = None):
+    if directory is None:
+        directory = os.path.dirname(filename)
+    
+    filename = filename.lower()
+    files = [x.lower() for x in os.listdir(directory)]
+    stem = os.path.basename(filename).split('.')[0]
+    match_files = [x for x in files if os.path.basename(x).split('.')[0] == stem
+                   and x != filename]
+    if tag:
+        match_files = [x for x in match_files if x.endswith(tag.lower())]
+    if len(match_files) > 1:
+        raise IOError("Ambigous file matches. %s" % match_files)
+    elif not match_files:
+        raise IOError("No file match for %s" % filename)
+    else:
+        return os.path.join(directory, match_files[0])
 
 def average_scan(scans):
     # Probably move to spectral_processing.py when I'm more sure about it.
@@ -76,7 +107,7 @@ def aggregate_points(pointlist, distance_function = None, MAX_WIDTH = 0.025):
         elif distance(group[-1], group[0]) < MAX_WIDTH:
             return [group]
         else:
-            splitpt = max(xrange(len(group)-1),
+            splitpt = max(list(range(len(group)-1)),
                           key = lambda x: distance(group[x+1], group[x])) + 1
             assert group[splitpt:] and group[:splitpt]
             return chain(hard_case(group[splitpt:]), hard_case(group[:splitpt]))
@@ -197,12 +228,12 @@ def assign_multiprocess_ext(function, data, pool_args = {}, **task_args):
 
     if isinstance(data, list):
         data = (x for x in data)
-    nexttask = data.next()
+    nexttask = next(data)
     while True:
         try:
             input_pipe.put_nowait(nexttask)
             control_pipe.put_nowait(True)
-            nexttask = data.next()
+            nexttask = next(data)
         except Full:
             pass
         except StopIteration:
@@ -258,20 +289,21 @@ def assign_multiprocess(function, data, pool_args = {}, **task_args):
         function_list = function
         def composed_function(*data_item):
             for func in function_list:
-                if isinstance(data_item, basestring):
+                if isinstance(data_item, str):
                     data_item = (data_item,)
                 try:
                     data_item = func(*data_item)
                 except Exception as err:
-                    print '\n\n\n################'
+                    print('\n\n\n################')
                     traceback.format_exc()
-                    print '################\n\n\n'
-                    print "In: " + str(func) + '\n'
+                    print('################\n\n\n')
+                    print(("In: " + str(func) + '\n'))
                     raise err
             return data_item
         function = composed_function
     else:
         import multiprocessing
+    from multiprocessing import TimeoutError    
     
     process_count = pool_args.get('processes', multiprocessing.cpu_count()-1)
     
@@ -296,8 +328,8 @@ def assign_multiprocess(function, data, pool_args = {}, **task_args):
             if isinstance(tasks, list):
                 newtask = tasks.pop()
             else:
-                newtask = tasks.next()
-            if isinstance(newtask, basestring) or len(newtask) == 1:
+                newtask = next(tasks)
+            if isinstance(newtask, str) or len(newtask) == 1:
                 newtask = (newtask,)
             jobs.append(workforce.apply_async(function, args = newtask,
                                               kwds = task_args))
@@ -307,8 +339,8 @@ def assign_multiprocess(function, data, pool_args = {}, **task_args):
             try:
                 yield done_thing.get(10) 
                 returncount += 1
-            except multiprocessing.TimeoutError:
-                print "Failure to return in 10 seconds!"
+            except TimeoutError:
+                print("Failure to return in 10 seconds!")
                 jobs.append(done_thing)
         sleep(1)
     
@@ -354,8 +386,18 @@ def pts_to_bins(pts, bincount):
             
     
     return sorted(bins.items())
-        
-            
+
+import numpy as np
+def linear_bin(pts, start, stop, bincount):
+    binpts = (x for x in np.linspace(start, stop, bincount+1))
+    pts.sort()
+    bins = np.array(shape = (bincount, 1))
+    binpt = next(binpts)
+    for x, y in pts:
+        while binpt < x:
+            binpt = next(binpts)
+        bins[index] += y
+    return bins
             
             
 def psm_assignment(psm):
@@ -426,7 +468,7 @@ def unzip(thing): return [list(t) for t in zip(*thing)]
 def typeInDir(directory, ext, recursive = False):
     import os
     if not os.path.exists(directory):
-        raise IOError, '%s not found.' % directory
+        raise IOError('%s not found.' % directory)
     if not recursive:
         return [os.path.join(directory, x) for x in
                 os.listdir(directory) if x.lower().endswith(ext.lower())
@@ -444,7 +486,7 @@ def typeInDir(directory, ext, recursive = False):
 
 
 def retryTimes(function, times, exceptions):
-    for _ in xrange(times-1):
+    for _ in range(times-1):
         try:
             result = function()
             return result
@@ -490,8 +532,8 @@ def parseClassicSpectrumDesc(desc):
     else:
         plex = None
 
-    uncorrected = numbers[-1*(plex+3):-3]
-    corrected = numbers[:plex]
+    uncorrected = numbers[plex+2:2*plex+2]
+    corrected = numbers[1:plex+1]
 
     datafile = words[0] # Usually.
     scanNum = words[1] # Again, usually.
@@ -518,7 +560,7 @@ class NaiveProximitySequence(object):
         del self.sequence[self.sequence.index([x for x in self.sequence if x[0] == index][0])]
         
     def asList(self):
-        return zip(*self.sequence)[1]
+        return list(zip(*self.sequence))[1]
     
     
     
@@ -535,7 +577,7 @@ def collectByCriterion(data, criterion, splitby = None):
     output = defaultdict(list)
     for datum in data:
         key = criterion(datum)
-        if isinstance(key, basestring):
+        if isinstance(key, str):
             key = key.strip()
         if splitby:
             keys = key.split(splitby)
@@ -554,14 +596,14 @@ def centroid(scan):
     Centroids profile-mode data given in [(M/Z, intensity)] format.
     """
     
-    threshold = average(zip(*scan)[1])
+    threshold = average(list(zip(*scan))[1])
     peaks = []
     peak = []
     for pt in scan:
         if pt[1] > threshold:
             peak.append(pt)
         elif peak:
-            centroid = average(zip(*peak)[0], weights = zip(*peak)[1]), max(zip(*peak)[1])
+            centroid = average(list(zip(*peak))[0], weights = list(zip(*peak))[1]), max(list(zip(*peak))[1])
             peaks.append(centroid)
             peak = []
     return peaks
@@ -583,11 +625,7 @@ isotopicRatios = {(0, 1) : (0.5, 16.2),
                   (10, 11) : (3.6, 15.0)
                   }
                   
-#from collections import defaultdict
-#isotopicRatios = defaultdict(lambda: (0, 100))
-    
-    
-    # Previously scan_features_opt
+# THIS COPY SHOULD BE REMOVED is redundant with copy in spectral_process.py.
 def peak_pick(scan, tolerance = 0.005, max_charge = 8, min_peaks = 3, correction = None,
               cleanup = False, recover_peaks = True,
               enforce_isotopic_ratios = True):
@@ -603,7 +641,7 @@ def peak_pick(scan, tolerance = 0.005, max_charge = 8, min_peaks = 3, correction
 
     if len(scan) > 10000:
         if all([(scan[i+1][0] - scan[i][0]) < 0.3 for i in range(0, 100)]):
-            raise NotImplementedError, "Called scan_features on a profile-mode spectrum."
+            raise NotImplementedError("Called scan_features on a profile-mode spectrum.")
 
     if enforce_isotopic_ratios:
         global isotopicRatios
@@ -631,7 +669,7 @@ def peak_pick(scan, tolerance = 0.005, max_charge = 8, min_peaks = 3, correction
         # the expected ratio with the previous intensity in the sequence, it
         # is added to that sequence and the algorithm proceeds to the next
         # point.
-        for chg, chargeSet in activeSets.items():
+        for chg, chargeSet in list(activeSets.items()):
             # Chargeset is ordered by MZ, by construction, so only the first
             # (within-range) expected-point has to be checked.
             
@@ -648,7 +686,11 @@ def peak_pick(scan, tolerance = 0.005, max_charge = 8, min_peaks = 3, correction
                                 possibleNexts = [(z, oldPt[0] + cF) for z, cF in chargeFractions if oldPt[0] + cF > pmz]
                                 if possibleNexts:
                                     activePts[oldPt] = possibleNexts
-
+                                else:
+                                    unassigned.append(oldPt)
+                        else:
+                            unassigned += finishedSet['envelope']             
+                            
             if chargeSet and chargeSet[0]['next'] - pmz < tolerance: # Too-low has already been eliminated?
                 iso = chargeSet[0]
                 isoLen = len(iso['envelope'])
@@ -677,7 +719,7 @@ def peak_pick(scan, tolerance = 0.005, max_charge = 8, min_peaks = 3, correction
         # since their charge is indeterminate, so there's multiple possible-next-MZs.
         # If a point matches to an active point, they're put together in a new 
         # isotopic sequence.
-        for actPt in sorted(activePts.keys(), key = lambda x: x[1], reverse = True):
+        for actPt in sorted(list(activePts.keys()), key = lambda x: x[1], reverse = True):
             if actPt[0] + 1 + tolerance < pmz:
                 del activePts[actPt]
                 unassigned.append(actPt)
@@ -709,14 +751,14 @@ def peak_pick(scan, tolerance = 0.005, max_charge = 8, min_peaks = 3, correction
     
     
     newCorrection = []
-    for charge, things in activeSets.items():
+    for charge, things in list(activeSets.items()):
         for thing in things:
             if len(thing['envelope']) >= min_peaks:
                 envelopes[charge].append(thing['envelope'])
             else:
                 unassigned += thing['envelope']            
                 
-    unassigned += activePts.keys()
+    unassigned += list(activePts.keys())
     
 
 
@@ -725,7 +767,7 @@ def peak_pick(scan, tolerance = 0.005, max_charge = 8, min_peaks = 3, correction
     if cleanup:
         unProx = ProximityIndexedSequenceAgain(unassigned, indexer = lambda x: x[0],
                                                dynamic = False)        
-        for charge, chgEnvelopes in envelopes.items():
+        for charge, chgEnvelopes in list(envelopes.items()):
             increment = 1.0/charge
             for envelope in chgEnvelopes:
                 first = min(envelope)
@@ -767,7 +809,7 @@ def peak_pick_PPM(scan, tolerance = 10, max_charge = 8, min_peaks = 3, correctio
 
     if len(scan) > 10000:
         if all([(scan[i+1][0] - scan[i][0]) < 0.3 for i in range(0, 100)]):
-            raise NotImplementedError, "Called scan_features on a profile-mode spectrum."
+            raise NotImplementedError("Called scan_features on a profile-mode spectrum.")
 
     if enforce_isotopic_ratios:
         global isotopicRatios
@@ -775,7 +817,12 @@ def peak_pick_PPM(scan, tolerance = 10, max_charge = 8, min_peaks = 3, correctio
         isotopicRatios = defaultdict(lambda: (-1000000, 1000000))
     lowC13Rat, highC13Rat = isotopicRatios[0, 1]
     
-    chargeFractions = [(x, 1.0/x) for x in range(1, max_charge+1)]
+    
+    if isinstance(max_charge, list):
+        chargeFractions = [(x, 1.0/x) for x in max_charge]
+        max_charge = max(max_charge)
+    else:
+        chargeFractions = [(x, 1.0/x) for x in range(1, max_charge+1)]
     chargeFracDict = dict(chargeFractions)
     scan.sort()
     
@@ -795,7 +842,7 @@ def peak_pick_PPM(scan, tolerance = 10, max_charge = 8, min_peaks = 3, correctio
         # the expected ratio with the previous intensity in the sequence, it
         # is added to that sequence and the algorithm proceeds to the next
         # point.
-        for chg, chargeSet in activeSets.items():
+        for chg, chargeSet in list(activeSets.items()):
             # Chargeset is ordered by MZ, by construction, so only the first
             # (within-range) expected-point has to be checked.
             
@@ -810,10 +857,30 @@ def peak_pick_PPM(scan, tolerance = 10, max_charge = 8, min_peaks = 3, correctio
                         #unassigned += finishedSet['envelope']
                         # Give these peaks a second chance.
                         if chg < max_charge and recover_peaks:
-                            for oldPt in finishedSet['envelope']:
-                                possibleNexts = [(z, oldPt[0] + cF) for z, cF in chargeFractions if oldPt[0] + cF > pmz]
+                            for oldPt in reversed(finishedSet['envelope']): # Reverse so as to not simply re-create the old envelope.
+                                possibleNexts = [(z, oldPt[0] + cF) for z, cF in chargeFractions]# if oldPt[0] + cF > pmz]
                                 if possibleNexts:
-                                    activePts[oldPt] = possibleNexts
+                                    #re_attached = False
+                                    #for actPt in sorted(activePts.keys(), key = lambda x: x[1], reverse = True):
+                                        #for z, pn_mz in possibleNexts:
+                                            #if (inPPM(tolerance, actPt[0], pn_mz) and 
+                                                #lowC13Rat <= (oldPt[1] / actPt[1]) <= highC13Rat):
+                                                
+                                                #nextMZ = pmz + chargeFracDict[z]
+                                                #newActiveSet = {'envelope':[oldPt, actPt],
+                                                                #'charge':z,
+                                                                #'next':nextMZ,
+                                                                #'prevInt':actPt[1]}
+                                                #activeSets[z].append(newActiveSet)  
+                                                #del activePts[actPt]
+                                                #re_attached = True                                                
+                                                #break
+                                    #if not re_attached:    
+                                        activePts[oldPt] = possibleNexts
+                                else:
+                                    unassigned.append(oldPt)
+                        else:
+                            unassigned += finishedSet['envelope']                    
 
             #if chargeSet and chargeSet[0]['next'] - pmz < tolerance: # Too-low has already been eliminated?
             if chargeSet and inPPM(tolerance, chargeSet[0]['next'], pmz):
@@ -844,7 +911,7 @@ def peak_pick_PPM(scan, tolerance = 10, max_charge = 8, min_peaks = 3, correctio
         # since their charge is indeterminate, so there's multiple possible-next-MZs.
         # If a point matches to an active point, they're put together in a new 
         # isotopic sequence.
-        for actPt in sorted(activePts.keys(), key = lambda x: x[1], reverse = True):
+        for actPt in sorted(list(activePts.keys()), key = lambda x: x[1], reverse = True):
             #if actPt[0] + 1 + tolerance < pmz:
             if actPt[0] + 1 < pmz and not inPPM(tolerance, actPt[0] + 1, pmz):
                 del activePts[actPt]
@@ -878,14 +945,14 @@ def peak_pick_PPM(scan, tolerance = 10, max_charge = 8, min_peaks = 3, correctio
     
     
     newCorrection = []
-    for charge, things in activeSets.items():
+    for charge, things in list(activeSets.items()):
         for thing in things:
             if len(thing['envelope']) >= min_peaks:
                 envelopes[charge].append(thing['envelope'])
             else:
                 unassigned += thing['envelope']            
                 
-    unassigned += activePts.keys()
+    unassigned += list(activePts.keys())
     
 
 
@@ -969,17 +1036,17 @@ def deisochart(envelopes, unassigned):
     seed(1)
     
     def lines(thing, charge = None, **etc):
-        pyt.vlines(zip(*thing)[0], [0]*len(thing), zip(*thing)[1], **etc)
+        pyt.vlines(list(zip(*thing))[0], [0]*len(thing), list(zip(*thing))[1], **etc)
         if charge:
             for pt in thing:
                 pyt.text(pt[0], pt[1], str(charge))
     
     lines(unassigned, color = 'b')
-    length = len(sum(envelopes.values(), []))
+    length = len(sum(list(envelopes.values()), []))
     colors = pyt.cm.Set1([x/float(length) for x in range(0, length)])
     shuffle(colors)
     i = 0
-    for chg, chgEnvs in envelopes.items():
+    for chg, chgEnvs in list(envelopes.items()):
         for env in chgEnvs:
             label = "%s(%s)" % (i, chg)
             lines(env, charge = label, color = colors[i], linewidth = 3)
@@ -996,18 +1063,18 @@ def deisocompare(envelopes1, unassigned1, envelopes2, unassigned2):
     seed(1)
     
     def lines(thing, charge = None, upness = 1, **etc):
-        pyt.vlines(zip(*thing)[0], [0]*len(thing), 
+        pyt.vlines(list(zip(*thing))[0], [0]*len(thing), 
                    [x*upness for x in zip(*thing)[1]], **etc)
         if charge:
             for pt in thing:
                 pyt.text(pt[0], upness * pt[1], str(charge))
     
     lines(unassigned1, color = 'b')
-    length = len(sum(envelopes1.values(), []))
+    length = len(sum(list(envelopes1.values()), []))
     colors = pyt.cm.Set1([x/float(length) for x in range(0, length)])
     shuffle(colors)
     i = 0
-    for chg, chgEnvs in envelopes1.items():
+    for chg, chgEnvs in list(envelopes1.items()):
         for env in chgEnvs:
             label = "%s(%s)" % (i, chg)
             lines(env, charge = label, color = colors[i], linewidth = 3)
@@ -1015,11 +1082,11 @@ def deisocompare(envelopes1, unassigned1, envelopes2, unassigned2):
             
             
     lines(unassigned2, upness = -1, color = 'b')
-    length = len(sum(envelopes2.values(), []))
+    length = len(sum(list(envelopes2.values()), []))
     colors = pyt.cm.Set1([x/float(length) for x in range(0, length)])
     shuffle(colors)
     i = 0
-    for chg, chgEnvs in envelopes2.items():
+    for chg, chgEnvs in list(envelopes2.items()):
         for env in chgEnvs:
             label = "%s(%s)" % (i, chg)
             lines(env, charge = label, upness = -1, color = colors[i], linewidth = 3)

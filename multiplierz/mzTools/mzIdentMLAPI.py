@@ -35,8 +35,8 @@ def transplantSpectraData(mzidFile, newTargets):
             newfilepath = targetLookup[oldfilename]
             fileElement.set("location", os.path.normpath(newfilepath))
         except KeyError:
-            print targetLookup
-            print "No match for {0}".format(oldfilename)
+            print(targetLookup)
+            print(("No match for {0}".format(oldfilename)))
 
     mzid.write(mzidFile)
 
@@ -48,7 +48,7 @@ def parseSpectrumTitle(spectrumTitle):
         # Then this is a .RAW file title.
         return dotsplit[0] + ".raw", int(dotsplit[1])
     else:
-        raise NotImplementedError, "Unrecognized spectrum title type!"
+        raise NotImplementedError("Unrecognized spectrum title type!")
 
 def renderModificationString(modList):
     modStrs = []
@@ -75,9 +75,9 @@ class mzIdentML(object):
 
         assert "mzIdentML" in self.root.tag, "%s does not appear to be a valid mzIdentML file."
         if self.root.get("version") != "1.1.0":
-            print ("Multiplierz mzIdentML reader was written against the specification "
+            print(("Multiplierz mzIdentML reader was written against the specification "
                    "for mzIdentML version 1.1.0; this file is version %s, so there may "
-                   "be discrepancies in the results." % self.root.get("version"))
+                   "be discrepancies in the results." % self.root.get("version")))
 
         self.pfx = self.root.tag[:-9] # Take out "mzIdentML"        
 
@@ -344,7 +344,7 @@ class mzIdentML(object):
         """
 
         spectraData = []
-        for spectrumResult in self.spectrumLookup.values():
+        for spectrumResult in list(self.spectrumLookup.values()):
             items = spectrumResult.findall(self.pfx + "SpectrumIdentificationItem")
             topRank = [s for s in items if int(s.get("rank")) == 1]
             for spectrumItem in topRank:
@@ -363,7 +363,7 @@ class mzIdentML(object):
         """
 
         if not reportAll:
-            assert self.giveCVs(self.proteinLookup.values()[0])["Mascot:score"], \
+            assert self.giveCVs(list(self.proteinLookup.values())[0])["Mascot:score"], \
                    "Protein ranking currently only supported via mascot scoring."
 
         proteinData = []
@@ -464,7 +464,7 @@ class mzIdentML(object):
                 try:
                     #fragmentation = [x for x in spectrumItem
                                         #if x.tag == (self.pfx + "Fragmentation")][0]
-                    fragmentation = spectrumItem.getiterator(self.pfx + 'Fragmentation').next()
+                    fragmentation = next(spectrumItem.getiterator(self.pfx + 'Fragmentation'))
                 except StopIteration:
                     fragmentation = xml.SubElement(spectrumItem, self.pfx + "Fragmentation")
                     #fragmentation = [x for x in spectrumItem
@@ -498,7 +498,7 @@ class mzIdentML(object):
             outputFile = self.filename
 
 
-        softwareUsed = self.root.getiterator(self.pfx + "AnalysisSoftwareList").next()
+        softwareUsed = next(self.root.getiterator(self.pfx + "AnalysisSoftwareList"))
         mzDesktopEl = xml.SubElement(softwareUsed, self.pfx + "AnalysisSoftware")
         mzDesktopEl.set("id", "DFCI Multiplierz v1.1.0")
         mzDesktopEl.set("name", "Multiplierz")
@@ -524,7 +524,7 @@ class mzIdentML(object):
 
     def getAnnotation(self, spectrumItemId):
         spectrum = self.pepIdLookup[spectrumItemId]
-        fragmentation = spectrum.getiterator(self.pfx + "Fragmentation").next()
+        fragmentation = next(spectrum.getiterator(self.pfx + "Fragmentation"))
 
         annotationArray = []
         for iontype in fragmentation:
@@ -547,7 +547,7 @@ class mzIdentML(object):
 
             mzArray = [float(x) for x in mzArray]
             intArray = [float(x) for x in intArray]
-            annotationArray = zip(mzArray, intArray)
+            annotationArray = list(zip(mzArray, intArray))
             break
 
         return annotationArray

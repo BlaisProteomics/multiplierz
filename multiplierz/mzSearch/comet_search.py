@@ -76,7 +76,7 @@ fixedModTypesForward = {'A': 'add_A_alanine',
                         'X': 'add_X_user_amino_acid',
                         'Y': 'add_Y_tyrosine',
                         'Z': 'add_Z_user_amino_acid'}
-fixedModTypesBackward = dict([(x,y) for y, x in fixedModTypesForward.items()])
+fixedModTypesBackward = dict([(x,y) for y, x in list(fixedModTypesForward.items())])
 
 
 # Does not include varmods args.
@@ -256,7 +256,7 @@ def perform_comet_search(ms2file, database, fixed_mods = None, var_mods = None):
     except KeyError:
         performSearch, saveParameters = True, False 
     if not (performSearch or saveParameters):
-        print "Neither 'Perform Search' nor 'Save Parameter File' selected.  Aborting."
+        print("Neither 'Perform Search' nor 'Save Parameter File' selected.  Aborting.")
         return
     
     searchObj = CometSearch()
@@ -333,17 +333,17 @@ def mgf_to_ms2(mgfFile, outputfile = None):
                     extractorVersion = __version__,
                     extractorOptions = "None")
     
-    sampleTitle = mgf.values()[0]['title']
+    sampleTitle = list(mgf.values())[0]['title']
     if 'MultiplierzMGF' in sampleTitle:
         titleMode = 'standard'
     elif sampleTitle.count('.') > 2 and sampleTitle.split('.')[1] == sampleTitle.split('.')[2] and '|' in sampleTitle:
         titleMode = 'classic' # From that old, barbaric format.
     else:
         titleMode = 'mysterious!'
-        print "WARNING: Spectrum title format not recognized; original spectrum numbering will be lost!"
+        print("WARNING: Spectrum title format not recognized; original spectrum numbering will be lost!")
         scanNum = 0
         
-    for entry in mgf.values():
+    for entry in list(mgf.values()):
         if titleMode == 'standard':
             info = standard_title_parse(entry['title'])
             scanNum = info['scan']
@@ -400,12 +400,12 @@ def format_report(reportfile, outputfile = None, mgffile = None, parameters = No
     rows = []
     report = open(reportfile, 'r')
     
-    headeritems = report.next().split('\t')
+    headeritems = next(report).split('\t')
     header = {'Program':headeritems[0],
               'Data':headeritems[1],
               'Search Run Time':headeritems[2],
               'Database':headeritems[3].strip()}
-    columnline = report.next()
+    columnline = next(report)
     
     # Fix for presumed bug; omit if this column title is changed in later Comet versions.
     columnline = columnline.replace('peptide\tmodifications', 'peptide_modifications')
@@ -422,7 +422,7 @@ def format_report(reportfile, outputfile = None, mgffile = None, parameters = No
     columns = [toStandardPSMConversions.get(x, x) for x in columnline.strip().split('\t')]
     for line in report:
         values = [tryNum(x.strip()) for x in line.split('\t')]
-        row = dict(zip(columns, values))
+        row = dict(list(zip(columns, values)))
         row = convertVarmods(row)
         row['Spectrum Description'] = queryToDesc.get(row['Query'], 'Unknown')
         rows.append(row)
@@ -498,7 +498,7 @@ class CometSearch(dict):
     
     def __init__(self, file_name = None, save_parameter_file = False):
         if not (cometPath and os.path.exists(cometPath)):
-            raise RuntimeError, ("Comet executable not found at %s; update the "
+            raise RuntimeError("Comet executable not found at %s; update the "
                                  "multiplierz settings file to indicate your Comet "
                                  "installation." % cometPath)
         
@@ -525,7 +525,7 @@ class CometSearch(dict):
                         #self.enzymes.append(line)                  
                             while True:
                                 try:
-                                    line = parameters.next()
+                                    line = next(parameters)
                                     num, name, active, specificity, p = line.split()
                                 except (IOError, ValueError, StopIteration):
                                     break
@@ -565,7 +565,7 @@ class CometSearch(dict):
                         
         else:
             #self.update(defaultParameters)
-            for field, value in defaultParameters.items():
+            for field, value in list(defaultParameters.items()):
                 self[field] = value
                 self.fields.append(field)
             self.enzymes = defaultEnzymes
@@ -601,7 +601,7 @@ class CometSearch(dict):
                                                                               mod['required']))
                 
             parfile.write('[COMET_ENZYME_INFO]\n')
-            for num, enz in self.enzymes.items():
+            for num, enz in list(self.enzymes.items()):
                 parfile.write('%s.\t%s\t%s\t%s\t%s\n' % (num, enz['name'], enz['active'],
                                                          enz['specificity'], enz['p']))
             
@@ -617,10 +617,10 @@ class CometSearch(dict):
         if ext.lower() in ['raw', 'wiff', 'd', 'mzml']:
             from multiplierz.mgf import extract
             if verbose:
-                print "Extracting to MGF..."
+                print("Extracting to MGF...")
             data_file = extract(data_file)
             if verbose:
-                print "Extracted %s" % datafile
+                print(("Extracted %s" % datafile))
         
         #if not data_file.lower().endswith('ms2'):
             #ms2_file = mgf_to_ms2(data_file)
@@ -639,7 +639,7 @@ class CometSearch(dict):
             
             print('Initiating Comet search...')
             result = call([cometPath, '-P' + parfile, data_file])
-            print('Comet search completed with return value %s' % result)    
+            print(('Comet search completed with return value %s' % result))    
             assert os.path.exists(expectedResultFile), "Comet failed to produce expected result file."
             
             if outputfile.split('.')[-1].lower() in ['xlsx', 'xls', 'mzd']:

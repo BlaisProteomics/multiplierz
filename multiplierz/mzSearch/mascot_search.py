@@ -1,4 +1,4 @@
-from mascot import interface, report
+from multiplierz.mzSearch.mascot import interface
 from multiplierz.settings import settings
 from multiplierz import myData
 from datetime import datetime
@@ -20,21 +20,29 @@ def bestType(value):
         return str(value)
 
 class MascotSearch(object):
-    def __init__(self, parameters):
+    def __init__(self, parameters, username = None, password = None):
         self.fields = []
         self.values = {}
-        with open(parameters, 'r') as par:
-            for line in par:
-                if '=' in line:
-                    words = [x.strip() for x in line.split('=')]
-                    if len(words) != 2:
-                        print "Warning- ignoring parse error on line: %s" % line
-                    else:
-                        if words[0] in self.values:
-                            raise IOError, ("Duplicated field: %s" % words[0])
-                        self.fields.append(words[0])
-                        self.values[words[0]] = bestType(words[1])
+        #with open(parameters, 'r') as par:
+        if isinstance(parameters, str):
+            par = open(parameters, 'r')
+        else:
+            # Ought to be a file pointer or list of strings.
+            par = parameters
+            
+        for line in par:
+            if '=' in line:
+                words = [x.strip() for x in line.split('=')]
+                if len(words) != 2:
+                    print(("Warning- ignoring parse error on line: %s" % line))
+                else:
+                    if words[0] in self.values:
+                        raise IOError("Duplicated field: %s" % words[0])
+                    self.fields.append(words[0])
+                    self.values[words[0]] = bestType(words[1])
     
+        self.username = username
+        self.password = password
     
     def __getitem__(self, field):
         return self.values[field]
@@ -46,7 +54,7 @@ class MascotSearch(object):
             for field in self.fields:
                 output.write('%s=%s\n' % (field, self.values[field]))
             
-            for field in [x for x in self.values.keys() if x not in self.fields]:
+            for field in [x for x in list(self.values.keys()) if x not in self.fields]:
                 output.write('%s=%s\n' % (field, self.values[field]))
     
     
@@ -56,6 +64,10 @@ class MascotSearch(object):
             self.values['FILE'] = os.path.abspath(data_file)
         if not outputfile:
             outputfile = self.values['FILE'] + '.xlsx'
+        
+        if not (user and password):
+            user = self.username
+            password = self.password
             
         assert 'FILE' in self.values, "Target data must be specified!"
         assert os.path.exists(self.values['FILE']), (("Search target %s not "
@@ -67,7 +79,7 @@ class MascotSearch(object):
             from multiplierz.mgf import extract
             expected_charge = self.values['CHARGE']
             if len(expected_charge) > 3 or not int(expected_charge.strip('+-')):
-                raise RuntimeError, "%s is not a valid default charge value for extraction to MGF." % expected_charge
+                raise RuntimeError("%s is not a valid default charge value for extraction to MGF." % expected_charge)
             self.values['FILE'] = extract(self.values['FILE'],
                                           default_charge = int(expected_charge.strip('+-')))
             
@@ -79,11 +91,12 @@ class MascotSearch(object):
             mascot_version = settings.mascot_version
             
         search = interface.MascotSearcher(mascot_server, version = mascot_version)
-        if user and password:
-            search.login(user, password)
+        search.login(user, password)
+
+            
         dat_id, error = search.search(self.values)
         if error:
-            raise Exception, error
+            raise Exception(error)
         assert dat_id, "No dat_id; no error raised. %s" % error
         
         if ':' in dat_id:
@@ -92,19 +105,21 @@ class MascotSearch(object):
             datestr = datetime.now().strftime("%Y%m%d")
         
         output_dir = os.path.dirname(data_file)
-        reportManager = report.MascotReport(mascot_server, mascot_version,
-                                            user, password,
-                                            cleanup = True)
+        reportManager = interface.MascotReport(mascot_server, mascot_version,
+                                               user, password,
+                                               cleanup = True)
+        
+        # It could be worth reinvestigating those default values.
         resultfile = reportManager.get_reports(mascot_ids = [dat_id],
                                                dates = [datestr],
-                                               outputfile = outputfile,
-                                               ion_cutoff = bestType(self.values['ion_cutoff']),
-                                               show_query_data = bestType(self.values['show_query_data']) != 0,
-                                               show_same_set = bestType(self.values['show_same_set']) != 0,
-                                               show_sub_set = bestType(self.values['show_sub_set']) != 0,
-                                               rank_one = bestType(self.values['rank_one']) != 0,
-                                               bold_red = bestType(self.values['bold_red']) != 0)      
-        if not isinstance(resultfile, basestring):
+                                               outputfiles = [outputfile],
+                                               ion_cutoff = bestType(self.values.get('ion_cutoff', 8)),
+                                               show_query_data = bestType(self.values.get('show_query_data', 1)) != 0,
+                                               show_same_set = bestType(self.values.get('show_same_set', 1)) != 0,
+                                               show_sub_set = bestType(self.values.get('show_sub_set', 1)) != 0,
+                                               rank_one = bestType(self.values.get('rank_one', 0)) != 0,
+                                               bold_red = bestType(self.values.get('bold_red', 0)) != 0)   
+        if not isinstance(resultfile, str):
             assert len(resultfile) == 1, "Invalid result count: %s" % len(resultfile) # retrieveMascotReport can do multiple at a time; this doesn't.
             resultfile = resultfile[0]
         assert os.path.exists(resultfile), "Result file not present: %s" % resultfile
@@ -203,32 +218,34 @@ def retrieveMascotReport(mascot_ids = None,
     used to annotate search result data with the genes corresponding to each
     peptide match.
     """
-    import sys
-    if max_hits > sys.maxint:
-        print "Warning: max_hits must be of type int (for msparser.)"
-        print "Reducing max_hits from %s to maximum int size (%s) ." % (max_hits, sys.maxint)
-        max_hits = sys.maxint
+    #import sys
+    #if max_hits > sys.maxint:
+        #print("Warning: max_hits must be of type int (for msparser.)")
+        #print(("Reducing max_hits from %s to maximum int size (%s) ." % (max_hits, sys.maxint)))
+        #max_hits = sys.maxint
+    if max_hits > 99999999:
+        max_hits = 99999999 # Limit to a "reasonable" number.
 
     if mascot_ids and dat_file_list:
-        raise NotImplementedError, ("Reports from server-located and local "
+        raise NotImplementedError("Reports from server-located and local "
                                     "searches must be processed separately.")
 
 
     if mascot_ids:
-        mascot_reporter = report.MascotReport(mascot_server,
-                                              mascot_version,
-                                              login_name,
-                                              password,
-                                              cleanup = not keep_dat)
+        mascot_reporter = interface.MascotReport(mascot_server,
+                                                 mascot_version,
+                                                 login_name,
+                                                 password,
+                                                 cleanup = not keep_dat)
 
-        if any([':' in mid for mid in mascot_ids]):
+        if any([':' in str(mid) for mid in mascot_ids]):
             if not dates or not any(dates):
                 dates = [mid.split(':')[1] if ':' in mid else None
                          for mid in mascot_ids]
             mascot_ids = [mid.split(':')[0] for mid in mascot_ids]
     else:
-        mascot_reporter = report.MascotReport("No server",
-                                              mascot_version)
+        mascot_reporter = interface.MascotReport(None,
+                                                 mascot_version)
 
     if chosen_folder:
         assert os.path.isabs(chosen_folder), 'Output directory must be an absolute path.'
@@ -236,38 +253,59 @@ def retrieveMascotReport(mascot_ids = None,
         chosen_folder = myData
 
     #Check Login
-    if not login_name and password:
+    if (not (login_name and password)) or dat_file_list:
         mascot_reporter.mascot.logged_in = True
     else:
         assert mascot_reporter.mascot.logged_in, "Could not login to Mascot server."
     
-    # Currently always processing requests sequentially/separately;
-    # get_reports for more than one report at once generates a file
-    # combined by sheets.
-    ret_vals = []
+    # Currently always processing requests for from-server download
+    # sequentially/separately; get_reports for more than one report at once
+    # generates a file combined by sheets.
     if dates and any(dates):
-        report_vals = zip(mascot_ids, dates)
+        report_vals = list(zip(mascot_ids, dates))
     else:
-        report_vals = zip(mascot_ids, [None]*len(mascot_ids))
-    for mascot_id, date in report_vals:
-        ret_vals.append(mascot_reporter.get_reports(mascot_ids = [mascot_id],
-                                                    dates = [date],
-                                                    local_dat_files = dat_file_list,
-                                                    chosen_folder = chosen_folder,
-                                                    combined_file = combined_file,
-                                                    rank_one = rank_one,
-                                                    max_hits = max_hits,
-                                                    ion_cutoff = ion_cutoff,
-                                                    bold_red = bold_red,
-                                                    show_query_data = show_query_data,
-                                                    show_same_set = show_same_set,
-                                                    show_sub_set = show_sub_set,
-                                                    protein_report = False,
-                                                    #quant = quant,
-                                                    ext = ext,
-                                                    mascotIDInResultName = True
-                                                    )
+        report_vals = list(zip(mascot_ids, [None]*len(mascot_ids)))
+        
+    ret_vals = []
+    if report_vals:
+        for mascot_id, date in report_vals:
+            ret_vals.append(mascot_reporter.get_reports(mascot_ids = [mascot_id],
+                                                        dates = [date],
+                                                        chosen_folder = chosen_folder,
+                                                        combined_file = combined_file,
+                                                        rank_one = rank_one,
+                                                        max_hits = max_hits,
+                                                        ion_cutoff = ion_cutoff,
+                                                        bold_red = bold_red,
+                                                        show_query_data = show_query_data,
+                                                        show_same_set = show_same_set,
+                                                        show_sub_set = show_sub_set,
+                                                        protein_report = False,
+                                                        #quant = quant,
+                                                        ext = ext,
+                                                        mascotIDInResultName = True
+                                                        )
+                            )
+    else: # DAT-list reports.
+        ret_vals.append(mascot_reporter.get_reports(mascot_ids = [],
+                                                     dates = [],
+                                                     local_dat_files = dat_file_list,
+                                                     chosen_folder = chosen_folder,
+                                                     combined_file = combined_file,
+                                                     rank_one = rank_one,
+                                                     max_hits = max_hits,
+                                                     ion_cutoff = ion_cutoff,
+                                                     bold_red = bold_red,
+                                                     show_query_data = show_query_data,
+                                                     show_same_set = show_same_set,
+                                                     show_sub_set = show_sub_set,
+                                                     protein_report = False,
+                                                     #quant = quant,
+                                                     ext = ext,
+                                                     mascotIDInResultName = True
+                                                     )
                         )
+        
 
     if include_search_number:
         new_filenames = []

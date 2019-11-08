@@ -34,7 +34,7 @@ class OMSSA_CSV():
         fin = open(self.orig_file)
         csvReader = csv.reader(fin)
 
-        headers = map(lambda x: x.strip(), csvReader.next())
+        headers = [x.strip() for x in next(csvReader)]
         new_headers = self.convert_headers(headers)
         spec_desc = new_headers.index('Spectrum Description')
         mz        = new_headers.index('Experimental mz')
@@ -43,7 +43,7 @@ class OMSSA_CSV():
         var_mods  = new_headers.index('Variable Modifications')
         new_data = []
         for prerow in csvReader:
-            row = map(lambda x: x.strip(), prerow)
+            row = [x.strip() for x in prerow]
             row[spec_desc] = self.convert_spectrum(row[spec_desc])
             row[mz] = self.convert_mass(row[mz],row[charge])
             (the_seq,the_mods) = self.convert_seq(row[seq])
@@ -90,7 +90,7 @@ class OMSSA_CSV():
 
     def convert_mass(self,mw,charge):
         mz = (float(mw) + multiplierz.mass_biochem.AW['H']*float(charge))/float(charge)
-        return `mz`
+        return repr(mz)
 
     def convert_seq(self,seq):
         new_seq = seq[:]

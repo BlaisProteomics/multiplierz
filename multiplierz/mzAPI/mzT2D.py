@@ -55,9 +55,9 @@ class mzFile(multiplierz.mzAPI.mzFile):
         # Apparently zero-argument methods in COM objects are
         # treated as data.  Odd!
         if centroid:
-            return zip(*self.source.GetCentroidScan)
+            return list(zip(*self.source.GetCentroidScan))
         else:
-            return zip(*self.source.GetScan)
+            return list(zip(*self.source.GetScan))
         
     
     def info(self):

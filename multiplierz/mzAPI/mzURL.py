@@ -70,7 +70,7 @@ def check_mzURL(mz_server, file_name):
             crl.perform()
             if output.getvalue():
                 break
-    except pycurl.error, e:
+    except pycurl.error as e:
         return False
 
     for f in output.getvalue().splitlines():
@@ -136,7 +136,7 @@ class mzFile(mzAPImzFile):
         '''
         self.crl.close()
         if self.verbose:
-            print self.output.getvalue()
+            print((self.output.getvalue()))
         self.output.close()
         os.unlink(self.cookie_file_name)
 

@@ -6,7 +6,7 @@ from numbers import Number
 
 #from multiplierz import vprint
 def vprint(thing):
-    print thing
+    print(thing)
 from multiplierz.mzReport import ReportReader, ReportWriter, ReportEntry, default_columns
 
 
@@ -31,7 +31,7 @@ def get_sheet_names(filename):
         return wb.get_sheet_names()
     
     else:
-        raise IOError, "File not a valid Excel format (.xls or .xlsx)."
+        raise IOError("File not a valid Excel format (.xls or .xlsx).")
         
 
 
@@ -48,16 +48,16 @@ class XLSheetReader(ReportReader):
         self.autotypecast = autotypecast
         
         if not os.path.exists(file_name):
-            raise IOError, '%s not found!' % file_name
+            raise IOError('%s not found!' % file_name)
         
         if file_name.lower().endswith('.xls'):
             self.__class__ = XLSReader
-            XLSReader.__init__(self, file_name, sheet_name)
+            XLSReader.__init__(self, file_name, sheet_name, **etc)
         elif file_name.lower().endswith('.xlsx'):
             self.__class__ = XLSXReader
-            XLSXReader.__init__(self, file_name, sheet_name)
+            XLSXReader.__init__(self, file_name, sheet_name, **etc)
         else:
-            raise IOError, "Invalid extension for file %s given to XLSheetReader!" % file_name
+            raise IOError("Invalid extension for file %s given to XLSheetReader!" % file_name)
 
 
     def __iter__(self):
@@ -80,7 +80,7 @@ class XLSheetWriter(ReportWriter):
         elif default_columns:
             self.columns = default_columns + (columns or [])
         else:
-            raise IOError, "Columns not specified and default columns not selected!"
+            raise IOError("Columns not specified and default columns not selected!")
     
         if len(self.columns) < len(set([x.lower() for x in self.columns])):
             import defaultdict
@@ -88,7 +88,7 @@ class XLSheetWriter(ReportWriter):
             for col in self.columns:
                 counts[col] += 1
                 
-            raise ValueError, "Column titles appear more than once: %s" % [k for (k, v) in counts.items() if v > 1]
+            raise ValueError("Column titles appear more than once: %s" % [k for (k, v) in list(counts.items()) if v > 1])
         
         
         if classic_mode:
@@ -103,13 +103,14 @@ class XLSheetWriter(ReportWriter):
             self.__class__ = XLSXWriter
             XLSXWriter.__init__(self, file_name, sheet_name, self.columns, **etc)
         else:
-            raise IOError, "Invalid extension on filename %s given to XLSheetWriter." % file_name
+            raise IOError("Invalid extension on filename %s given to XLSheetWriter." % file_name)
         
         
     
 
 class XLSXReader(XLSheetReader):
-    def __init__(self, file_name, sheet_name = None):
+    def __init__(self, file_name, sheet_name = None,
+                 select_columns = None, **etc):
         try:
             self.wb = openpyxl.load_workbook(file_name, read_only = True, use_iterators = True)
         except TypeError:
@@ -128,20 +129,44 @@ class XLSXReader(XLSheetReader):
         self.all_sheets = self.wb.get_sheet_names()
         
         try:
-            self.columns = [x.value if x.value != None else '' for x in self.sheet.iter_rows().next() if x]
+            self.columns = [x.value if x.value != None else '' for x in next(self.sheet.iter_rows()) if x]
         except StopIteration:
-            self.columns = [] # Empty sheet; raise error instead?
+            raise IOError("Empty worksheet at %s." % file_name)
+        
+        #if select_columns:
+            #self.column_selection = [self.columns.index(x) for x in select_columns]
+            #self.column_selection_headers = select_columns
+        #else:
+            #self.column_selection = None
+            #self.column_selection_headers = None       
+        self.select_headers = select_columns
             
     def get_row_count(self):
         return self.sheet.max_row
     
     def __iter__(self):
-        iterator = self.sheet.iter_rows()
-        iterator.next() # Skip header.
-        for row in iterator:
-            values = [x.value if x.value != None else '' for x in row]
-            if not any(values): continue
-            yield ReportEntry(self.columns, values, self.autotypecast)
+        if self.select_headers:
+            column_selection = [self.columns.index(x) for x in self.select_headers]
+            leftcol = min(column_selection)
+            rightcol = max(column_selection)
+            column_indexes = [x - leftcol for x in column_selection]
+            iterator = self.sheet.iter_rows(min_col = leftcol + 1, # 1-indexed arguements. 
+                                            max_col = rightcol + 1)
+            next(iterator) # Skip header.            
+            for row in iterator:
+                values = [row[i].value if row[i].value != None else ''
+                          for i in column_indexes]
+                if all(x == None or x == '' for x in values): continue
+                yield ReportEntry(self.select_headers,
+                                  values,
+                                  self.autotypecast)
+        else:
+            iterator = self.sheet.iter_rows()
+            next(iterator) # Skip header.            
+            for row in iterator:
+                values = [x.value if x.value != None else '' for x in row]
+                if all(x == None or x == '' for x in values): continue
+                yield ReportEntry(self.columns, values, self.autotypecast)
     
     def close(self):
         self.wb._archive.close() # I have bad words for the openpyxl writers.
@@ -155,7 +180,7 @@ class XLSXReader(XLSheetReader):
 class XLSXWriter(XLSheetReader):
     def __init__(self, file_name, sheet_name = 'Data', columns = None,
                  overwrite_corrupt = default_overwrite_corrupt, **etc):
-        if not columns: raise IOError, "No columns!  Also, use XLSheetReader instead of XLSXWriter directly."
+        if not columns: raise IOError("No columns!  Also, use XLSheetReader instead of XLSXWriter directly.")
         
         self.file_name = file_name
         self.sheet_name = sheet_name
@@ -189,15 +214,16 @@ class XLSXWriter(XLSheetReader):
     
     def write(self, row, metadata = None, ignore_extra = default_ignore_extra_columns):
         if metadata:
-            raise NotImplementedError, "Non-comtypes Excel interface can't handle Excel metadata."
+            raise NotImplementedError("Non-comtypes Excel interface can't handle Excel metadata.")
+        assert isinstance(row, dict) or isinstance(row, list), "Invalid type for row."
         
         if (not ignore_extra) and len(row) > len(self.columns):
             if isinstance(row, dict):
-                missing = set([str(x).lower() for x in row.keys()]) - set([str(x).lower() for x in self.columns])
-                raise ValueError, "Row has extra columns: %s" % missing 
+                missing = set([str(x).lower() for x in list(row.keys())]) - set([str(x).lower() for x in self.columns])
+                raise ValueError("Row has extra columns: %s" % missing) 
             # It should be impossible for this error to show an empty set!
             else:
-                raise ValueError, "Row has extra columns."
+                raise ValueError("Row has extra columns.")
         
         if isinstance(row, dict):
             row = [row[x] for x in self.columns]
@@ -230,7 +256,7 @@ class XLSXWriter(XLSheetReader):
 class XLSWriter(XLSheetWriter):
     def __init__(self, file_name, sheet_name = 'Data', columns = None, 
                  overwrite_corrupt = default_overwrite_corrupt, **etc):
-        if not columns: raise IOError, "No columns!  Also, use XLSheetReader instead of XLSWriter directly."
+        if not columns: raise IOError("No columns!  Also, use XLSheetReader instead of XLSWriter directly.")
         
         self.file_name = file_name
         self.sheet_name = sheet_name
@@ -260,12 +286,12 @@ class XLSWriter(XLSheetWriter):
         
     def write(self, row, metadata = None, ignore_extra = default_ignore_extra_columns):
         if metadata:
-            raise NotImplementedError, "Non-comtypes Excel interface can't handle Excel metadata."
+            raise NotImplementedError("Non-comtypes Excel interface can't handle Excel metadata.")
         
         if len(row) > len(self.columns):
-            raise ValueError, "Row is missing values for some columns."
+            raise ValueError("Row is missing values for some columns.")
         elif (not ignore_extra) and len(row) < len(self.columns):
-            raise ValueError, "Row is too long for sheet columns."
+            raise ValueError("Row is too long for sheet columns.")
         
         if isinstance(row, dict):
             row = dict(row)
@@ -297,14 +323,14 @@ class XLSWriter(XLSheetWriter):
 
         
 class XLSReader(XLSheetWriter):
-    def __init__(self, file_name, sheet_name = None):
+    def __init__(self, file_name, sheet_name = None, *etc):
         self.wb = xlrd.open_workbook(file_name, on_demand = True)
         
         if sheet_name:
             try:
                 self.sheet = self.wb.sheet_by_name(sheet_name)
             except xlrd.biffh.XLRDError:
-                raise IOError, "%s has no sheet named %s" % (file_name, sheet_name)
+                raise IOError("%s has no sheet named %s" % (file_name, sheet_name))
         elif 'Data' in self.wb.sheet_names():
             self.sheet = self.wb.sheet_by_name('Data')
         else:

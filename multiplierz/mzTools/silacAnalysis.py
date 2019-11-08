@@ -3,19 +3,21 @@ from multiplierz.mzAPI import mzFile
 from multiplierz.mzReport import reader, writer, mzSpreadsheet
 from multiplierz import myData, vprint
 from collections import defaultdict
-import cPickle as pickle
+import pickle
 import matplotlib.pyplot as pyt
 from multiplierz.mass_biochem import mz, unimod
-try:
-    from scipy.stats import pearsonr
-except ImportError:
-    print "Could not import scipy.stats.pearsonr!"
-    def pearsonr(x, y):
-        return float('NaN'), float('NaN')
+#try:
+    #from scipy.stats import pearsonr
+#except ImportError:
+    #print "Could not import scipy.stats.pearsonr!"
+    #def pearsonr(x, y):
+        #return float('NaN'), float('NaN')
+def pearsonr(x, y):
+    return float('NaN'), float('NaN')        
 from numpy import average, median, floor, ceil
 import os
 import re
-from multiplierz.internalAlgorithms import ProximityIndexedSequence, inPPM
+from multiplierz.internalAlgorithms import ProximityIndexedSequence, inPPM, select
 from multiplierz.mzTools.featureUtilities import FeatureInterface
 from multiplierz.mgf import standard_title_parse
 import warnings
@@ -118,7 +120,7 @@ def findDoubles(data):
         else:
             return frozenset()
     
-    for psm in data.values():
+    for psm in list(data.values()):
         charge = psm['Charge']
         sequence = psm['Peptide Sequence']
         mods = unsilacMods(psm['Variable Modifications'])
@@ -128,7 +130,7 @@ def findDoubles(data):
             pepMods[sequence, mods, charge].add(psm['Spectrum Description'])
 
     doubles = []
-    for cosilacSpecDescs in pepMods.values():
+    for cosilacSpecDescs in list(pepMods.values()):
         cosilacPSMs = [data[x] for x in cosilacSpecDescs]
         
         lights = [x for x in cosilacPSMs if not any(parseModifications(x['Variable Modifications'])[0])]
@@ -157,9 +159,9 @@ def findDoublesAdapter(data):
     
     newdoubles = []
     for lights, heavies in doubles:
-        newdoubles.append((zip(lights, [None]*len(lights), [None]*len(lights)),
+        newdoubles.append((list(zip(lights, [None]*len(lights), [None]*len(lights))),
                           [],
-                          zip(heavies, [None]*len(heavies), [None]*len(heavies))))
+                          list(zip(heavies, [None]*len(heavies), [None]*len(heavies)))))
         
     return newdoubles
         
@@ -174,7 +176,7 @@ def findTriples(data):
         else:
             return frozenset()
     
-    for psm in data.values():
+    for psm in list(data.values()):
         charge = psm['Charge']
         sequence = psm['Peptide Sequence']
         mods = unsilacMods(psm['Variable Modifications'])
@@ -184,7 +186,7 @@ def findTriples(data):
             pepMods[sequence, mods, charge].add(psm['Spectrum Description'])
         
     triples = []
-    for cosilacSpecDescs in pepMods.values():
+    for cosilacSpecDescs in list(pepMods.values()):
         cosilacPSMs = [data[spectrumDescriptionToScanNumber(x)] for x in cosilacSpecDescs]
         
         lights = []
@@ -227,9 +229,9 @@ def findTriplesAdapter(data):
     triples = findTriples(data)
     newtriples = []
     for lights, mediums, heavies in triples:
-        newtriples.append((zip(lights, [None] * len(lights), [None]* len(lights)),
-                          zip(mediums, [None] * len(mediums), [None]* len(mediums)),
-                          zip(heavies, [None] * len(heavies), [None]* len(heavies))))
+        newtriples.append((list(zip(lights, [None] * len(lights), [None]* len(lights))),
+                          list(zip(mediums, [None] * len(mediums), [None]* len(mediums))),
+                          list(zip(heavies, [None] * len(heavies), [None]* len(heavies)))))
         
     return newtriples
 
@@ -289,7 +291,7 @@ def getPSMIntensity(resultIndex, featureList, ms2toms1, specDesc, shift = None):
         mz = float(resultIndex[specDesc]['Experimental mz']) + (shift/float(chg))
     
     try:
-        match = (x for x in featureList if x.containsPoint(mz, scan, chg)).next()
+        match = next((x for x in featureList if x.containsPoint(mz, scan, chg)))
     except StopIteration:
         return 0
     
@@ -396,7 +398,7 @@ def overlapIntensity(data, lightFeatures, heavyFeatures, shift):
     #allRegions = sorted(list(set(unzip(light.regions)[0] + unzip(heavy.regions)[0])))
     lightRegions = dict(light.regions)
     heavyRegions = dict(heavy.regions)
-    allRegions = list(set(lightRegions.keys() + heavyRegions.keys()))
+    allRegions = list(set(list(lightRegions.keys()) + list(heavyRegions.keys())))
     try:
         assert sorted(allRegions) == sorted(list(set(unzip(light.regions)[0] + unzip(heavy.regions)[0])))
     except IndexError:
@@ -473,16 +475,16 @@ def interpolatePoints(firstPoints, secondPoints):
     more likely to occur outside of their features' times (perversely!).
     """
     
-    firstScans = zip(*firstPoints)[1]
-    secondScans = zip(*secondPoints)[1]
+    firstScans = select(1, firstPoints)
+    secondScans = select(1, secondPoints)
     
     onlyFirstScans = set(firstScans) - set(secondScans)
     onlySecondScans = set(secondScans) - set(firstScans)
     
-    firstMZ = median(zip(*firstPoints)[0])
-    secondMZ = median(zip(*secondPoints)[0])
-    firstChg = median(zip(*firstPoints)[2])
-    secondChg = median(zip(*secondPoints)[2])
+    firstMZ = median(select(0, firstPoints))
+    secondMZ = median(select(0, secondPoints))
+    firstChg = median(select(2, firstPoints))
+    secondChg = median(select(2, secondPoints))
     
     firstPoints += [(firstMZ, scan, firstChg) for scan in onlySecondScans]
     secondPoints += [(secondMZ, scan, secondChg) for scan in onlyFirstScans]
@@ -492,16 +494,16 @@ def interpolatePoints(firstPoints, secondPoints):
     
     
 def interpolateTriplePoints(firstPoints, secondPoints, thirdPoints):
-    firstScans = zip(*firstPoints)[1]
-    secondScans = zip(*secondPoints)[1]
-    thirdScans = zip(*thirdPoints)[1]
+    firstScans = select(1, firstPoints)
+    secondScans = select(1, secondPoints)
+    thirdScans = select(1, thirdPoints)
     
-    firstMZ = median(zip(*firstPoints)[0])
-    secondMZ = median(zip(*secondPoints)[0])
-    thirdMZ = median(zip(*thirdPoints)[0])
-    firstChg = median(zip(*firstPoints)[2])
-    secondChg = median(zip(*secondPoints)[2])
-    thirdChg = median(zip(*thirdPoints)[2])
+    firstMZ = median(select(0, firstPoints))
+    secondMZ = median(select(0, secondPoints))
+    thirdMZ = median(select(0, thirdPoints))
+    firstChg = median(select(2, firstPoints))
+    secondChg = median(select(2, secondPoints))
+    thirdChg = median(select(2, thirdPoints))
     
     # There's presumably some better form of this set arithmetic.
     
@@ -1026,17 +1028,17 @@ def getDoubleRatios(data, resultIndex, featureList, ms2toms1, tagTuples):
             try:
                 scan = ms2toms1[spectrumDescriptionToScanNumber(specDesc)]
             except KeyError as err:
-                print "Scan number not found in target file."
-                print specDesc
-                print spectrumDescriptionToScanNumber(specDesc)
-                print ms2toms1.keys()[:5]
+                print("Scan number not found in target file.")
+                print(specDesc)
+                print(spectrumDescriptionToScanNumber(specDesc))
+                print(list(ms2toms1.keys())[:5])
                 raise err
             
             chg = float(resultIndex[specDesc]['Charge'])
     
             if predict == 'light': sign = -1
             elif predict == 'heavy': sign = 1
-            elif predict: raise Exception, "Invalid value of predict."
+            elif predict: raise Exception("Invalid value of predict.")
             
             shift = 0
             if predict:
@@ -1229,19 +1231,19 @@ def getXICParametersTriple(lights, mediums, heavies, lightMediumShift, lightHeav
     hPts = featurePoints(heavies)
     
     try:
-        lMin = min(zip(*lPts)[0])
+        lMin = min(select(0, lPts))
         lMZ = average([x[0] for x in lPts if abs(x[0] - lMin) < 0.1])
-    except IndexError:
+    except ValueError:
         lMZ = None
     try:
-        mMin = min(zip(*mPts)[0])
+        mMin = min(select(0, mPts))
         mMZ = average([x[0] for x in mPts if abs(x[0] - mMin) < 0.1])
-    except IndexError:
+    except ValueError:
         mMZ = None
     try:
-        hMin = min(zip(*hPts)[0])
+        hMin = min(select(0, hPts))
         hMZ = average([x[0] for x in hPts if abs(x[0] - hMin) < 0.1])
-    except IndexError:
+    except ValueError:
         hMZ = None
     
     
@@ -1288,7 +1290,7 @@ def getMS1Lookup(datafile):
         elif scan[3] == 'MS2':
             ms2s.append(scan[2])
         else:
-            raise Exception, "Unidentified scan type of %s" % scan[3]
+            raise Exception("Unidentified scan type of %s" % scan[3])
     for ms2 in ms2s:
         ms2toms1[ms2] = ms1
         
@@ -1304,7 +1306,7 @@ def showRatioHistogram(ratioList):
     ratios = [sorted([x[1], x[2]]) for x in ratioList if x[1] or x[2]]
     ratios = [x[0]/x[1] for x in ratios if x[1] and x[0] != '-' and x[1] != '-']
     
-    print len([x for x in ratios if x > 0.6])    
+    print(len([x for x in ratios if x > 0.6]))    
     
     pyt.hist(ratios, bins=100)
     pyt.show()
@@ -1313,7 +1315,7 @@ def showOverlapHistogram(ratioList):
     ratios = [sorted([x[6], x[7]]) for x in ratioList if x[6] or x[7]]
     ratios = [x[0]/x[1] for x in ratios if x[1] and x[0] != '-' and x[1] != '-']
     
-    print len([x for x in ratios if x > 0.6])
+    print(len([x for x in ratios if x > 0.6]))
     
     pyt.hist(ratios, bins=100)
     pyt.show()
@@ -1395,7 +1397,7 @@ def writeDuplexSILAC(resultIndex, ratios, columns, outputFile):
             heavyMol = heavyPSM['Peptide Sequence'], heavyPSM['Variable Modifications'], heavyPSM['Charge']
             molecIndex[heavyMol] = ratio[1:]
     
-    for line in resultIndex.values():
+    for line in list(resultIndex.values()):
         molecule = line['Peptide Sequence'], line['Variable Modifications'], line['Charge']
         try:
             (light, heavy, notes, correlation, ratioMatch,
@@ -1475,7 +1477,7 @@ def writeTriplexSILAC(resultIndex, ratios, columns, outputFile):
             heavyMol = heavyPSM['Peptide Sequence'], heavyPSM['Variable Modifications'], heavyPSM['Charge']
             molecIndex[heavyMol] = ratioData
             
-    for line in resultIndex.values():
+    for line in list(resultIndex.values()):
         molecule = line['Peptide Sequence'], line['Variable Modifications'], line['Charge']
         try:
             (identifier, light, medium, heavy, notes, 
@@ -1570,9 +1572,10 @@ def setGlobals(constants):
         #peakFindTolerance = constants['tolerance']
         #XICTol = peakFindTolerance/2
         global peakFindTolPPM
+        global XICTol
         peakFindTolPPM = constants['tolerance']
         if peakFindTolPPM < 1:
-            print "\n\n\nWARNING- tolerance value for SILAC analysis should be in PPM!\n\n\n"
+            print("\n\n\nWARNING- tolerance value for SILAC analysis should be in PPM!\n\n\n")
         XICTol = 0.0008 * peakFindTolPPM # "Typical" Da tolernace for PPM.
         
         
@@ -1734,9 +1737,9 @@ def SILAC2Plex(datafiles, resultfiles, heavyTags, **constants):
     global heavyR, heavyK, allTags
     global heavyShifts
     
-    if isinstance(datafiles, basestring):
+    if isinstance(datafiles, str):
         datafiles = [datafiles]
-    if isinstance(resultfiles, basestring):
+    if isinstance(resultfiles, str):
         resultfiles = [resultfiles]
     
     if isinstance(heavyTags, list):
@@ -1803,7 +1806,7 @@ def SILAC2Plex(datafiles, resultfiles, heavyTags, **constants):
             resultToData[partialResultFile] = datafile
         combinedResults += psms
     
-    assert len(set(resultToData.values())) == len(datafiles), str(resultToData.values())
+    assert len(set(resultToData.values())) == len(datafiles), str(list(resultToData.values()))
     
     
     results_byfile = defaultdict(list)
@@ -1814,7 +1817,7 @@ def SILAC2Plex(datafiles, resultfiles, heavyTags, **constants):
     
     ratios_byfile = {}
     resultIndex_byfile = {}
-    for datafilebase, psms in results_byfile.items():
+    for datafilebase, psms in list(results_byfile.items()):
         assert datafilebase == os.path.basename(resultToData[psms[0]['Source']])
         datafile = resultToData[psms[0]['Source']]
         
@@ -1850,9 +1853,9 @@ def SILAC3Plex(datafiles, resultfiles, mediumTags, heavyTags, **constants):
     global heavyR, heavyK, mediumR, mediumK, allTags
     global mediumShifts, heavyShifts
     
-    if isinstance(datafiles, basestring):
+    if isinstance(datafiles, str):
         datafiles = [datafiles]
-    if isinstance(resultfiles, basestring):
+    if isinstance(resultfiles, str):
         resultfiles = [resultfiles]    
     
     if isinstance(heavyTags, list):
@@ -1916,7 +1919,7 @@ def SILAC3Plex(datafiles, resultfiles, mediumTags, heavyTags, **constants):
     
     ratios_byfile = {}
     resultIndex_byfile = {}
-    for datafilebase, psms in results_byfile.items():
+    for datafilebase, psms in list(results_byfile.items()):
         assert datafilebase == os.path.basename(resultToData[psms[0].get('Source', 'None')])
         
         #resultIndex = {x['Spectrum Description']:x for x in psms}
@@ -1967,7 +1970,7 @@ def writeCombinedTriplexSILAC(resultIndex_byfile, results_byfile, ratios_byfile,
                      'XIC Ratio (M/L)', 'Top-Signal Ratio (M/L)',
                      ])
     
-    for datafile, psms in resultIndex_byfile.items():
+    for datafile, psms in list(resultIndex_byfile.items()):
         molecIndex = {}
         for ratioData in ratios_byfile[datafile]:
             identifier = ratioData[0]
@@ -2073,7 +2076,7 @@ def writeCombinedDuplexSILAC(resultIndex_byfile, results_byfile, ratios_byfile, 
                     columns = oldColumns + addedColumns)  
     
     
-    for datafile, psms in resultIndex_byfile.items():
+    for datafile, psms in list(resultIndex_byfile.items()):
         molecIndex = {}
         for ratioData in ratios_byfile[datafile]:
             identifier = ratioData[0]

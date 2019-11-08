@@ -75,7 +75,7 @@ def vprint(thing):
     """
     global verbose_mode # Slightly speeds up lookup, supposedly.
     if verbose_mode:
-        print thing
+        print(thing)
         
 
 
@@ -212,7 +212,7 @@ def deployUnimod():
                 break
             
     if not unimodFile:
-        print "WARNING: No unimod.sqlite found in %s (%s)" % (basedir, sys.executable)    
+        print(("WARNING: No unimod.sqlite found in %s (%s)" % (basedir, sys.executable)))    
     else:
         shutil.copy(unimodFile, os.path.join(myData, 'unimod.sqlite'))    
     
@@ -235,7 +235,7 @@ def initializeFasta():
     
 
 if not os.path.exists(myData):
-    print "Multiplierz directory (%s) not found; creating it." % myData
+    print(("Multiplierz directory (%s) not found; creating it." % myData))
     os.mkdir(myData)
     
 
@@ -249,11 +249,11 @@ requiredSubdirs = ['TEMP', # Still used by old mzReport imaging functions.
 
 for subdir in requiredSubdirs:
     if not os.path.exists(os.path.join(myData, subdir)):
-        print "Required multiplierz data directory %s not found!  Creating it." % subdir
+        print(("Required multiplierz data directory %s not found!  Creating it." % subdir))
         os.mkdir(os.path.join(myData, subdir))
 for filename, initializer in requiredFiles:
     if not os.path.exists(os.path.join(myData, filename)):
-        print "Required multiplierz data file %s not found!  Creating it." % filename
+        print(("Required multiplierz data file %s not found!  Creating it." % filename))
         initializer()
 
 from multiplierz.settings import settings

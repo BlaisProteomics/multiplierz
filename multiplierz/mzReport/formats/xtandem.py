@@ -89,7 +89,7 @@ def xTandemArray(xTandem_file, rev_mods=None, db_regex=None):
             pep_array.append((dom.get('hyperscore'), dom.get('seq')))
         pep_array = list(set(pep_array))
         pep_array.sort(reverse=True)
-        pep_hash = dict(zip([p[1] for p in pep_array], range(1, len(pep_array)+1)))
+        pep_hash = dict(list(zip([p[1] for p in pep_array], list(range(1, len(pep_array)+1)))))
 
         #General information for all hits in the group id
         pep_query = group.get('id')
@@ -248,7 +248,7 @@ def xtandemParse(tandemfile):
     psms = []
     for model in models:
         spectrumEl = [x for x in model.iter('group') if x.get('label') == 'fragment ion mass spectrum'][0]
-        description = spectrumEl.iter('note').next().text
+        description = next(spectrumEl.iter('note')).text
         
         pep_query = model.get('id')
         pep_exp_mh = float(model.get('mh'))
@@ -258,7 +258,7 @@ def xtandemParse(tandemfile):
         bestdom = None
         bestscore = -99
         for peptide in model.iter('peptide'):
-            domain = peptide.iter('domain').next()
+            domain = next(peptide.iter('domain'))
             hyperscore = float(domain.get('hyperscore'))
             if hyperscore > bestscore:
                 bestpep = peptide
@@ -340,8 +340,8 @@ def format_XML(xTandem_file, save_file, parameters = None,
     report = multiplierz.mzReport.writer(save_file, sheet_name = "XTandem_Header",
                                          columns = ["Category", "Setting", "Value"])
     if parameters:
-        for category, settings in parameters.items():
-            for setting, value in settings.items():
+        for category, settings in list(parameters.items()):
+            for setting, value in list(settings.items()):
                 report.write({'Category':category,
                               'Setting':setting,
                               'Value':value})

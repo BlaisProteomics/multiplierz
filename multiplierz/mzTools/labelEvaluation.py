@@ -1,7 +1,7 @@
 from multiplierz.mzReport import reader, writer
 from multiplierz.mzTools.featureDetector import detectFeatures, Feature
 from multiplierz.mzTools.featureUtilities import FeatureInterface
-import cPickle as pickle
+import pickle
 from collections import defaultdict
 from multiplierz.mzAPI import mzFile
 
@@ -33,7 +33,7 @@ def evaluateSILAC(outputfile, columns, results, featureIntMap):
                   'arginine labelled':0}    
     
     labelSummary = []
-    for key, pepSet in peptides.items():
+    for key, pepSet in list(peptides.items()):
         fullLabelledInt = 0
         partLabelledInt = 0
         
@@ -131,7 +131,7 @@ def evaluateTMTiTRAQ(outputfile, columns, results, resultIntMap):
                   'lysine labelled':0}
     
     labelSummary = []
-    for key, pepSet in peptides.items():
+    for key, pepSet in list(peptides.items()):
         fullLabelledInt = 0
         partLabelledInt = 0
         
@@ -196,7 +196,7 @@ def evaluateTMTiTRAQ(outputfile, columns, results, resultIntMap):
 def evaluateMascotFile(resultfile, datafile = None, featurefile = None, outputfile = None):
     #assert datafile or featurefile, "Either raw data or feature data must be given!"
     
-    header = [x.values() for x in list(reader(resultfile, sheet_name = 'Mascot_Header'))]
+    header = [list(x.values()) for x in list(reader(resultfile, sheet_name = 'Mascot_Header'))]
     
     def retrieveHeaderValue(key):
         try:
@@ -214,7 +214,7 @@ def evaluateMascotFile(resultfile, datafile = None, featurefile = None, outputfi
     else:
         features = FeatureInterface(featurefile)
     
-    print "Matching features to PSMs..."
+    print("Matching features to PSMs...")
     results = reader(resultfile)
     columns = results.columns
     results = list(results)

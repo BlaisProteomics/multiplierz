@@ -66,9 +66,9 @@ class CSVReportReader(ReportReader):
         self.fh = gzOptOpen(self.file_name, 'rb')
         self.csv = csv.reader(self.fh)
         try:
-            self.columns = self.csv.next()
+            self.columns = next(self.csv)
         except StopIteration:
-            raise IOError, "CSV file contains no header, is empty: %s" % file_name
+            raise IOError("CSV file contains no header, is empty: %s" % file_name)
         self.infer_types = infer_types
         
         if len(self.columns) == 1 and '\t' in self.columns[0]:
@@ -83,10 +83,10 @@ class CSVReportReader(ReportReader):
 
     def __iter__(self):
         self.fh.seek(0) # start at beginning of the file
-        self.csv.next() # ignore headers
+        next(self.csv) # ignore headers
         for row in self.csv:
             if self.infer_types:
-                row = map(infer_and_convert_type, row)
+                row = list(map(infer_and_convert_type, row))
             if not len(row):
                 continue
             elif len(row) != len(self.columns):
@@ -111,9 +111,9 @@ class CSVReportWriter(ReportWriter):
             self.columns = columns
 
         for i, col in enumerate(self.columns):
-            if not all(map(lambda x: ord(x) < 128, col)):
+            if not all([ord(x) < 128 for x in col]):
                 newcol = ''.join([x for x in col if ord(x) < 128])
-                print "WARNING: %s has non-utf-8 characters; changing to %s" % (col, newcol)
+                print(("WARNING: %s has non-utf-8 characters; changing to %s" % (col, newcol)))
                 self.columns[i] = newcol
 
         if len(self.columns) > len(set(c.lower() for c in self.columns)):
@@ -130,8 +130,8 @@ class CSVReportWriter(ReportWriter):
             self.csv.writerow(self.columns)
             
         except IOError as err:
-            print err
-            print "WARNING- could not write %s." % file_name
+            print(err)
+            print(("WARNING- could not write %s." % file_name))
             self.file_name = insert_tag(file_name, 'OVERWRITE')
             if self.file_name.lower().endswith('gz'):
                 self.fh = gzip.open(self.file_name, 'wb')
@@ -140,7 +140,7 @@ class CSVReportWriter(ReportWriter):
             self.csv = csv.writer(self.fh)
     
             self.csv.writerow(self.columns)
-            print "Writing to %s" % self.file_name
+            print(("Writing to %s" % self.file_name))
             
     def write(self, row, metadata=None, ignore_extra = False):
         # error checking: want one value per column and nothing more
@@ -150,7 +150,7 @@ class CSVReportWriter(ReportWriter):
         elif (not ignore_extra) and len(row) > len(self.columns):
             raise ValueError('Too many values')
         elif isinstance(row,dict):
-            row = dict((k.lower(),v) for k,v in row.items())
+            row = dict((k.lower(),v) for k,v in list(row.items()))
             #if not all(k.lower() in row for k in self.columns):
                 #raise ValueError('Value dictionary does not match column headers')
 
@@ -167,4 +167,3 @@ class CSVReportWriter(ReportWriter):
 
     def close(self):
         self.fh.close()
-

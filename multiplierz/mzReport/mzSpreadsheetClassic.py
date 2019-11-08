@@ -91,7 +91,7 @@ def get_xl_sheet(file_name, sheet_name='Data'):
                 #metadata = []
 
             workbook.Close(SaveChanges=0)
-        except Exception, e:
+        except Exception as e:
             raise
         finally:
             _stop_excel()
@@ -194,17 +194,17 @@ def write_xl_sheet(file_name, sheet_name, data, metadata,
             elif t == 'formula':
                 workbook.Worksheets(sheet_name).Cells(x,y).FormulaR1C1 = md
             elif t == 'text':
-                workbook.Worksheets(sheet_name).Cells(x,y).NumberFormat = u'@'
+                workbook.Worksheets(sheet_name).Cells(x,y).NumberFormat = '@'
                 try:
                     if len(md) > 32000:
                         md = "!!!Truncated!!!" + md[:32000]
                     workbook.Worksheets(sheet_name).Cells(x,y).Value = md
                 except:
-                    print x
-                    print y
-                    print t
-                    print md
-                    print i
+                    print(x)
+                    print(y)
+                    print(t)
+                    print(md)
+                    print(i)
                     raise ValueError("Error!")
 
         if before and before in sheet_list:
@@ -223,7 +223,7 @@ def write_xl_sheet(file_name, sheet_name, data, metadata,
         workbook.Activate()
 
         workbook.Close(SaveChanges=1)
-    except Exception, e:
+    except Exception as e:
         raise
     finally:
         _stop_excel()
@@ -279,7 +279,7 @@ def genbank_sheet_format(file_name, num_rows):
         # move sheet
         workbook.Worksheets('GenBank_Info').Move(Before=None, After=workbook.Worksheets(workbook.Worksheets.Count))
         workbook.Close(SaveChanges=1)
-    except Exception, e:
+    except Exception as e:
         raise
     finally:
         _stop_excel()
@@ -341,7 +341,7 @@ class XLSheetWriter(ReportWriter):
         elif len(row) > len(self.columns):
             raise ValueError('Too many values')
         elif isinstance(row,dict):
-            row = dict((k.lower(),v) for k,v in row.items())
+            row = dict((k.lower(),v) for k,v in list(row.items()))
             if not all(k.lower() in row for k in self.columns):
                 raise ValueError('Value dictionary does not match column headers')
 
@@ -350,9 +350,9 @@ class XLSheetWriter(ReportWriter):
 
         index = len(self._data) + 1
         self._metadata.extend((index,i+1,'text',d) for i,d in enumerate(row)
-                              if isinstance(d, (str,unicode)) and len(d) > 768)
+                              if isinstance(d, (str,str)) and len(d) > 768)
 
-        self._data.append([(d[:768] if isinstance(d, (str,unicode)) else d) for d in row])
+        self._data.append([(d[:768] if isinstance(d, (str,str)) else d) for d in row])
 
         if metadata:
             self._metadata.extend((index,self.columns.index(c)+1,t,md) for (c,t,md) in metadata)
@@ -362,7 +362,7 @@ class XLSheetWriter(ReportWriter):
         if index:
             self._metadata.append((index, self.columns.index(column) + 1, 'image', image))
         else:
-            raise IndexError, "No row to add an image to"
+            raise IndexError("No row to add an image to")
 
     def close(self, *args, **kwargs):
         '''Close the file. In this case, we really open, write, and close all in

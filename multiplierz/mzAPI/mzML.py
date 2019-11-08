@@ -30,18 +30,18 @@ class mzFile(multiplierz.mzAPI.mzFile):
         if data_file.lower().endswith('mzml'):
             flptr, flname = tempfile.mkstemp(suffix = '.mzmlsql')
             #flptr.close()
-            print "Parsing mzML to SQLite... (this may take some time.)"
+            print("Parsing mzML to SQLite... (this may take some time.)")
             mzmlToSqlite(data_file, flname)
             self.connection = sqlite.connect(flname)
             self.cursor = self.connection.cursor()
             self.cachename = flname
         elif data_file.lower().endswith('mzmlsql'):
-            print "Opening previously prepared SQLite file..."
+            print("Opening previously prepared SQLite file...")
             self.connection = sqlite.connect(data_file)
             self.cursor = self.connection.cursor()
             self.cachename = data_file
         else:
-            raise NotImplementedError, '%s is not a recognized file type for mzML reader!' % data_file    
+            raise NotImplementedError('%s is not a recognized file type for mzML reader!' % data_file)    
     
     def save_cache(self, save_file):
         self.connection.close()
@@ -70,7 +70,7 @@ class mzFile(multiplierz.mzAPI.mzFile):
         scandata = demarshal(self.cursor.fetchone()[0])
         
         if centroid and not scandata['centroid']:
-            raise NotImplementedError, "Requires general centroiding function!"
+            raise NotImplementedError("Requires general centroiding function!")
         elif centroid == False and scandata['centroid']:
             warnings.warn("Non-centroid data requested but only centroided data available.", RuntimeWarning)
         
@@ -108,7 +108,7 @@ class mzFile(multiplierz.mzAPI.mzFile):
     
     def xic(self, start_time = None, stop_time = None, start_mz = None, stop_mz = None):
         if any([start_time, stop_time, start_mz, stop_mz]):
-            raise NotImplementedError, "Uncertain how to deal with custom XICs from mzML data."
+            raise NotImplementedError("Uncertain how to deal with custom XICs from mzML data.")
         else:
             self.cursor.execute('SELECT data FROM chromato WHERE ind=0 AND startmz=0 AND stopmz=0 AND startrt=0 AND stopmz=0')
             return demarshal(self.cursor.fetchone()[0])[1]

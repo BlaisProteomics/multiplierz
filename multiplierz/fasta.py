@@ -1,5 +1,5 @@
 import gzip
-from mass_biochem import digest
+from multiplierz.mass_biochem import digest
 from multiplierz.internalAlgorithms import gzOptOpen
 import re
 
@@ -126,7 +126,7 @@ def write_fasta(fasta, save_file, write_mode='w'):
     fasta_file = gzOptOpen(save_file, mode = write_mode)
 
     if type(fasta) == type(dict()):
-        for prot, seq in fasta.items():
+        for prot, seq in list(fasta.items()):
             if prot[0] == '>':
                 fasta_file.write("%s\n" % prot.strip())
             else:
@@ -164,10 +164,10 @@ def partial_database(fasta, output = None, search = '',
     if not output:
         output = fasta + 'partial_database.fasta'
 
-    if isinstance(search, basestring):
+    if isinstance(search, str):
         search = [search]
     if use_regex:
-        search = map(re.compile, search)
+        search = list(map(re.compile, search))
         
     
     fastaGen = parse_to_generator(fasta)

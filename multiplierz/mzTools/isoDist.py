@@ -29,11 +29,11 @@ def isotopicDistribution(recipe, precision = 0.000001):
     
     """
     
-    for el in recipe.keys():
+    for el in list(recipe.keys()):
         assert el in iso, "No isotopic distribution for %s" % el
     
     pattern = [100.0]
-    for atom, count in recipe.items():
+    for atom, count in list(recipe.items()):
         for i in range(0, count):
             newPattern = defaultdict(float)
             
@@ -102,7 +102,7 @@ def renderFormula(inputString):
             except ValueError:
                 raise Exception("Could not parse formula.")
             assert len(atom) == 1
-            assert atom in recipe.keys(), "%s currently not supported in this function." % atom
+            assert atom in list(recipe.keys()), "%s currently not supported in this function." % atom
 
             recipe[atom] += count
 
@@ -122,7 +122,7 @@ def chartDistribution(distribution, outputfile = None):
     while distribution[-1] < 0.001:
         distribution = distribution[:-1]
     
-    pyt.bar(range(0, len(distribution) + 1), [0] + distribution, width = 0.3,
+    pyt.bar(list(range(0, len(distribution) + 1)), [0] + distribution, width = 0.3,
             align = 'center')
     pyt.xticks(arange(1, len(distribution)))
     pyt.yticks(arange(0, 110, 10))
@@ -154,5 +154,5 @@ def forFormula(formula_string):
                 formdict[x] = 1
             i += 1
         else:
-            raise NotImplementedError, "Unable to parse chemical formula %s" % formula_string      
+            raise NotImplementedError("Unable to parse chemical formula %s" % formula_string)      
     return isotopicDistribution(formdict)

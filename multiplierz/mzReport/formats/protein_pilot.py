@@ -77,7 +77,7 @@ class ProteinPilot():
 
         for line in fh:
             new_data = dict((h,None) for h in new_headers)
-            data = dict(zip(headers,line[:-1].split('\t')))
+            data = dict(list(zip(headers,line[:-1].split('\t'))))
 
             protein_matches[data['Accessions']] += 1
 

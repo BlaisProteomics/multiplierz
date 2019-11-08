@@ -72,7 +72,7 @@ def numberSequence(start, end, step):
     return foo
 
 def pairplot(thing):
-    pyt.plot(zip(*thing)[0], zip(*thing)[1])
+    pyt.plot(list(zip(*thing))[0], list(zip(*thing))[1])
 
 class EmptyMass(Exception):
     def __init__(self, value = None):
@@ -99,9 +99,9 @@ def stripNone(sequence):
     return list(dropwhile(lambda x: x[0] == None, sequence))
 
 def line(xs, a, b):
-    return np.array(map(lambda x: x*a + b, xs))
+    return np.array([x*a + b for x in xs])
 def curve(xs, a, b, c, d):
-    return np.array(map(lambda x: (x**3)*a + (x**2)*b + x*c + d, xs))
+    return np.array([(x**3)*a + (x**2)*b + x*c + d for x in xs])
 
 def iterativeFitBreak(data, fitFunc = curve, depth = 2):
     """
@@ -119,7 +119,7 @@ def iterativeFitBreak(data, fitFunc = curve, depth = 2):
     
     
     
-    if min(zip(*data)[1]) + 3 > max(zip(*data)[1]):
+    if min(list(zip(*data))[1]) + 3 > max(list(zip(*data))[1]):
         return [data]
     elif len(data) < 4:
         return [data]
@@ -208,10 +208,10 @@ def obtainPeaksForMass(data, mass, tolerance, recorrect = False, requireConsiste
 
     
     if not recorrect:
-        if not peaks: raise SpectralMiss, str(mass)
+        if not peaks: raise SpectralMiss(str(mass))
         return peaks, charges
     else:
-        return obtainPeaksForMass(data, refineMass(zip(peaks, charges), mass),
+        return obtainPeaksForMass(data, refineMass(list(zip(peaks, charges)), mass),
                                   tolerance, recorrect = False)
 
 def refineMass(chargePeaks, mass):
@@ -244,7 +244,7 @@ def refineMass(chargePeaks, mass):
         if not round(chargeEstimate) == chg:
             continue
         if abs(round(chargeEstimate) - chg) > 0.1:
-            print "Distant."
+            print("Distant.")
         hypotheticalMasses.append(((peak[0] * chg) - (chg * proton), weight))
     
     #assert hypotheticalMasses
@@ -309,13 +309,13 @@ def validatePeaks(peakPoints):
 # Note that non-multiplicative inaccuracies in the guess are generally solved
 # by refineMass(), so nothing here really addresses that very well.
 def assignMassCharge(peakPoints, mass):
-    peaks = zip(*obtainPeaksForMass(peakPoints, mass, finalTolerance))
+    peaks = list(zip(*obtainPeaksForMass(peakPoints, mass, finalTolerance)))
     
     stripPeaks = validatePeaks(peaks) # Removes not-found peaks from beginning and end.
     
 
     if not stripPeaks:
-        raise EmptyMass, str(mass)
+        raise EmptyMass(str(mass))
     
     noneGapFraction = len([x for x in stripPeaks if x[0] == None]) / float(len(stripPeaks))
     if noneGapFraction > 0.3:
@@ -337,10 +337,10 @@ def assignMassCharge(peakPoints, mass):
         
         if chargeDen == 1:
             if noneGapFraction > 0.5:
-                raise SpectralMiss, str(noneGapFraction)
+                raise SpectralMiss(str(noneGapFraction))
                     
             finalMass = refineMass(peaks, mass)
-            finalPeaks = zip(*obtainPeaksForMass(peakPoints, finalMass, finalTolerance))
+            finalPeaks = list(zip(*obtainPeaksForMass(peakPoints, finalMass, finalTolerance)))
             return [x for x in finalPeaks if x[0]], finalMass
         else:    
             return assignMassCharge(peakPoints, mass / chargeDen)
@@ -349,7 +349,7 @@ def assignMassCharge(peakPoints, mass):
         # Check mass multiples of the next few primes to see if its skipping over peaks.
         for multiple in [2,3,5,7,11]:
             try:
-                nextPeaks = zip(*obtainPeaksForMass(peakPoints, mass*multiple, finalTolerance))
+                nextPeaks = list(zip(*obtainPeaksForMass(peakPoints, mass*multiple, finalTolerance)))
                 nextPeaks = validatePeaks(nextPeaks)
                 if (not nextPeaks) or len(nextPeaks)*2 < len(stripPeaks): continue
             except SpectralMiss:
@@ -362,7 +362,7 @@ def assignMassCharge(peakPoints, mass):
             
             
     finalMass = refineMass(peaks, mass)
-    finalPeaks = zip(*obtainPeaksForMass(peakPoints, finalMass, finalTolerance))
+    finalPeaks = list(zip(*obtainPeaksForMass(peakPoints, finalMass, finalTolerance)))
     return [x for x in finalPeaks if x[0]], finalMass
                 
         
@@ -389,10 +389,10 @@ def assignMassCharge(peakPoints, mass):
 def assignAllMasses(data, removalArea = None, requiredLength = 0, 
                     peakIterations = 2, massRange = None):
     peaks = iterativeFitBreak(data, line, peakIterations)
-    print "Peaks found. %s" % time.clock()
+    print(("Peaks found. %s" % time.clock()))
     
     if not peaks:
-        print "No peaks detected! "
+        print("No peaks detected! ")
         return []
     
     peakPoints = []
@@ -418,7 +418,7 @@ def assignAllMasses(data, removalArea = None, requiredLength = 0,
         peakPoints = sorted(peakPoints, key = lambda x: x[1], reverse = True)[:300]
         
     if not peakPoints:
-        print "No peaks detected!"
+        print("No peaks detected!")
         return []    
         
     peakPoints.sort(key = lambda x: x[1], reverse = True)
@@ -443,13 +443,13 @@ def assignAllMasses(data, removalArea = None, requiredLength = 0,
     
     
     potentialMassSpec.sort(key = lambda x: x[0])
-    print len(potentialMassSpec)
+    print((len(potentialMassSpec)))
     potentialMassSpec = (x for x in potentialMassSpec) # Scopes and closures!
     
-    print "Binning mass values. %s" % time.clock()
+    print(("Binning mass values. %s" % time.clock()))
     massBins = []
     low = 0
-    nextEl = potentialMassSpec.next()
+    nextEl = next(potentialMassSpec)
     for i in range(lowMassBound, highMassBound, binSize):
         if not i: 
             continue
@@ -459,7 +459,7 @@ def assignAllMasses(data, removalArea = None, requiredLength = 0,
         while nextEl[0] < high:
             massBin.append(nextEl)
             try:
-                nextEl = potentialMassSpec.next()
+                nextEl = next(potentialMassSpec)
             except StopIteration:
                 massBin.append(nextEl)
                 break
@@ -513,7 +513,7 @@ def assignAllMasses(data, removalArea = None, requiredLength = 0,
         try:
             chargePeaks, finalMass = assignMassCharge(peakPoints, mass)
         except EmptyMass as err:
-            print err
+            print(err)
             continue
         except (SpectralMiss, ZeroDivisionError) as err:
             continue
@@ -601,9 +601,9 @@ def getAllMW(mzSpectrum,
     
     zcSpectrum = []
     try:
-        nextEl = zcRawSpectrum.next()
+        nextEl = next(zcRawSpectrum)
     except StopIteration:
-        raise EmptySpectrum, "No valid features were found in the data."
+        raise EmptySpectrum("No valid features were found in the data.")
     
     baseline = True
     done = False
@@ -612,7 +612,7 @@ def getAllMW(mzSpectrum,
         while nextEl[0] < mass:
             points.append(nextEl)
             try:
-                nextEl = zcRawSpectrum.next()
+                nextEl = next(zcRawSpectrum)
             except StopIteration:
                 points.append(nextEl)
                 done = True
@@ -641,7 +641,7 @@ def getAllMW(mzSpectrum,
         except ValueError: continue # Why does this happen?
         mwLabels.append(massPoint)
     
-    mwLabels = zip(mwLabels, alphabet)
+    mwLabels = list(zip(mwLabels, alphabet))
     if speciesCount:
         speciesCount = int(speciesCount)
         mwLabels = mwLabels[:speciesCount]
@@ -664,7 +664,7 @@ def getAllMW(mzSpectrum,
             if smoothWidth % 2 == 0:
                 smoothWidth -= 1
             mzs, intensities = unzip(subSpec)
-            subSpec = zip(mzs, savitzkyGolay(intensities, smoothWidth, 3))
+            subSpec = list(zip(mzs, savitzkyGolay(intensities, smoothWidth, 3)))
             subSpec = subSpec + [(zcSpectrum[-1][0]+1, 0)]
         zcSpectrum2 += subSpec
     
@@ -703,8 +703,8 @@ def mannAlgorithm(mzSpectrum, massRange, chargeRange):
         #avgInt = avgInt / step * 2
         #reducedSpec.append((avgMZ, avgInt))
 
-    smoothedMassSpec = zip(unzip(massSpec)[0],
-                           savitzkyGolay(unzip(massSpec)[1], 15, 3))
+    smoothedMassSpec = list(zip(unzip(massSpec)[0],
+                           savitzkyGolay(unzip(massSpec)[1], 75, 5)))
 
     
     return smoothedMassSpec
@@ -722,73 +722,73 @@ def mannAlgorithm(mzSpectrum, massRange, chargeRange):
 
 
 
-# trainingPoints is a sequence of feature sequences; trainingOuput is a sequence of
-# dependent features;
-# dataPoints is a sequence of sequences same as trainingPoints.
-# If trainingPoints == dataPoints, trainingOutput ~~ return value, if it works correctly.
-def emulateFunctionBasedOnExamples(trainingPoints, trainingOutput, dataPoints,
-                                   normFactor = 1, paramLength = 16):
-    from scipy.optimize import leastsq
+## trainingPoints is a sequence of feature sequences; trainingOuput is a sequence of
+## dependent features;
+## dataPoints is a sequence of sequences same as trainingPoints.
+## If trainingPoints == dataPoints, trainingOutput ~~ return value, if it works correctly.
+#def emulateFunctionBasedOnExamples(trainingPoints, trainingOutput, dataPoints,
+                                   #normFactor = 1, paramLength = 16):
+    #from scipy.optimize import leastsq
 
-    def normalize(shift, scale, data):
-        return (data - shift) / scale    
+    #def normalize(shift, scale, data):
+        #return (data - shift) / scale    
     
-    def model(param, features):
-        output = 0
-        for i in range(0, len(param)/len(features)):
-            degree = i
-            for c, f in enumerate(features):
-                output += param[(i*len(features))+c]*(f**i)
-        return output
+    #def model(param, features):
+        #output = 0
+        #for i in range(0, len(param)/len(features)):
+            #degree = i
+            #for c, f in enumerate(features):
+                #output += param[(i*len(features))+c]*(f**i)
+        #return output
     
-    def costFunc(param, features, target, normFactor):
-        features = unzip([list(f) for f in features])
+    #def costFunc(param, features, target, normFactor):
+        #features = unzip([list(f) for f in features])
         
-        iteratee = []
+        #iteratee = []
     
-        for i in range(0, len(target)):
-            iteratee.append((target[i], features[i]))
+        #for i in range(0, len(target)):
+            #iteratee.append((target[i], features[i]))
             
         
-        cost = []
-        for idealOutput, featurePoint in iteratee:
-            cost.append(model(param, featurePoint) - idealOutput)
+        #cost = []
+        #for idealOutput, featurePoint in iteratee:
+            #cost.append(model(param, featurePoint) - idealOutput)
         
-        for p in param:
-            cost.append(p * normFactor)
+        #for p in param:
+            #cost.append(p * normFactor)
         
-        return cost    
+        #return cost    
     
     
-    features = len(trainingPoints)
-    featureScales = []
-    featureShifts = []
-    TP = []
-    for feature in trainingPoints:
-        shift = np.average(feature)
-        scale = np.std(feature)
-        TP.append([normalize(shift, scale, f) for f in feature])
-        featureScales += [scale]
-        featureShifts += [shift]
-    # Scaling output isn't necessary, is it?
-    # Don't be confused by not having done this!
+    #features = len(trainingPoints)
+    #featureScales = []
+    #featureShifts = []
+    #TP = []
+    #for feature in trainingPoints:
+        #shift = np.average(feature)
+        #scale = np.std(feature)
+        #TP.append([normalize(shift, scale, f) for f in feature])
+        #featureScales += [scale]
+        #featureShifts += [shift]
+    ## Scaling output isn't necessary, is it?
+    ## Don't be confused by not having done this!
     
-    # Replace explicit list set with variable length list of ones?
-    #initialParameters = [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
-    initialParameters = [1,1,1,1,1,1]
-    initialParameters = [1] * paramLength
-    parameters, _ = leastsq(costFunc, initialParameters, args = (TP, trainingOutput, normFactor))
+    ## Replace explicit list set with variable length list of ones?
+    ##initialParameters = [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+    #initialParameters = [1,1,1,1,1,1]
+    #initialParameters = [1] * paramLength
+    #parameters, _ = leastsq(costFunc, initialParameters, args = (TP, trainingOutput, normFactor))
     
-    print parameters
+    #print parameters
     
-    DP = []
-    for feature, scale, shift in zip(dataPoints, featureScales, featureShifts):
-        DP.append([normalize(shift, scale, f) for f in feature])
+    #DP = []
+    #for feature, scale, shift in zip(dataPoints, featureScales, featureShifts):
+        #DP.append([normalize(shift, scale, f) for f in feature])
     
-    DOutput = [model(parameters, dat) for dat in zip(*DP)]
+    #DOutput = [model(parameters, dat) for dat in zip(*DP)]
 
     
-    return DOutput
+    #return DOutput
 
 
 
@@ -902,13 +902,13 @@ def savitzkyGolay(y, window_size, order, deriv=0, rate=1):
     try:
         window_size = np.abs(np.int(window_size))
         order = np.abs(np.int(order))
-    except ValueError, msg:
+    except ValueError as msg:
         raise ValueError("window_size and order have to be of type int")
     if window_size % 2 != 1 or window_size < 1:
         raise TypeError("window_size size must be a positive odd number")
     if window_size < order + 2:
         raise TypeError("window_size is too small for the polynomials order")
-    order_range = range(order+1)
+    order_range = list(range(order+1))
     half_window = (window_size -1) // 2
     # precompute coefficients
     b = np.mat([[k**i for i in order_range] for k in range(-half_window, half_window+1)])
@@ -932,7 +932,7 @@ def smoothSpectrum(spectrum, window = None, order = 3):
         if window % 2 == 0: window += 1
 
     smoothIntensities = savitzkyGolay(intensities, window, order)
-    return zip(mzs, smoothIntensities)
+    return list(zip(mzs, smoothIntensities))
 
 
 
@@ -961,7 +961,7 @@ def processZCSpectrum(spectra):
         peakRelativePoints.sort(key = lambda x: x[0])
         relativeSpectra[charge] += peakRelativePoints
     
-    zcSpectrum = sorted(sum(relativeSpectra.values(), []), key = lambda x: x[0])
+    zcSpectrum = sorted(sum(list(relativeSpectra.values()), []), key = lambda x: x[0])
     
     def extrapolateZeroes(spectrum):
         filledSpectrum = []
@@ -1207,6 +1207,11 @@ App = None
 Pres = None
 ppFilename = None
 def slideWritingNonsense(outputfile, imagefile, inputfile):
+    global App
+    global Pres
+    global ppFilename    
+    global consolidateMode    
+    
     if not MSO:
         errorStr = ("Microsoft Office Object Library not found.  To generate\n"
                     "this library, run the client/makepy.py script located \n"
@@ -1214,8 +1219,7 @@ def slideWritingNonsense(outputfile, imagefile, inputfile):
                     "select the version appropriate to your copy of Office.")
         wx.MessageBox(errorStr, "Could not write to Powerpoint.")
         return
-    
-    global consolidateMode
+
     if not consolidateMode:
         App = win32com.client.Dispatch("PowerPoint.Application")
         Pres = App.Presentations.Add()
@@ -1234,9 +1238,6 @@ def slideWritingNonsense(outputfile, imagefile, inputfile):
         Pres = None
         App = None
     else:
-        global App
-        global Pres
-        global ppFilename
         if not App:
             global App
             global Pres
@@ -1256,9 +1257,9 @@ def powerPointCleanup():
     global App
     global Pres    
     global ppFilename
-    print ppFilename
-    if App: print 5
-    if Pres: print 6
+    print(ppFilename)
+    if App: print((5))
+    if Pres: print((6))
     assert App and Pres and ppFilename
     Pres.SaveAs(ppFilename)
     Pres.Close()
@@ -1271,45 +1272,45 @@ def powerPointCleanup():
             
 
 
-def getMaxima(spectrum, minElevation = 2):
-    spectrum.sort(key = lambda x: x[0])
-    interpolationPoints = unzip(spectrum)[0]
+#def getMaxima(spectrum, minElevation = 2):
+    #spectrum.sort(key = lambda x: x[0])
+    #interpolationPoints = unzip(spectrum)[0]
     
-    spectralCurve = emulateFunctionBasedOnExamples([unzip(spectrum)[0]], unzip(spectrum)[1], 
-                                                      [interpolationPoints], normFactor = 1,
-                                                      paramLength = 5)
-    curveSpectrum = zip(interpolationPoints, spectralCurve)
+    #spectralCurve = emulateFunctionBasedOnExamples([unzip(spectrum)[0]], unzip(spectrum)[1], 
+                                                      #[interpolationPoints], normFactor = 1,
+                                                      #paramLength = 5)
+    #curveSpectrum = zip(interpolationPoints, spectralCurve)
     
-    if curveSpectrum[0][1] > spectrum[0][1]:
-        peakRegion = False
-    else:
-        peakRegion = True
-    peaks = []
-    previousIntersection = 0
-    for curvePeak, truePeak in zip(curveSpectrum, spectrum):
-        assert curvePeak[0] == truePeak[0]
-        if peakRegion and curvePeak[1] > truePeak[1]:
-            peakRegion = not peakRegion
-            if abs(previousIntersection - curvePeak[0]) > 0.5:
-                peaks.append((previousIntersection, curvePeak[0]))
-            previousIntersection = curvePeak[0]
-        elif not peakRegion and curvePeak[1] < truePeak[1]:
-            peakRegion = not peakRegion
-            previousIntersection = curvePeak[0]
+    #if curveSpectrum[0][1] > spectrum[0][1]:
+        #peakRegion = False
+    #else:
+        #peakRegion = True
+    #peaks = []
+    #previousIntersection = 0
+    #for curvePeak, truePeak in zip(curveSpectrum, spectrum):
+        #assert curvePeak[0] == truePeak[0]
+        #if peakRegion and curvePeak[1] > truePeak[1]:
+            #peakRegion = not peakRegion
+            #if abs(previousIntersection - curvePeak[0]) > 0.5:
+                #peaks.append((previousIntersection, curvePeak[0]))
+            #previousIntersection = curvePeak[0]
+        #elif not peakRegion and curvePeak[1] < truePeak[1]:
+            #peakRegion = not peakRegion
+            #previousIntersection = curvePeak[0]
             
-    maxima = []
-    for start, end in peaks:
-        try:
-            trueMaximum = max([x for x in spectrum if start < x[0] < end], key = lambda x: x[1])
-            curveMaximum = max([x for x in curveSpectrum if start < x[0] < end], key = lambda x: x[1])
-        except ValueError:
-            continue
+    #maxima = []
+    #for start, end in peaks:
+        #try:
+            #trueMaximum = max([x for x in spectrum if start < x[0] < end], key = lambda x: x[1])
+            #curveMaximum = max([x for x in curveSpectrum if start < x[0] < end], key = lambda x: x[1])
+        #except ValueError:
+            #continue
         
-        if trueMaximum[1] > curveMaximum[1] + minElevation:
-            maxima.append(trueMaximum)
+        #if trueMaximum[1] > curveMaximum[1] + minElevation:
+            #maxima.append(trueMaximum)
         
             
-    return maxima
+    #return maxima
             
 
     
@@ -1349,9 +1350,10 @@ def zoomOnMostIntense(spectrum, maxLabels, label):
     
     
     
-    if maxLabels == None: maxLabels = 99
+    if maxLabels == None: 
+        maxLabels = 99
     return ((accumulator[0][0], accumulator[-1][0]), 
-            zip(peaks, [None]*maxLabels))
+            list(zip(peaks, [None]*maxLabels)))
     
     
     
@@ -1435,10 +1437,10 @@ def chargeDecWholeRunMode(dataFile, outputfile, mzRange, massRange,
                                 peakIterations, zcLabelCount, zoomLabelCount, 
                                 recalibrationSettings, smoothWindow)
         
-            print "Completed segment {0:.2f}-{1:.0f} of {2}".format(start, end, outputfile)
+            print(("Completed segment {0:.2f}-{1:.0f} of {2}".format(start, end, outputfile)))
         except AssertionError as err:
-            print err
-            print "Failed on segment {0:.2f}-{1:.2f} of {2}".format(start, end, outputfile)
+            print(err)
+            print(("Failed on segment {0:.2f}-{1:.2f} of {2}".format(start, end, outputfile)))
     
     
         
@@ -1450,12 +1452,21 @@ def chargeDecWholeRunMode(dataFile, outputfile, mzRange, massRange,
 #def chargeDeconvolution(mzSpectrum, outputfile, snThreshold,
                         #mzTolerance, maxCharge, mzRange, speciesCount,
                         #zcLabelCount, zoomLabelCount):
-def chargeDeconvolution(mzSpectrum, outputfile, mzRange, massRange,
-                        speciesCount, removalArea, minimumPeaks, peakIterations,
-                        zcLabelCount, zoomLabelCount, (rSlope, rIntercept),
-                        smoothWindow, consolidateSet = False,
+def chargeDeconvolution(mzSpectrum, outputfile, 
+                        mzRange = (300, 2000), 
+                        massRange = (10000, 100000),
+                        speciesCount = 5,
+                        removalArea = 3,
+                        minimumPeaks = 8,
+                        peakIterations = 2,
+                        zcLabelCount = None,
+                        zoomLabelCount = None,
+                        slopeIntercept = (0.0, 0.0),
+                        smoothWindow = False,
+                        consolidateSet = False,
                         returnFigure = False):                        
     
+    rSlope, rIntercept = slopeIntercept
     if consolidateSet:
         global consolidateMode
         consolidateMode = True
@@ -1512,7 +1523,7 @@ def chargeDeconvolution(mzSpectrum, outputfile, mzRange, massRange,
             triFigure.savefig(outputfile, bbox_inches='tight')
     
         triFigure.clear()    
-        print "Done!"
+        print("Done!")
     
 
 

@@ -31,153 +31,11 @@ __author__ = 'Jignesh Parikh, James Webber, William Max Alexander'
 
 __all__ = ['mzFile']
 
-import cPickle
 import os
 import re
 import sys
 
 from multiplierz import logger_message
-
-# Caused problems and, really, who needs to open link files?  If necessary
-# and you want to deal with win32com import errors, uncomment-out this and the
-# use of it below.
-#if sys.platform == 'win32':
-    #import pythoncom
-    #from win32com.shell import shell
-
-    ## windows function to follow links
-    #def follow_link(data_file):
-        #link = pythoncom.CoCreateInstance (
-            #shell.CLSID_ShellLink,
-            #None,
-            #pythoncom.CLSCTX_INPROC_SERVER,
-            #shell.IID_IShellLink
-        #)
-        #link.QueryInterface(pythoncom.IID_IPersistFile).Load(data_file)
-
-        ## GetPath returns the name and a WIN32_FIND_DATA structure
-        ## which we're ignoring. The parameter indicates whether
-        ## shortname, UNC or the "raw path" are to be
-        ## returned.
-
-        #data_file,_ = link.GetPath(shell.SLGP_UNCPRIORITY)
-
-        #return data_file
-
-#elif 'readlink' in dir(os):
-    ## *nix function to follow symlinks.
-    ## This is of limited utility until we can open files
-    ## on *nix, of course.
-    #def follow_link(data_file):
-        #res = os.readlink(data_file)
-        #if os.path.isabs(res):
-            #return res
-        #else:
-            #return os.path.join(os.path.dirname(data_file), res)
-
-
-def make_info_file(data_file, **kwargs):
-    """Generates a text file with mapping for scan time to proprietary scan index
-
-    """
-
-    if data_file.lower().startswith('http://'):
-        raise NotImplementedError('How do you make an info file for a URL?')
-
-    if data_file.lower().endswith('wiff'):
-        file_type = 'wiff'
-    elif data_file.lower().endswith('raw'):
-        file_type = 'raw'
-    elif data_file.lower().endswith('mzml'):
-        file_type = 'mzml'
-    elif data_file.lower().endswith('mzml.gz'):
-        file_type = 'mzml'
-
-
-    if os.path.exists(data_file + '.mzi'):
-        os.remove(data_file + '.mzi')
-
-    if file_type == 'mzml':
-        import mzML
-        mzML.make_info_file(data_file)
-    else:
-        my_file = mzFile(data_file, **kwargs)
-        (start_time, stop_time) = my_file.time_range()
-        scan_list = my_file.scan_info(start_time, stop_time)
-        my_file.close()
-
-        info_list = []
-        for (time, mz, scan_name, scan_type, scan_mode) in scan_list:
-            my_dict = {'time': time, 'mz': mz, 'scan_name': scan_name, 'scan_type': scan_type, 'scan_mode': scan_mode}
-            info_list.append(my_dict)
-        info_list = mzInfoFile(info_list)
-
-        # pickle object
-        with open(data_file + '.mzi', 'w') as f:
-            cPickle.dump(info_list, f)
-
-
-class mzInfoFile(tuple):
-    """Subclass of tuple object for storing mzInfo.
-
-    Each element of the tuple is a dictionary that stores information about each scan
-    """
-
-    def __init__(self, s):
-        tuple.__init__(self, s)
-        self.index_dict = dict((d["time"], i) for i,d in enumerate(self))
-
-    def field_list(self):
-        """Returns keys for dictionary stored in each list element.
-
-        Assumes all dictionaries have same keys.
-        """
-
-        return self[0].keys()
-
-    def sort_by_field(self, field=None):
-        if field:
-            return sorted(self, key=lambda e: e[field])
-        else:
-            return list(self)
-
-    def filter(self, list_key=None, value_list=None, value_range=None, sort_field=None):
-        """All purpose extract data function
-
-        list_key provides the key used to exctract data
-        value_list or value_range can be used to provide the values to exctract
-        value_list = [val1, val2, val3...]
-        value_range = [start_val, stop_val]
-        if value_list is provided, range will be ignored
-
-        sort_field option returns the list sorted based on a specified_field
-        """
-
-        #  Extract
-        temp_list = self.sort_by_field(field = list_key)
-        if value_list != None:
-            value_list = set(value_list)
-            extracted_list = [i for i in temp_list if i[list_key] in value_list]
-        elif value_range != None:
-            (start_value, stop_value) = sorted(value_range)
-            extracted_list = [i for i in temp_list if start_value <= i[list_key] <= stop_value]
-        else:
-            extracted_list = temp_list
-
-        if sort_field != None:
-            extracted_list.sort(key=lambda i: i[sort_field])
-
-        return extracted_list
-
-    def closest(self, key, value):
-        closest_item = self[0]
-        if key == "time":
-            if value in self.index_dict:
-                closest_item = self[self.index_dict[value]]
-                return closest_item
-
-        return min((i for i in self), key=lambda e: abs(e[key] - value))
-
 
 class mzScan(list):
     """A subclass of the list object to represent a raw data scan.
@@ -221,24 +79,24 @@ class mzFile(object):
         bitness = platform.architecture()[0]
         if bitness != '64bit':
             if '32bit' in bitness:
-                raise Exception, "mzAPI does not support 32-bit Python!"
+                raise Exception("mzAPI does not support 32-bit Python!")
             else:
-                print ("WARNING- System architecture string %s not "
-                      "recognized.  Is this 64-bit Windows Python?") % bitness
+                print((("WARNING- System architecture string %s not "
+                      "recognized.  Is this 64-bit Windows Python?") % bitness))
         
         #if data_file.lower().endswith('.lnk') or os.path.islink(data_file):
             #data_file = follow_link(data_file)
 
         if not (data_file.lower().startswith('http://') or os.path.exists(data_file)):
-            raise IOError, "%s not found." % data_file
+            raise IOError("%s not found." % data_file)
 
         if data_file.lower().startswith('http://'):
-            import mzURL
+            import multiplierz.mzAPI.mzURL as mzURL
             self.__class__ = mzURL.mzFile
             self.format = 'mzserver'
             mzURL.mzFile.__init__(self, data_file, **kwargs)
         elif data_file.lower().endswith('.wiff'):
-            import mzWiff
+            import multiplierz.mzAPI.mzWiff as mzWiff
             self.format = 'wiff'
             if kwargs.get('implicit_mode', False) == True:
                 self.__class__ = mzWiff.mzFile_implicit_numbering
@@ -256,31 +114,37 @@ class mzFile(object):
                 
             #mzWiff.mzFile.__init__(self, data_file, **kwargs)
         elif data_file.lower().endswith('.raw'):
-            import raw
+            import multiplierz.mzAPI.raw as raw
             self.__class__ = raw.mzFile
             self.format = 'raw'
             raw.mzFile.__init__(self, data_file, **kwargs)
         elif (data_file.lower().endswith('.mzml') or
               data_file.lower().endswith('.mzml.gz') or
               data_file.lower().endswith('.mzmlsql')):
-            import mzML
+            import multiplierz.mzAPI.mzML as mzML
             self.__class__ = mzML.mzFile
             self.format = 'mzml'
             mzML.mzFile.__init__(self, data_file, **kwargs)
         elif data_file.lower().endswith('.d'):
-            #assert sys.maxsize <= 2**32, "Agilent files are not currently supported in 64-bit Python."
-            
-            import D
-            self.__class__ = D.mzFile
-            self.format = 'd'
-            D.mzFile.__init__(self, data_file, **kwargs)
+            from comtypes import COMError
+            try:
+                import multiplierz.mzAPI.bruker as bruker
+                self.__class__ = bruker.mzBruker
+                self.format = 'Bruker'
+                bruker.mzBruker.__init__(self, data_file, **kwargs)                
+            except COMError as err:
+                print(err)
+                import multiplierz.mzAPI.D as D
+                self.__class__ = D.mzFile
+                self.format = 'Agilent'
+                D.mzFile.__init__(self, data_file, **kwargs)
         elif data_file.lower().endswith('.t2d'):
-            import mzT2D
+            import multiplierz.mzAPI.mzT2D as mzT2D
             self.__class__ = mzT2D.mzFile
             self.format = 't2d'
             mzT2D.mzFile.__init__(self, data_file, **kwargs)
         else:
-            raise NotImplementedError, "Can't open %s; extension not recognized." % data_file
+            raise NotImplementedError("Can't open %s; extension not recognized." % data_file)
         
         
         

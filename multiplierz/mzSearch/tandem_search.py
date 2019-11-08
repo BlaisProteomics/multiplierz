@@ -337,8 +337,8 @@ class TandemSearch(dict):
         note.text = 'XTandem parameter file written by Multiplierz.'
         bioml.append(note)
         
-        for category, fields in self.items():
-            for field, value in fields.items():
+        for category, fields in list(self.items()):
+            for field, value in list(fields.items()):
                 if category == 'refine' and not field:
                     fullfield = 'refine'
                 else:

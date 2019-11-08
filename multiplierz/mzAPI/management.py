@@ -22,8 +22,8 @@
 import os
 
 def pause():
-    print "\n-"
-    print "Press enter to continue."
+    print("\n-")
+    print("Press enter to continue.")
     raw_input()
     return
 
@@ -53,7 +53,7 @@ def testInterfaces():
     return worked
 
 def registerInterfaces():
-    print "Checking for access to MS data formats..."
+    print("Checking for access to MS data formats...")
     
     import ctypes
     assert ctypes.windll.shell32.IsUserAnAdmin(), "registerInterfaces() must be run with administrator priviledges!"
@@ -85,12 +85,12 @@ def registerInterfaces():
     except IndexError:
         message =  (".NET version 3 or higher not found; the free .NET redistributable can be found at: "
                     "http://www.microsoft.com/en-us/download/details.aspx?id=17718")
-        print message
+        print(message)
         pause()
         return 1   
     
     initialChecks = {}
-    for filetype, guid in interfaceGUIDs.items():
+    for filetype, guid in list(interfaceGUIDs.items()):
         try:
             Dispatch(guid)
             initialChecks[filetype] = True
@@ -101,18 +101,18 @@ def registerInterfaces():
     dllsFound = {}
     for directory in sys.path + [os.path.dirname(sys.executable)]:
         if len(os.path.abspath(directory)) <= 3: # Searching from base directory is unwise.
-            print "Not searching from %s" % directory
+            print(("Not searching from %s" % directory))
             continue 
         for path, names, files in os.walk(directory):
             #print path
             for filename in files:
-                if (filename in interfaceModules.keys()) and (not filename in dllsFound.keys()):
+                if (filename in list(interfaceModules.keys())) and (not filename in list(dllsFound.keys())):
                     dllsFound[filename] = os.path.join(path, filename)
                     if len(dllsFound) == len(interfaceModules): break
     
     registerResults = defaultdict(int)
-    for filename in interfaceModules.keys():
-        print '\n\n' + filename + '\n'
+    for filename in list(interfaceModules.keys()):
+        print(('\n\n' + filename + '\n'))
         try:
             dllpath = dllsFound[filename]
             ret = subprocess.call([netDir, dllpath, "/tlb", "/codebase"])
@@ -122,7 +122,7 @@ def registerInterfaces():
     
         
     afterChecks = {}
-    for filetype, guid in interfaceGUIDs.items():
+    for filetype, guid in list(interfaceGUIDs.items()):
         try:
             Dispatch(guid)
             afterChecks[filetype] = True
@@ -130,15 +130,15 @@ def registerInterfaces():
             afterChecks[filetype] = False
             
     
-    print "Registration operations completed."
-    print "Results: \n"
-    print "File Type\tRegistered Before\tRegAsm Return Code\tRegistered Now"
-    for filetype in interfaceGUIDs.keys():
-        print "{0}\t\t{1}\t\t{2}\t\t\t{3}".format(filetype,
+    print("Registration operations completed.")
+    print("Results: \n")
+    print("File Type\tRegistered Before\tRegAsm Return Code\tRegistered Now")
+    for filetype in list(interfaceGUIDs.keys()):
+        print(("{0}\t\t{1}\t\t{2}\t\t\t{3}".format(filetype,
                                                   initialChecks[filetype],
                                                   registerResults[filetype],
-                                                  afterChecks[filetype])
-    print "\n"
+                                                  afterChecks[filetype])))
+    print("\n")
     #if not afterChecks["RAW"]:
         #print "MSFileReader (required for RAW file access) has not been installed.  Run the Thermo MSFileReader installation package now? [Y/n]"
         #if 'n' not in raw_input().lower():
@@ -174,7 +174,7 @@ if __name__ == '__main__':
         registerInterfaces()
         pause()
     else:
-        print sys.executable, sys.argv
+        print((sys.executable, sys.argv))
         #reRun = ' '.join([sys.executable] + sys.argv)
         #foo = ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, "", None, 1)
         #procinfo = shell.ShellExecuteEx(lpVerb = 'runas', lpFile = sys.executable,
@@ -191,6 +191,6 @@ if __name__ == '__main__':
         except:
             retval = 'No return value.'
         
-        print retval
+        print(retval)
         
     

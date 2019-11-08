@@ -1,5 +1,5 @@
 from collections import defaultdict
-from internalAlgorithms import average
+from multiplierz.internalAlgorithms import average
 from multiplierz import protonMass
 from collections import deque, Iterator
 from numpy import std
@@ -18,7 +18,7 @@ def centroid(scan, threshold = None):
                                                 "threshold value if given an "
                                                 "Iterator argument.")
 
-        threshold = average(zip(*scan)[1])
+        threshold = average(list(zip(*scan))[1])
         
     peaks = []
     peak = []
@@ -26,11 +26,11 @@ def centroid(scan, threshold = None):
         if pt[1] > threshold:
             peak.append(pt)
         elif peak:
-            centMZ = average(zip(*peak)[0], weights = zip(*peak)[1])
-            centInt = max(zip(*peak)[1])
+            centMZ = average(list(zip(*peak))[0], weights = list(zip(*peak))[1])
+            centInt = max(list(zip(*peak))[1])
             if len(pt) == 4:
-                centNoise = average(zip(*peak)[2], weights = zip(*peak)[1])
-                centCharge = max(zip(*peak)[3])
+                centNoise = average(list(zip(*peak))[2], weights = list(zip(*peak))[1])
+                centCharge = max(list(zip(*peak))[3])
                 peaks.append((centMZ, centInt, centNoise, centCharge))
             else:
                 peaks.append((centMZ, centInt))
@@ -51,7 +51,8 @@ isotopicRatios = {(0, 1) : (0.5, 16.2),
                   (7, 8) : (2.9, 22.2),
                   (8, 9) : (3.0, 20.0),
                   (9, 10) : (3.4, 17.0),
-                  (10, 11) : (3.6, 15.0)
+                  (10, 11) : (3.6, 15.0),
+                  (11, 12) : (0.0, 0.0) # To gracefully close an endless envelope.
                   }
 # Tolerances widened even further, for chlorine atoms.
 isotopicRatios_permissive = {(0, 1) : (0.5, 16.2),
@@ -64,7 +65,8 @@ isotopicRatios_permissive = {(0, 1) : (0.5, 16.2),
                              (7, 8) : (2.0, 22.2),
                              (8, 9) : (3.0, 20.0),
                              (9, 10) : (3.4, 17.0),
-                             (10, 11) : (3.6, 15.0)
+                             (10, 11) : (3.6, 15.0),
+                             (11, 12) : (0.0, 0.0)
                            }
 # Dev note: "First, do no harm"- all peaks from the input scan should be
 # represented somewhere in the output (and no new peaks, obviously.)
@@ -111,7 +113,7 @@ def peak_pick(scan, tolerance = 0.005, max_charge = 8, min_peaks = 3, correction
         # the expected ratio with the previous intensity in the sequence, it
         # is added to that sequence and the algorithm proceeds to the next
         # point.
-        for chg, chargeSet in activeSets.items():
+        for chg, chargeSet in list(activeSets.items()):
             # Chargeset is ordered by MZ, by construction, so only the first
             # (within-range) expected-point has to be checked.
 
@@ -164,7 +166,7 @@ def peak_pick(scan, tolerance = 0.005, max_charge = 8, min_peaks = 3, correction
         # since their charge is indeterminate, so there's multiple possible-next-MZs.
         # If a point matches to an active point, they're put together in a new 
         # isotopic sequence.
-        for actPt in sorted(activePts.keys(), key = lambda x: x[1], reverse = True):
+        for actPt in sorted(list(activePts.keys()), key = lambda x: x[1], reverse = True):
             if actPt[0] + 1 + tolerance < pmz:
                 del activePts[actPt]
                 unassigned.append(actPt)
@@ -196,14 +198,14 @@ def peak_pick(scan, tolerance = 0.005, max_charge = 8, min_peaks = 3, correction
 
 
     newCorrection = []
-    for charge, things in activeSets.items():
+    for charge, things in list(activeSets.items()):
         for thing in things:
             if len(thing['envelope']) >= min_peaks:
                 envelopes[charge].append(thing['envelope'])
             else:
                 unassigned += thing['envelope']            
 
-    unassigned += activePts.keys()
+    unassigned += list(activePts.keys())
 
 
 
@@ -212,7 +214,7 @@ def peak_pick(scan, tolerance = 0.005, max_charge = 8, min_peaks = 3, correction
     if cleanup:
         unProx = ProximityIndexedSequenceAgain(unassigned, indexer = lambda x: x[0],
                                                dynamic = False)        
-        for charge, chgEnvelopes in envelopes.items():
+        for charge, chgEnvelopes in list(envelopes.items()):
             increment = 1.0/charge
             for envelope in chgEnvelopes:
                 first = min(envelope)
@@ -252,7 +254,7 @@ def deisotope_reduce_scan(spectrum, *peak_pick_args, **peak_pick_kwargs):
     chargeEnvelopes, peaks = peak_pick(spectrum,
                                        *peak_pick_args,
                                        **peak_pick_kwargs)
-    for charge, envelopes in chargeEnvelopes.items():
+    for charge, envelopes in list(chargeEnvelopes.items()):
         for envelope in envelopes:
             mz, ints = envelope[0]
             if charge > 1:
@@ -272,12 +274,23 @@ def deisotope_scan(spectrum, *args, **kwargs):
     """
      
     chargeEnvelopes, peaks = peak_pick(spectrum, *args, **kwargs)
-    for charge, envelopes in chargeEnvelopes.items():
+    for charge, envelopes in list(chargeEnvelopes.items()):
         for envelope in envelopes:
             peaks.append(envelope[0])
     return peaks           
-    
 
+def get_monoisotopic(spectrum, *args, **kwargs):
+    """
+    Performs peak-picking and returns only known-monoisotopic peaks.
+    """
+    
+    charge_envelopes, _ = peak_pick(spectrum, *args, **kwargs)
+    peaks = []
+    for charge, envelopes in list(charge_envelopes.items()):
+        for envelope in envelopes:
+            peaks.append((charge, envelope[0]))
+    return peaks
+        
 
 
 
@@ -314,6 +327,8 @@ def signal_noise(spectrum, minSN):
     ratio and discarding those.
     """
     
+    # Ought to do a binary search!
+    
     if not minSN or not float(minSN):
         return spectrum
     
@@ -341,8 +356,20 @@ def mz_range(spectrum, range):
     MZ range.
     """
     
-    if isinstance(range, basestring):
+    if isinstance(range, str):
         start, stop = [int(x) for x in range.split('-')]
     else:
         start, stop = range
     return [x for x in spectrum if start <= x[0] <= stop]
+
+
+def recalibrate(spectra, constant = 0, slope = 1):
+    """
+    For each spectrum in spectra, shift the MZ of every point to:
+    
+    MZ' = (MZ * slope) + constant
+    """
+    
+    for spectrum in spectra:
+        yield [((x[0]*slope)+constant, x[1]) for x in spectrum]
+    

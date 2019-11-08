@@ -27,10 +27,10 @@ from multiplierz import logger_message
 
 # SQLite type conversion. The trailing space is for insertion into statements
 sqlite_types = {int: ' INTEGER',
-                long: ' INTEGER',
+                int: ' INTEGER',
                 float: ' REAL',
                 str: ' TEXT',
-                unicode: ' TEXT'}
+                str: ' TEXT'}
 
 # this function converts a scan into a binary blob for sqlite
 # it simply uses Python's pickle functionality.
@@ -53,7 +53,7 @@ class SQLiteReader(ReportReader):
         if sheet_name and not table_name:
             table_name = sheet_name
         elif sheet_name and table_name and (sheet_name != table_name):
-            raise IOError, "Doubly-specified table name: %s and %s" % (sheet_name, table_name)
+            raise IOError("Doubly-specified table name: %s and %s" % (sheet_name, table_name))
         self.table_name = table_name or 'PeptideData'
 
         if not os.path.exists(file_name):
@@ -141,7 +141,7 @@ class SQLiteWriter(ReportWriter):
         elif len(row) > len(self.columns):
             raise ValueError('Too many values')
         elif isinstance(row,dict):
-            row = dict((k.lower(),v) for k,v in row.items())
+            row = dict((k.lower(),v) for k,v in list(row.items()))
             if not all(k.lower() in row for k in self.columns):
                 raise ValueError('Value dictionary does not match column headers')
 
@@ -180,7 +180,7 @@ class SQLiteWriter(ReportWriter):
             self.conn.execute("INSERT into ImageData values (?,?,?,?)",
                               (self.lastID,column,'image',sqlite3.Binary(open(image,'rb').read())))
         else:
-            raise IndexError, "No row to add an image to"
+            raise IndexError("No row to add an image to")
 
     def close(self):
         self.conn.commit()
