@@ -1,14 +1,15 @@
 from multiplierz.mzReport import reader, writer
-from multiplierz.fasta import parse_to_dict
+from multiplierz.fasta import parse_to_dict, parse_to_generator
 from multiplierz.settings import settings
-
 from multiplierz.internalAlgorithms import print_progress
-import cPickle as pickle
+
+import pickle
 import time
 import os
 import re
 from collections import defaultdict
-import urllib, urllib2
+import requests
+from functools import reduce
 
 K = 4
 
@@ -38,18 +39,15 @@ def convertAccessionsViaUniprot(accessions):
         
         geneNameReq = {
             'from':fromKey,
-            'to':'ACC',
+            'to':'GENENAME',
             'format':'tab',
             'query':' '.join(subAccList),
         }    
         
         contact = settings.user_email    
     
-        data = urllib.urlencode(geneNameReq)
-        request = urllib2.Request(url, data)
-        request.add_header('User-Agent', 'Multiplierz: %s' % contact)
-        response = urllib2.urlopen(request)
-        geneNamePage = response.read()  
+        res = requests.post(url, data = geneNameReq)
+        geneNamePage = res.text
         
         table = [x.split('\t') for x in geneNamePage.split('\n')[1:] if x]
         for row in table:
@@ -57,13 +55,13 @@ def convertAccessionsViaUniprot(accessions):
             # The gene field seems to be a list of synonymous names,
             # which should be considered as a unit.
             try:
-                geneNames[acc].append(row[5])
+                geneNames[acc].append(row[1])
             except IndexError as err:
-                print row
+                print(row)
                 raise err
     
     normedGeneNames = dict()
-    for acc, genes in geneNames.items():
+    for acc, genes in list(geneNames.items()):
         normedGeneNames[acc.split('.')[0]] = ','.join(genes)
     
     return normedGeneNames#, uniprotIDs
@@ -73,7 +71,7 @@ def convertAccessionsViaUniprot(accessions):
 def readLocalMapForFasta(local_map_file, accessions, accession_parser = None):
     # Local mapping file, for now, is just assumed to be a pickled dict. 
     # Only including relevant accessions purely for the sake of output file size.
-    import cPickle as pickle
+    import pickle
     local_map = pickle.load(open(local_map_file, 'rb'))
     output_map = {}
     valid = 0
@@ -90,9 +88,9 @@ def readLocalMapForFasta(local_map_file, accessions, accession_parser = None):
                 continue
         
     if valid < float(len(accessions))/10:
-        raise ValueError, ("Only %s matching accessions out of %s found in %s" % 
+        raise ValueError("Only %s matching accessions out of %s found in %s" % 
                            (valid, len(accessions), local_map_file))
-    print "Local map file match: %s/%s" % (valid, len(accessions))
+    print("Local map file match: %s/%s" % (valid, len(accessions)))
     return output_map
     
     
@@ -106,14 +104,14 @@ def create_fasta_index(fasta_file, outputfile = None, labelParser = (lambda x: x
     if not outputfile:
         outputfile = fasta_file + '.pep2gene'
     
-    if isinstance(labelParser, basestring):
+    if isinstance(labelParser, str):
         # If called from the GUI, a function can't be passed for
         # the sake of async.  But presumably the string is a regex.
         parser = re.compile(labelParser)
         def labelParser(label):
             parsed = parser.search(label)
             if not parsed:
-                raise RuntimeError, (("Could not parse FASTA label %s "
+                raise RuntimeError(("Could not parse FASTA label %s "
                                       "with provided regular expression %s") % 
                                      (label, parser.pattern))
             return parsed.group(0)  
@@ -121,34 +119,34 @@ def create_fasta_index(fasta_file, outputfile = None, labelParser = (lambda x: x
     prevtime = time.clock()
     fasta = parse_to_dict(fasta_file, labelConverter = labelParser,
                           filter_string = 'rev_')
-    print "FASTA file read: %.2f" % (time.clock() - prevtime)
+    print("FASTA file read: %.2f" % (time.clock() - prevtime))
     prevtime = time.clock()
     
     if not local_mapping_file:
-        prot_to_gene = convertAccessionsViaUniprot(fasta.keys())
+        prot_to_gene = convertAccessionsViaUniprot(list(fasta.keys()))
     else:
-        prot_to_gene = readLocalMapForFasta(local_mapping_file, fasta.keys())
+        prot_to_gene = readLocalMapForFasta(local_mapping_file, list(fasta.keys()))
     assert any(prot_to_gene.values()), 'WARNING: Gene mapping acquisition failed to find any genes.  Check your header parser?'
-    print "Gene lookup acquired: %.2f" % (time.clock() - prevtime)
+    print("Gene lookup acquired: %.2f" % (time.clock() - prevtime))
     prevtime = time.clock()
     
     if distinguish_leucine:
         isofasta = {}
-        for prot, seq in fasta.items():
+        for prot, seq in list(fasta.items()):
             isofasta[prot] = seq.replace('I', 'L')
     else:
         isofasta = None
         
     fmerLookup = defaultdict(set)
     isomerLookup = defaultdict(set)
-    for protein, seq in fasta.items():
+    for protein, seq in list(fasta.items()):
         for i in range(len(seq) - 3):
             fmer = seq[i:i+K]
             fmerLookup[fmer].add(protein)
             if distinguish_leucine:
                 isomerLookup[fmer.replace('I', 'L')].add(protein)
     
-    print "Lookup tables created: %.2f" % (time.clock() - prevtime)
+    print("Lookup tables created: %.2f" % (time.clock() - prevtime))
     prevtime = time.clock()
     
     out = open(outputfile, 'wb')
@@ -156,8 +154,8 @@ def create_fasta_index(fasta_file, outputfile = None, labelParser = (lambda x: x
     pickle.dump(data, out, protocol = 2)
     out.close()
     
-    print "Data written: %.2f" % (time.clock() - prevtime)
-    print "Overall database generation time: %.2f" % (time.clock() - starttime)
+    print("Data written: %.2f" % (time.clock() - prevtime))
+    print("Overall database generation time: %.2f" % (time.clock() - starttime))
     
     return outputfile
     
@@ -168,7 +166,7 @@ def add_gene_ids(target_files, p2g_database,
                  legacy_columns = True):
     starttime = time.clock()
     
-    if isinstance(target_files, basestring):
+    if isinstance(target_files, str):
         return_list = False
         target_files = [target_files]
     else:
@@ -180,9 +178,9 @@ def add_gene_ids(target_files, p2g_database,
     if isinstance(data, tuple) and len(data) == 6:
         k_len, seqLookup, fmerLookup, geneLookup, isoSeqLookup, isoFmerLookup = data
     elif isinstance(data, tuple) and not len(data) == 6:
-        raise Exception, str(len(data))
+        raise Exception(str(len(data)))
     else:
-        print 'Legacy mode P2G database detected!'
+        print('Legacy mode P2G database detected!')
         seqLookup = data
         fmerLookup = pickle.load(dataRdr)
         geneLookup = pickle.load(dataRdr)
@@ -195,11 +193,11 @@ def add_gene_ids(target_files, p2g_database,
             isoFmerLookup = None
     dataRdr.close()
     
-    if isinstance(geneLookup.values()[0], tuple):
-        print "Legacy mode gene names detected."
-        oldTupleInstance = geneLookup.values()[0]
+    if isinstance(list(geneLookup.values())[0], tuple):
+        print("Legacy mode gene names detected.")
+        oldTupleInstance = list(geneLookup.values())[0]
         nameIndex = 0 if oldTupleInstance[0] and any(x.isalpha() for x in oldTupleInstance[0]) else 1
-        for k, v in geneLookup.items():
+        for k, v in list(geneLookup.items()):
             geneLookup[k] = v[nameIndex]
     
     if leucine_equals_isoleucine:
@@ -209,7 +207,7 @@ def add_gene_ids(target_files, p2g_database,
     if k_len:
         assert k_len == K, "Pep2Gene database created with kmers of length %s, not %s" % (k_len, K)
     
-    print "P2G database loaded: %.2f\n\n" % (time.clock() - starttime)
+    print("P2G database loaded: %.2f\n\n" % (time.clock() - starttime))
     prevtime = time.clock()
     
     outputfiles = []
@@ -227,10 +225,10 @@ def add_gene_ids(target_files, p2g_database,
                     "Gene Count", "Gene Symbols"]
         if legacy_columns:
             new_cols = add_legacy_cols
-            colname = dict(zip(add_cols, add_legacy_cols))
+            colname = dict(list(zip(add_cols, add_legacy_cols)))
         else:
             new_cols = add_cols
-            colname = dict(zip(add_cols, add_cols))
+            colname = dict(list(zip(add_cols, add_cols)))
             
         iso_legacy_cols = ['IL Ambiguity pro_count', 'IL Ambiguity pro_list', 
                            "IL Ambiguity gene_count", "IL Ambiguity gene_symbols"]
@@ -238,10 +236,10 @@ def add_gene_ids(target_files, p2g_database,
                     'I<->L Gene Symbols']
         if legacy_columns and leucine_equals_isoleucine:
             new_cols += iso_legacy_cols
-            colname.update(dict(zip(iso_cols, iso_legacy_cols)))
+            colname.update(dict(list(zip(iso_cols, iso_legacy_cols))))
         elif leucine_equals_isoleucine:
             new_cols += iso_cols
-            colname.update(dict(zip(iso_cols, iso_cols)))
+            colname.update(dict(list(zip(iso_cols, iso_cols))))
         
             
         if (not outputfile) or return_list:
@@ -258,7 +256,7 @@ def add_gene_ids(target_files, p2g_database,
             try:
                 pep = row['Peptide Sequence'].upper()
             except KeyError:
-                pep = row['peptide sequence'].upper()
+                pep = row['Peptide'].upper()
             
             pep = ''.join([x for x in pep if x.isalpha()])
                 
@@ -317,14 +315,20 @@ def add_gene_ids(target_files, p2g_database,
             
             output.write(row)
         
-        print "\nGene lookup completed: %.2f" % (time.clock() - prevtime)
+        print("\nGene lookup completed: %.2f" % (time.clock() - prevtime))
         prevtime = time.clock()
         rdr.close()
         output.close()
-        print "Output written: %.2f" % (time.clock() - prevtime)
+        print("Output written: %.2f" % (time.clock() - prevtime))
         outputfiles.append(outputfile)
     if return_list:
         return outputfiles
     else:
         return outputfile
-    
+                
+                
+        
+if __name__ == "__main__":
+    test_accs = ['Q9NSD7', 'P62945', 'Q86X10']
+    foo = convertAccessionsViaUniprot(test_accs)
+    print foo
