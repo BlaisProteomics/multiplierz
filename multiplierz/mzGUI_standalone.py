@@ -705,18 +705,13 @@ def text_input(prompt='', value='', title=''):
 
 def directory_chooser(parent = None, title = None):
     try:
-        dialog = wx.DirDialog()
+        dialog = wx.DirDialog(None)
     except wx._core.PyNoAppError:
         app = mzApp()
         app.launch()
-        dialog = wx.DirDialog()
+        dialog = wx.DirDialog(None)
         
     if dialog.ShowModal() == wx.ID_OK:
         return dialog.GetPath()
     else:
         return None
-
-#if __name__ == "__main__":
-    #print "TEST MODE"
-    #foo = open_filearray(None, [('Foo', ["*.xlsx", '*.features']), ('Bar', ['*.features', '*.raw'])])
-    #print "DONE"
