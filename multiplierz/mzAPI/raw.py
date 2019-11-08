@@ -80,7 +80,7 @@ class mzFile(object):
         if not self._info:
             self._info = []
             scanrange = self.scan_range()
-            for scannum in range(scanrange[0], scanrange[1]):
+            for scannum in range(scanrange[0], scanrange[1]+1):
                 time = self.time_from_scan(scannum)
                 info = self.source.GetFilterForScanNumber(scannum)
                 level = 'MS%d' % info.MSOrder
