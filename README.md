@@ -14,7 +14,7 @@ The mzDesktop GUI application can be found at [our Sourceforge page](https://sou
 
 #### Native, Open-Source Python Codebase
 
-*multiplierz* is written for and in Python 2.7, a mature and user-friendly language that is becoming a standard for scientific data analysis, and is fully open-source.  This allows researchers with programming experience full freedom in customizing and improving the *multiplierz* library for individual, novel use cases.  We expect *multiplierz* capabilities to grow alongside the rapid developments in the field of computational proteomics.
+*multiplierz* is written for and in Python, a mature and user-friendly language that is becoming a standard for scientific data analysis, and is fully open-source.  This allows researchers with programming experience full freedom in customizing and improving the *multiplierz* library for individual, novel use cases.  We expect *multiplierz* capabilities to grow alongside the rapid developments in the field of computational proteomics.
 
 #### mzAPI Data Interface
 
