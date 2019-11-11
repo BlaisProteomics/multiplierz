@@ -7,8 +7,8 @@ from os import path
 
 install_requires = ['numpy', 'matplotlib', 'openpyxl', 'xlrd',
                     'xlwt', 'requests', 'beautifulsoup4', 'pythonnet',
-                    'pypiwin32; platform_system == "Windows"',
-                    'comtypes; platform_system == "Windows"']
+                    'pywin32 >= 1.0;platform_system=="Windows"',
+                    'comtypes >= 1.0;platform_system=="Windows"']
 
 
 
