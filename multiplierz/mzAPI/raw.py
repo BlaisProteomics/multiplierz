@@ -133,6 +133,10 @@ class mzFile(object):
         return list(zip(stream.Masses, stream.Intensities, 
                         stream.Noises, stream.Charges))
     
+    def rscan(self, scannum):
+        stream = self.source.GetCentroidStream(scannum, False)
+        return list(zip(stream.Masses, stream.Intensities, 
+                        stream.Resolutions))    
     
     def average_scan(self, start_scan, stop_scan, filter = 'Full ms', centroid = False):
         average_scan = Extensions.AverageScansInScanRange(self.source,
