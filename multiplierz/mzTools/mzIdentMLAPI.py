@@ -79,50 +79,58 @@ class mzIdentML(object):
                    "for mzIdentML version 1.1.0; this file is version %s, so there may "
                    "be discrepancies in the results." % self.root.get("version")))
 
-        self.pfx = self.root.tag[:-9] # Take out "mzIdentML"        
+        self.getSourceMode()
 
-        #print "Indexing file..." # Really this could all be done on an as-needed basis.
+        self.pfx = self.root.tag[:-9] # Take out "mzIdentML", when present.
+        # (There's probably a more proper way to do this!)
+
+        # The below be done as-needed
+        # or at least in a single iterator (but it seems fast enough.)
         self.parentMap = dict(sum([[(c.get("id"),p.get("id")) for c in p if c.get("id") and p.get("id")]
                                    for p in ch(self.tree.getiterator(self.pfx + "ProteinAmbiguityGroup"),
                                                self.tree.getiterator(self.pfx + "SpectrumIdentificationResult"))], []))
 
         proteinElements = self.root.getiterator(self.pfx + "ProteinDetectionHypothesis")
-        #self.proteinLookup = {prot.get("id"):prot for prot in proteinElements}
-        self.proteinLookup = dict([(prot.get("id"), prot) for prot in proteinElements])
+        self.proteinLookup = {prot.get("id"):prot for prot in proteinElements}
 
         spectrumElements = self.root.getiterator(self.pfx + "SpectrumIdentificationResult")
-        #self.spectrumLookup = {spec.get("id"):spec for spec in spectrumElements}
-        self.spectrumLookup = dict([(spec.get("id"), spec) for spec in spectrumElements])
+        self.spectrumLookup = {spec.get("id"):spec for spec in spectrumElements}        
 
         pepIdElements = self.root.getiterator(self.pfx + "SpectrumIdentificationItem")
-        #self.pepIdLookup = {pepid.get("id"):pepid for pepid in pepIdElements}
-        self.pepIdLookup = dict([(pepid.get("id"), pepid) for pepid in pepIdElements])
+        self.pepIdLookup = {pepid.get("id"):pepid for pepid in pepIdElements}
 
         evidenceElements = self.root.getiterator(self.pfx + "PeptideEvidence")
-        #self.evidenceLookup = {evi.get("id"):evi for evi in evidenceElements}
-        self.evidenceLookup = dict([(evi.get("id"), evi) for evi in evidenceElements])
+        self.evidenceLookup = {evi.get("id"):evi for evi in evidenceElements}
 
         dbElements = self.root.getiterator(self.pfx + "DBSequence")
-        #self.dbLookup = {db.get("id"):db for db in dbElements}
-        self.dbLookup = dict([(db.get("id"), db) for db in dbElements])
+        self.dbLookup = {db.get("id"):db for db in dbElements}
 
         peptideElements = self.root.getiterator(self.pfx + "Peptide")
-        #self.peptideLookup = {pep.get("id"):pep for pep in peptideElements}
-        self.peptideLookup = dict([(pep.get("id"), pep) for pep in peptideElements])
+        self.peptideLookup = {pep.get("id"):pep for pep in peptideElements}
 
         fileElements = self.root.getiterator(self.pfx + "SpectraData")
-        #self.fileLookup = {data.get("id"):data for data in fileElements}
-        self.fileLookup = dict([(data.get("id"), data) for data in fileElements])
-        #print "Indexing complete."
+        self.fileLookup = {data.get("id"):data for data in fileElements}
 
         self.dataFileScans = {}
         self.filePointers = {}
 
-    def numberOfProteins():
+    def getSourceMode(self):
+        analysissoft_list = next((x for x in self.root if 'AnalysisSoftwareList' in x.tag), [])
+        self.mode = None
+        for software in analysissoft_list:
+            soft_name = software.attrib['name']
+            if 'Mascot' in soft_name:
+                self.mode = "mascot"
+                break
+            elif 'MS-GF+' in soft_name:
+                self.mode = 'msgf+'
+                break
+
+    def numberOfProteins(self):
         return len(self.proteinLookup)
-    def numberOfAmbiguityGroups():
+    def numberOfAmbiguityGroups(self):
         return len(self.root.findall(self.pfx + "ProteinAmbiguityGroups"))
-    def numberOfSpectra():
+    def numberOfSpectra(self):
         return len(self.spectrumLookup)
 
     def giveCVs(self, element):
@@ -151,7 +159,12 @@ class mzIdentML(object):
                 spectra.append(specItem)
 
             # Only for mascot files!  What are equivalents from other search engines?
-            spectrum = max(spectra, key = lambda x: self.giveCVs(x)["Mascot:score"])
+            if mode == 'mascot':
+                spectrum = max(spectra, key = lambda x: float(self.giveCVs(x)["Mascot:score"]))
+            elif mode == 'msgf+':
+                spectrum = min(spectra, key = lambda x: float(self.giveCVs(x)["MS-GF:SpecEValue"]))
+            else:
+                raise NotImplementedError, "Only implemented for Mascot and MSGF+ reports."
 
             pepEvidence = self.evidenceLookup[pepHyp.get("peptideEvidence_ref")]
             peptide = self.peptideLookup[pepEvidence.get("peptide_ref")]
@@ -190,12 +203,18 @@ class mzIdentML(object):
 
         spectCVs = self.giveCVs(spectEl)
         # Annoying that these fields are Mascot specific.
-        try:
-            spectrum_score = spectCVs['Mascot:score']
-        except KeyError:
-            # Mascot spectral library search result.
-            spectrum_score = spectCVs['MSPepSearch:score']
-        spectrum_expect = spectCVs['Mascot:expectation value']
+        if self.mode == 'mascot':
+            try:
+                spectrum_score = spectCVs['Mascot:score']
+            except KeyError:
+                # Mascot spectral library search result.
+                spectrum_score = spectCVs['MSPepSearch:score']
+            spectrum_expect = spectCVs['Mascot:expectation value']
+        elif self.mode == 'msgf+':
+            spectrum_expect = spectCVs['MS-GF:SpecEValue']
+            spectrum_score = spectCVs['MS-GF:RawScore']
+        else:
+            raise NotImplementedError, "Not an MSGF or Mascot report."
 
         resultCVs = self.giveCVs(resultEl)
         try:
@@ -205,64 +224,42 @@ class mzIdentML(object):
 
 
         spectrum_info = {"Calculated mz" : float(spectEl.get("calculatedMassToCharge")),
-                         #"Calculated PI" : spectEl.get("calculatedPI"),
                          "Charge" : int(spectEl.get("chargeState")),
                          "Experimental mz" : float(spectEl.get("experimentalMassToCharge")),
                          "Passed Threshold" : spectEl.get("passThreshold") == 'true',
                          "Rank" : int(spectEl.get("rank")),
-                         #"Spectrum Name" : spectEl.get("name"),
                          "Spectrum ID" : spectEl.get("id"),
                          "Spectrum Description" : spectDesc,
-                         #"MS2 Time" : retentionTime,
                          "File" : dataEl.get("location").replace(r'file:///', ''),
+                         "Peptide Score":spectrum_score,
+                         "Expectation Value":spectrum_expect
                         }
         # How is this not a function of the peptide assignment?
         spectrum_info['Delta'] = (float(spectrum_info['Experimental mz']) -
                                   float(spectrum_info['Calculated mz']))
-        #spectrumInfo.update(pepInfo)
-        ## All peptide data will be the same in all evidence elements?
-        ## No, this is designed to accomodate multiple peptide matches!
-        #evidenceRef = spectEl.find(self.pfx + "PeptideEvidenceRef")
-        #pepEvidence = self.evidenceLookup[evidenceRef.get("peptideEvidence_ref")]
-
-        #pepInfo = self.peptideInfo(pepEvidence.get("peptide_ref"))
-
-        #accessions = []
-        #scores = []
-        #for evidenceRef in spectEl.findall(self.pfx + "PeptideEvidenceRef"):
-            #evidence = self.evidenceLookup[evidenceRef.get("peptideEvidence_ref")]
-            #dbSeq = self.dbLookup[evidence.get("dBSequence_ref")]
-            #accessions.append(dbSeq.get("accession"))
-
-            #try:
-                #cvparams = self.giveCVs(evidence)
-                #score = [x['value'] for x in cvparams if x['name'] == 'Mascot:score'][0]
-                #scores.append(score)
-            #except IndexError:
-                #pass
-        #accessions = "; ".join(accessions)
-        #scores = "; ".join(scores)
 
         psms = []
         for evidenceRef in spectEl.findall(self.pfx + "PeptideEvidenceRef"):
             evidence = self.evidenceLookup[evidenceRef.get("peptideEvidence_ref")]
             dbSeq = self.dbLookup[evidence.get("dBSequence_ref")]
             accessions = dbSeq.get("accession")
+            try:
+                desc = self.giveCVs(dbSeq)['protein description']
+            except KeyError:
+                desc = 'No Description'
             pepInfo = self.peptideInfo(evidence.get("peptide_ref"))
             
-            try:
-                cvparams = self.giveCVs(evidence)
-                score = float([x['value'] for x in cvparams if x['name'] == 'Mascot:score'][0])
-                expect = float([x['value'] for x in cvparams if x['name'] == 'Mascot:expectation value'][0])
-            except IndexError:
-                score = spectrum_score
-                expect = spectrum_expect
+            start, stop = evidence.get('start'), evidence.get('stop')
+            pre, post = evidence.get('pre'), evidence.get('post')
             
             psm = spectrum_info.copy()
             psm.update(pepInfo)
             psm['Accession Number'] = accessions
-            psm['Peptide Score'] = float(score)
-            psm['Expectation Value'] = float(expect)
+            psm['Protein Description'] = desc
+            psm['Preceding Residue'] = pre
+            psm['Following Residue'] = post
+            psm['Start Position'] = start
+            psm['End Position'] = stop
             psms.append(psm)
             
         return psms
@@ -283,14 +280,12 @@ class mzIdentML(object):
 
     def peptideInfo(self, peptideId):
         pepEl = self.peptideLookup[peptideId]
-
+        pep_seq = pepEl.find(self.pfx + "PeptideSequence").text
+        
         modificationData = []
         for modification in pepEl.findall(self.pfx + "Modification"):
             cvs = modification.findall(self.pfx + "cvParam")
-            try:
-                kind = [x.get("name") for x in cvs if x.get("cvRef") == 'UNIMOD'][0]
-            except IndexError:
-                kind = "NOT-UNIMOD"
+            kind = next((x.get("name") for x in cvs if x.get("cvRef") == 'UNIMOD'), "NOT-UNIMOD")
             modificationData.append((modification.get("location"), kind, 
                                      modification.get("residues")))
         for modification in pepEl.findall(self.pfx + "SubstitutionModification"):
@@ -298,11 +293,17 @@ class mzIdentML(object):
                                      modification.get("replacementResidue") + "-replacement",
                                      modification.get("originalResidue")))
 
-        peptideInfo = {"Peptide Sequence" : pepEl.find(self.pfx + "PeptideSequence").text,
+        # MS-GF+ (and possibly others?) don't always supply residue location in
+        # mo
+        for i in xrange(len(modificationData)):
+            if modificationData[i][2] is None and modificationData[i][0] is not None:
+                pos = int(modificationData[i][0])
+                residue = pep_seq[pos-1] # 1-indexed position.
+                modificationData[i] = str(pos), modificationData[i][1], residue
+            
+        peptideInfo = {"Peptide Sequence" : pep_seq,
                        "Variable Modifications" : renderModificationString(modificationData),
-                       "Peptide ID" : pepEl.get("id"),
-                       #"Peptide Name" : pepEl.get("name")
-                       }
+                       "Peptide ID" : pepEl.get("id")}
 
         return peptideInfo
 
@@ -332,10 +333,7 @@ class mzIdentML(object):
         return componentInfo
 
 
-
-
-
-    def peptideSummary(self):
+    def peptideSummary(self, top_rank_only = True):
         """
         Info on the top-ranking peptide match for each spectrum in the file."
 
@@ -346,11 +344,9 @@ class mzIdentML(object):
         spectraData = []
         for spectrumResult in list(self.spectrumLookup.values()):
             items = spectrumResult.findall(self.pfx + "SpectrumIdentificationItem")
-            topRank = [s for s in items if int(s.get("rank")) == 1]
-            for spectrumItem in topRank:
-                #info = self.spectrumInfo(spectrumItem.get("id"))
-                #info['Delta'] = str(float(info['Experimental mz']) - float(info['Calculated mz']))
-                #spectraData.append(info)
+            if top_rank_only:
+                items = [s for s in items if int(s.get("rank")) == 1]
+            for spectrumItem in items:
                 spectraData += self.spectrumInfo(spectrumItem.get("id"))
 
         return spectraData
@@ -362,9 +358,7 @@ class mzIdentML(object):
         protein of each ambiguity group.
         """
 
-        if not reportAll:
-            assert self.giveCVs(list(self.proteinLookup.values())[0])["Mascot:score"], \
-                   "Protein ranking currently only supported via mascot scoring."
+        assert self.mode == 'mascot', "Protein summary only implemented for Mascot reports."
 
         proteinData = []
         for ambiguity in self.root.getiterator(self.pfx + "ProteinAmbiguityGroup"):
@@ -385,7 +379,6 @@ class mzIdentML(object):
                         bestProtein = protein
 
             if not reportAll:
-                #protInfo = self.proteinInfo(protein.get("id"))
                 protInfo = self.proteinInfo(bestProtein.get("id"))
                 protInfo.update({"Protein Redundancy":ambiguityLength,
                                  "Protein Group ID":ambiguityId})
@@ -415,8 +408,6 @@ class mzIdentML(object):
             mzMeasureKind.set("accession", "MS:1001225")
             mzMeasureKind.set("name", "product ion m/z")
 
-
-
         for spectrumResult in self.root.getiterator(self.pfx + "SpectrumIdentificationResult"):
             dataEl = self.fileLookup[spectrumResult.get("spectraData_ref")]
 
@@ -424,51 +415,24 @@ class mzIdentML(object):
             spectrumTitle = self.giveCVs(spectrumResult)['spectrum title']
             derivedData, scanNum = parseSpectrumTitle(spectrumTitle)            
             if not datafile:
-                #datafile = dataEl.get("location")
                 datafile = derivedData
             try:
                 data = self.filePointers[datafile]
             except KeyError:
                 data = mzFile(datafile)
                 self.filePointers[datafile] = data
-            #rT = float(self.giveCVs(spectrumResult)["MS:1001114"]) / 60.0
 
-            #scanName = spectrumResult.get("spectrumID") # Perhaps?  Not entirely clear.
-            #try:
-                #scanNum = int(scanName)
-            #except ValueError:
-                #scanNum = int(scanName.split("=")[1])
-
-
-
-            #scan = data.cscan(data.scan_time_from_scan_name(scanNum))
-
-            #for spectrumItem in [x for x in spectrumResult 
-                                    #if x.tag == (self.pfx + 'SpectrumIdentificationItem')]:
             for spectrumItem in spectrumResult.getiterator(self.pfx + 'SpectrumIdentificationItem'):
-                #mz = float(spectrumItem.get("experimentalMassToCharge"))
-                #scanHeader = min([x for x in data.scan_info(rT - 0.1, rT + 0.1, mz - 1, mz + 1)
-                                    #if x[3] == 'MS2'],
-                                    #key = lambda x: abs(x[1] - mz))
-                #scan = data.scan(scanHeader[0], centroid = True)
                 scan = data.scan(scanNum, centroid = True)
 
                 if len(scan) > 500:
                     scan = sorted(scan, key = lambda x: x[1], reverse = True)[:500]                
 
-                #try:
-                    #scans = self.dataFileScans[datafile]
-                #except KeyError:
-                    #scans = data.scan_info()
-                    #self.dataFileScans[datafile] = scans
+
                 try:
-                    #fragmentation = [x for x in spectrumItem
-                                        #if x.tag == (self.pfx + "Fragmentation")][0]
                     fragmentation = next(spectrumItem.getiterator(self.pfx + 'Fragmentation'))
                 except StopIteration:
                     fragmentation = xml.SubElement(spectrumItem, self.pfx + "Fragmentation")
-                    #fragmentation = [x for x in spectrumItem
-                                        #if x.tag == (self.pfx + "Fragmentation")][0]
                 iontype = xml.SubElement(fragmentation, self.pfx + "IonType")
                 iontype.set("index", "0 " * len(scan))
                 iontype.set("charge", "0")
@@ -537,7 +501,6 @@ class mzIdentML(object):
 
             mzArray = None
             intArray = None
-            #for fragArray in [x for x in iontype if x.tag == "FragmentArray"]:
             for fragArray in iontype.getiterator(self.pfx + "FragmentArray"):
                 if fragArray.get("measure_ref") == "m_mz":
                     mzArray = fragArray.get("values").split()
@@ -552,55 +515,5 @@ class mzIdentML(object):
 
         return annotationArray
 
-
-    #def fullReport(self):
-        #"""An attempt to replicate the content of basic Mascot output."""
-
-        #protsum = self.proteinSummary()
-        #pepsum = self.peptideSummary()
-
-        #protLookup = {} # Using this to not lose ambiguity group info?
-        #for protein in protsum:
-            #protLookup[protein['id']] = protein            
-
-        #results = []
-        #for peptide in pepsum:
-            #protIds = peptide['Accession Number']
-
-            #proteins = []
-            #for protId in protIds.split('; '):
-                #proteins.append(protLookup['PDH_' + protId + '_0'])
-            #protein = max(proteins, key = lambda x: float(x['Rank']))
-
-            #try:
-                #del protein['id']
-            #except KeyError:
-                #pass # How does this happen???
-            #peptide.update(protein)
-            #results.append(peptide)
-
-        #return results
-
-
     def close(self):
         self.mzid.close()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
