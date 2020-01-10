@@ -122,25 +122,22 @@ class CSVReportWriter(ReportWriter):
         try:
             self.file_name = file_name
             if self.file_name.lower().endswith('gz'):
-                self.fh = gzip.open(self.file_name, 'wb')
+                self.fh = gzip.open(self.file_name, 'wt')
             else:
-                self.fh = open(self.file_name, 'wb')
-            self.csv = csv.writer(self.fh)
-    
-            self.csv.writerow(self.columns)
-            
+                self.fh = open(self.file_name, 'wt')
         except IOError as err:
             print(err)
             print(("WARNING- could not write %s." % file_name))
             self.file_name = insert_tag(file_name, 'OVERWRITE')
             if self.file_name.lower().endswith('gz'):
-                self.fh = gzip.open(self.file_name, 'wb')
+                self.fh = gzip.open(self.file_name, 'wt')
             else:
-                self.fh = open(self.file_name, 'wb')
-            self.csv = csv.writer(self.fh)
-    
-            self.csv.writerow(self.columns)
+                self.fh = open(self.file_name, 'wt')
             print(("Writing to %s" % self.file_name))
+            
+        self.csv = csv.writer(self.fh, lineterminator = '\n')
+        self.csv.writerow([x for x in self.columns])
+            
             
     def write(self, row, metadata=None, ignore_extra = False):
         # error checking: want one value per column and nothing more
