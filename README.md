@@ -35,6 +35,8 @@ Not all biologists are computer scientists, so *multiplierz* provides a fully-gr
 
 ### News
 
+* 12/4/2019: Major update (2.2.0) adds Linux compatibility and Bruker data format access!
+
 * 8/22/2017: The paper on *multiplierz*'s 2.0 release has been [published in Proteomics](http://onlinelibrary.wiley.com/doi/10.1002/pmic.201700091/full).
 
 * 8/01/2017: [mzStudio](https://github.com/BlaisProteomics/mzStudio), an interactive proteomics data browser built using *multiplierz*, has been [published in Proteomes](http://www.mdpi.com/2227-7382/5/3/20/html).
