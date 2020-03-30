@@ -3,8 +3,9 @@ import sqlite3
 import os, sys
 from ctypes import *
 from collections import defaultdict
-from itertools import izip, chain
+from itertools import chain
 from bisect import bisect_left, bisect_right
+import six
 
 if sys.platform[:5] == "win32":
     libname = os.path.join(os.path.dirname(os.path.realpath(__file__)),
@@ -16,7 +17,11 @@ else:
     raise Exception("Unsupported platform.")
 assert os.path.exists(libname), libname    
     
-dll = cdll.LoadLibrary(libname)
+try:
+    dll = cdll.LoadLibrary(libname)
+except:
+    print("WARNING: Failed to load Bruker access modules.")
+    print("(This can be due to lack of the Visual C++ Redistributable dependency.)")
 dll.tims_open.argtypes = [ c_char_p, c_uint32 ]
 dll.tims_open.restype = c_uint64
 dll.tims_close.argtypes = [ c_uint64 ]
@@ -81,10 +86,10 @@ class TimsData:
     def __init__ (self, analysis_directory, use_recalibrated_state=False):
 
         if sys.version_info.major == 2:
-            if not isinstance(analysis_directory, basestring):
+            if not isinstance(analysis_directory, six.string_types):
                 raise ValueError("analysis_directory must be a Unicode string.")
         if sys.version_info.major == 3:
-            if not isinstance(analysis_directory, basestring):
+            if not isinstance(analysis_directory, six.string_types):
                 raise ValueError("analysis_directory must be a string.")
 
         self.dll = dll
@@ -263,6 +268,10 @@ class mzBruker(object):
         mz_seq = self.source.indexToMz(framenum, index_seq)
         return list(zip(mz_seq, k0_seq, int_seq))
  
+    def frame_int(framenum):
+        scans = self.source.readScans(framenum, start_scan, stop_scan)
+        index_groups, int_groups = list(zip(*[x for x in scans]))
+        return sum(chain(*int_groups))
     
     def pasef_frame(self, framenum, prec_num = None, include_k0 = False):
         """
@@ -319,12 +328,12 @@ class mzBruker(object):
             index_arrs, int_arrs = zip(*self.source.readScans(frame, start_scan, stop_scan))
             indexes, ints = map(lambda x: list(chain(*x)), [index_arrs, int_arrs])
             mzs = self.source.indexToMz(frame, indexes)
-            subspectra.append(zip(mzs, ints))
+            subspectra.append(list(zip(mzs, ints)))
         
         if aggregate:
             raise NotImplementedError
         else:
-            return zip(frames, subspectra)          
+            return list(zip(frames, subspectra))
         
     def precursor_spectrum(self, precursor):
         frames = self.dbquery(("SELECT Frame, ScanNumBegin, ScanNumEnd "
@@ -351,8 +360,6 @@ class mzBruker(object):
         c = 0
         for framenum, rt, scan_count in frame_list:
             c += 1
-            if c % 100 == 0:
-                print c, len(frame_list)
             # MZ is a function of index, and vice versa!  Also the function
             # index-to-mz is monotonically increasing, so index bounds are
             # equivalent to matching mz bounds.

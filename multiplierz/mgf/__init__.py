@@ -4,6 +4,7 @@ from multiplierz import protonMass, __version__, vprint
 import os
 from numpy import average, std
 import re
+from six import PY2 as Is_Py2
 
 from multiplierz.mass_biochem import add_protons
 
@@ -174,7 +175,10 @@ class MGF(object):
             for match in titles.finditer(text):
                 pos, stoppos = match.start(), match.end()
                 title_text = text[pos + 6 : stoppos].strip()
-                self.entry_index[str(title_text, 'utf-8')] = pos + i
+                if Is_Py2:
+                    self.entry_index[title_text] = pos + i
+                else:
+                    self.entry_index[str(title_text, 'utf-8')] = pos + i
         
         print("Read file of size %d" % len(self.entry_index))
         

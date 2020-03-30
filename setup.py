@@ -5,10 +5,11 @@ from os import path
 
 
 
+
 install_requires = ['numpy', 'matplotlib', 'openpyxl', 'xlrd',
                     'xlwt', 'requests', 'beautifulsoup4', 'pythonnet',
-                    'pywin32 >= 1.0;platform_system=="Windows"',
-                    'comtypes >= 1.0;platform_system=="Windows"']
+                    'pypiwin32; platform_system == "Windows"',
+                    'comtypes; platform_system == "Windows"']
 
 
 
@@ -25,7 +26,7 @@ page](https://github.com/BlaisProteomics/multiplierz) .
 """
 
 setup(name = 'multiplierz',
-      version = '2.2.0',
+      version = '2.2.1',
       description = 'The MultiplierZ proteomics package',
       long_description = README,
       author = 'William Max Alexander (et al.)',
@@ -34,17 +35,16 @@ setup(name = 'multiplierz',
                      'Intended Audience :: Science/Research',
                      'Topic :: Scientific/Engineering :: Bio-Informatics',
                      'License :: OSI Approved :: GNU Lesser General Public License v2 or later (LGPLv2+)',
-                     'Programming Language :: Python :: 2.7',
+                     'Programming Language :: Python',
                      ],
       keywords = 'biology bioinformatics proteomics spectrometry',
       packages = find_packages(),
-      package_data = {'multiplierz':(['unimod.sqlite',
-                                      '_msparser.pyd',
-                                      'mzAPI/agilentdlls/*',
-                                      'mzAPI/t2ddlls/*',
-                                      'mzAPI/wiffdlls/*',
-                                      'mzAPI/rawdlls/*',
-                                      'mzAPI/brukerlib/*'])},
+      package_data = {'multiplierz.mzAPI':['agilentdlls/*',
+                                           't2ddlls/*',
+                                           'wiffdlls/*',
+                                           'rawdlls/*',
+                                           'brukerlib/*'],
+                      'multiplierz':['unimod.sqlite', '_msparser.pyd',]},
       include_package_data=True,
       install_requires = install_requires
       )
