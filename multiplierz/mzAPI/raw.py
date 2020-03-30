@@ -39,7 +39,8 @@ class mzFile(object):
     def __init__(self, filename, *etc, **etcetc):
         self.source = RawFileReaderAdapter.FileFactory(filename)
         if self.source.InstrumentCount > 1:
-            print("%s has data from %d instruments, but only one is supported.")
+            print("%s has data from %d instruments, but only one is supported." 
+                  % (os.path.basename(filename), self.source.InstrumentCount))
         self.source.SelectInstrument(Device.MS, 1)
         
         self.data_file = filename
