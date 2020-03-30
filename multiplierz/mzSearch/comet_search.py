@@ -374,8 +374,8 @@ def convertVarmods(psm):
     psm['Variable Modifications'] = '; '.join(modstrs)
     return psm
         
-def format_report(reportfile, outputfile = None, mgffile = None, parameters = None,
-                  most_rank = None, most_exp = None):
+def format_text_report(reportfile, outputfile = None, mgffile = None, parameters = None,
+                       most_rank = None, most_exp = None):
     """
     Renders a native Comet output .txt file into an mzReport-compatible and
     prettier .xlsx format.
@@ -454,8 +454,19 @@ def format_report(reportfile, outputfile = None, mgffile = None, parameters = No
     return outputfile
     
     
+
+def format_xml_report(reportfile, outputfile, highest_rank = None, highest_exp = None):
+    import xml.etree.ElementTree as ET
     
-        
+    if highest_rank:
+        highest_rank = int(highest_rank)
+    if highest_exp:
+        highest_exp = int(highest_exp)
+    
+    root = ET.getroot()
+    queries = [x for x in root[0]
+               if x.tag == '{http://regis-web.systemsbiology.net/pepXML}spectrum_query']
+    
      
     
     
@@ -496,13 +507,21 @@ class CometSearch(dict):
     >settings.database_name = 'C:/real/path/to/fasta/database.fasta'
     """
     
-    def __init__(self, file_name = None, save_parameter_file = False):
-        if not (cometPath and os.path.exists(cometPath)):
-            raise RuntimeError("Comet executable not found at %s; update the "
-                                 "multiplierz settings file to indicate your Comet "
-                                 "installation." % cometPath)
+    def __init__(self, parameterfile = None, database = None, save_parameter_file = False,
+                 program_path = None):
+        if program_path:
+            assert os.path.exists(program_path), "Executable not found at %s" % program_path
+            self.comet_path = program_path
+        else:
+            if not (cometPath and os.path.exists(cometPath)):
+                raise RuntimeError("Comet executable not found at default location %s; "
+                                   "update the multiplierz settings file to indicate "
+                                   "your Comet installation." % cometPath)
+            self.comet_path = cometPath
         
-        self.file_name = file_name
+        self.file_name = parameterfile
+        self.fasta_file = database
+
         self.fields = []
         self.enzymes = {}
         self.varmods = []
@@ -510,8 +529,8 @@ class CometSearch(dict):
         # Parameters for the run itself, used by run_comet_search().
         self.enzyme_selection = None
         
-        if file_name:
-            with open(file_name, 'r') as parameters:
+        if parameterfile:
+            with open(parameterfile, 'r') as parameters:
                 for line in parameters:
                     line = line.split('#')[0].strip()
                     
@@ -607,9 +626,7 @@ class CometSearch(dict):
             
 
         
-    def run_search(self, data_file, outputfile = None, most_rank = None, most_exp = None, verbose = False):
-        #assert self.enzyme_selection != None, "Must specify enzyme selection (attribute .enzyme_selection)!" 
-        
+    def run_search(self, data_file, output = None, most_rank = None, most_exp = None, verbose = False):        
         self['digest_mass_range'] = '450.0 6000.0' # Remove this if this parameter gets added to the GUI!
         self['output_txtfile'] = '1'
         
@@ -621,10 +638,7 @@ class CometSearch(dict):
             data_file = extract(data_file)
             if verbose:
                 print(("Extracted %s" % datafile))
-        
-        #if not data_file.lower().endswith('ms2'):
-            #ms2_file = mgf_to_ms2(data_file)
-        
+                
         parfile = os.path.join(myData, 'COMET.par.temp')
         
         while os.path.exists(parfile): # Paranoia; avoid collisions.
@@ -638,7 +652,12 @@ class CometSearch(dict):
             expectedResultFile = data_file[:-3] + 'txt'
             
             print('Initiating Comet search...')
-            result = call([cometPath, '-P' + parfile, data_file])
+            comet_command =[self.comet_path,
+                            '-P' + parfile,
+                            data_file]
+            if self.fasta_file:
+                comet_command.insert(2, '-D' + self.fasta_file)
+            result = call(comet_command)
             print(('Comet search completed with return value %s' % result))    
             assert os.path.exists(expectedResultFile), "Comet failed to produce expected result file."
             
