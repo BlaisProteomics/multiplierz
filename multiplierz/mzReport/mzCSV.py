@@ -59,11 +59,11 @@ class CSVReportReader(ReportReader):
     '''The CSV implementation of the mzReport class. Python's CSV module
     is actually fine for what we need, so this is mostly a wrapper of
     its functionality.'''
-    def __init__(self, file_name, infer_types = True):
+    def __init__(self, file_name, infer_types = True, sheet_name = None):
         if not os.path.exists(file_name):
             raise IOError("No such file: '%s'" % os.path.basename(file_name))
         self.file_name = file_name
-        self.fh = gzOptOpen(self.file_name, 'rb')
+        self.fh = gzOptOpen(self.file_name, 'rt')
         self.csv = csv.reader(self.fh)
         try:
             self.columns = next(self.csv)
@@ -75,7 +75,7 @@ class CSVReportReader(ReportReader):
             # Retry with tab-delimiting dialect
             
             self.fh.close()
-            self.fh = open(self.file_name, 'rb')
+            self.fh = open(self.file_name, 'rt')
             self.csv = csv.reader(self.fh, dialect = 'excel-tab')
             self.columns = self.csv.next()[:]            
             
@@ -104,7 +104,10 @@ class CSVReportWriter(ReportWriter):
     '''The CSV implementation of the mzReport class. Python's CSV module
     is actually fine for what we need, so this is mostly a wrapper of
     its functionality.'''
-    def __init__(self, file_name, columns=None, default_columns=False):
+    def __init__(self, file_name, columns=None, default_columns=False, sheet_name = None):
+        if sheet_name is not None:
+            raise IOError("CSV files cannot have named tables.")
+        
         if default_columns:
             self.columns = default_columns + (columns or [])
         else:
