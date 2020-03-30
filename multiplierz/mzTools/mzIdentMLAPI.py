@@ -164,7 +164,7 @@ class mzIdentML(object):
             elif mode == 'msgf+':
                 spectrum = min(spectra, key = lambda x: float(self.giveCVs(x)["MS-GF:SpecEValue"]))
             else:
-                raise NotImplementedError, "Only implemented for Mascot and MSGF+ reports."
+                raise NotImplementedError("Only implemented for Mascot and MSGF+ reports.")
 
             pepEvidence = self.evidenceLookup[pepHyp.get("peptideEvidence_ref")]
             peptide = self.peptideLookup[pepEvidence.get("peptide_ref")]
@@ -214,7 +214,7 @@ class mzIdentML(object):
             spectrum_expect = spectCVs['MS-GF:SpecEValue']
             spectrum_score = spectCVs['MS-GF:RawScore']
         else:
-            raise NotImplementedError, "Not an MSGF or Mascot report."
+            raise NotImplementedError("Not an MSGF or Mascot report.")
 
         resultCVs = self.giveCVs(resultEl)
         try:
@@ -295,7 +295,7 @@ class mzIdentML(object):
 
         # MS-GF+ (and possibly others?) don't always supply residue location in
         # mo
-        for i in xrange(len(modificationData)):
+        for i in range(len(modificationData)):
             if modificationData[i][2] is None and modificationData[i][0] is not None:
                 pos = int(modificationData[i][0])
                 residue = pep_seq[pos-1] # 1-indexed position.
