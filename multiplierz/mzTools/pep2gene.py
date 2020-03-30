@@ -325,10 +325,3 @@ def add_gene_ids(target_files, p2g_database,
         return outputfiles
     else:
         return outputfile
-                
-                
-        
-if __name__ == "__main__":
-    test_accs = ['Q9NSD7', 'P62945', 'Q86X10']
-    foo = convertAccessionsViaUniprot(test_accs)
-    print foo
