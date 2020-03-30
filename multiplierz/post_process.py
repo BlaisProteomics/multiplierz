@@ -101,11 +101,15 @@ def calculate_FDR(reportfile, outputfile = None, threshold = 0.01,
             outputfile = insert_tag(reportfile, 'FDR_filtered')
         else:
             outputfile = '.'.join(reportfile.split('.')[:-1] + ['FDR_filtered.xlsx'])
-
+        is_excel_output = True
+    else:
+        ext = outputfile.lower().split('.')[-1]
+        is_excel_output = ext in {'xls', 'xlsx'}
+        
     percentage = round(threshold * 100)
 
 
-    if includeStatisticsSheet:
+    if includeStatisticsSheet and is_excel_output:
         statOutput = writer(outputfile, columns = ['FDR Calculation Statistics', '--------------'],
                             sheet_name = "FDR Statistics")
         statOutput.write(['', ''])
@@ -117,28 +121,29 @@ def calculate_FDR(reportfile, outputfile = None, threshold = 0.01,
         statOutput.write(['Number of Duplicates', str(duplicates)])
         statOutput.close()
 
-    if includeFailedSheet:
+    if includeFailedSheet and is_excel_output:
         failedOutput = writer(outputfile, columns = columns,
                               sheet_name = "Failed %s%% FDR" % percentage)
         for row in failedRows:
             failedOutput.write(row)
         failedOutput.close()
 
-    if separateDuplicateSheet:
+    if separateDuplicateSheet and is_excel_output:
         duplicateOutput = writer(outputfile, columns = columns,
                                  sheet_name = "Duplicate Rows")
         for row in duplicateRows:
             duplicateOutput.write(row)
         duplicateOutput.close()
 
-    if includeReverseSheet:
+    if includeReverseSheet and is_excel_output:
         reverseOutput = writer(outputfile, columns = columns,
                                sheet_name = 'Reverse Hits')
         for row in reverseRows:
             reverseOutput.write(row)
         reverseOutput.close()
 
-    passedOutput = writer(outputfile, columns = columns, sheet_name = "Data")
+    passedOutput = writer(outputfile, columns = columns, 
+                          sheet_name = "Data" if is_excel_output else None)
     for row in passedRows:
         passedOutput.write(row)
     passedOutput.close()   
