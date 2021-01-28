@@ -24,7 +24,7 @@ import os
 def pause():
     print("\n-")
     print("Press enter to continue.")
-    raw_input()
+    input()
     return
 
 import sys
@@ -141,7 +141,7 @@ def registerInterfaces():
     print("\n")
     #if not afterChecks["RAW"]:
         #print "MSFileReader (required for RAW file access) has not been installed.  Run the Thermo MSFileReader installation package now? [Y/n]"
-        #if 'n' not in raw_input().lower():
+        #if 'n' not in input().lower():
             #if not os.path.exists(msfilereader_installer):
                 #print "MSFileReader installer not found!  Please re-install multiplierz or download MSFileReader from the Thermo Scientific website."
                 #print msfilereader_installer

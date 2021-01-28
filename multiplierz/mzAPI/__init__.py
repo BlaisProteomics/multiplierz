@@ -132,8 +132,7 @@ class mzFile(object):
                 self.__class__ = bruker.mzBruker
                 self.format = 'Bruker'
                 bruker.mzBruker.__init__(self, data_file, **kwargs)                
-            except COMError as err:
-                print(err)
+            except:
                 import multiplierz.mzAPI.D as D
                 self.__class__ = D.mzFile
                 self.format = 'Agilent'
