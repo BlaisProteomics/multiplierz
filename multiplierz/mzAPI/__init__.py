@@ -126,7 +126,6 @@ class mzFile(object):
             self.format = 'mzml'
             mzML.mzFile.__init__(self, data_file, **kwargs)
         elif data_file.lower().endswith('.d'):
-            from comtypes import COMError
             try:
                 import multiplierz.mzAPI.bruker as bruker
                 self.__class__ = bruker.mzBruker
