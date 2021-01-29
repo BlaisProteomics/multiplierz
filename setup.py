@@ -7,11 +7,9 @@ from os import path
 
 
 install_requires = ['numpy', 'matplotlib', 'openpyxl', 'xlrd',
-                    'xlwt', 'requests', 'beautifulsoup4', 'pythonnet',
+                    'xlwt', 'requests', 'beautifulsoup4', 'repo @ https://github.com/pythonnet/pythonnet/',
                     'pypiwin32; platform_system == "Windows"',
                     'comtypes; platform_system == "Windows"']
-
-
 
 README = """ 
 **multiplierz** is a Python software library and associated GUI \
