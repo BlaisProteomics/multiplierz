@@ -1,7 +1,7 @@
 import clr
 import sys, os
 
-dll_path = 'thermo_dlls'
+dll_path = 'rawdlls'
 dlls = ['ThermoFisher.CommonCore.Data',
         'ThermoFisher.CommonCore.RawFileReader',
         'ThermoFisher.CommonCore.BackgroundSubtraction',
