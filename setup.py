@@ -7,8 +7,7 @@ from os import path
 
 
 install_requires = ['numpy', 'matplotlib', 'openpyxl', 'xlrd',
-                    'xlwt', 'requests', 'beautifulsoup4', 
-                    'repo @ https://github.com/pythonnet/pythonnet/archive/master.zip#egg=repo-1.0.0; platform_system == "Linux"',
+                    'xlwt', 'requests', 'beautifulsoup4',
                     'pythonnet; platform_system == "Windows"',
                     'pypiwin32; platform_system == "Windows"',
                     'comtypes; platform_system == "Windows"']
