@@ -45,9 +45,8 @@ class _extractor_(object):
                  maximum_precursor_mass, long_ms1,
                  deisotope_and_reduce_MS1_args, deisotope_and_reduce_MS2_args,
                  min_mz, precursor_tolerance, isobaric_labels, label_tolerance,
-                 channel_corrections,
-                 prec_info_file = None,
-                 region_based_labels = False):
+                 channel_corrections, prec_info_file = None, region_based_labels = False,
+                 target_scan_list = None):
         self.data = data
         self.filename = filename
         self.default_charge = default_charge
@@ -67,6 +66,7 @@ class _extractor_(object):
         self.region_based_labels = region_based_labels
         
         self.prec_info = parse_prec_info(prec_info_file) if prec_info_file else None
+        self.target_scans = set(target_scan_list) if target_scan_list is not None else None
         
         self.set_isobaric_labels(isobaric_labels)
         self.initialize_scan_info()
@@ -394,7 +394,7 @@ class _extractor_(object):
         self.possible_precursors = None
         for time, mz, scanNum, scanLevel, scanMode in self.scanInfo:
             scanName = scanNum if isinstance(scanNum, int) else time
-            
+
             if scanLevel == 'MS1':
                 self.lastMS1ScanName = scanName
                 self.possible_precursors = None
@@ -403,7 +403,10 @@ class _extractor_(object):
                 continue
             elif self.lastMS1ScanName == None:
                 continue                
-            
+
+            if (self.target_scans is not None) and (scanName not in self.target_scans):
+                continue
+
             # Each file type handles centroiding differently (or not at all.)
             if self.data.format == 'raw':
                 scan = self.data.scan(scanName, centroid = self.centroid)
@@ -425,8 +428,7 @@ class _extractor_(object):
             
             if self.filters and not mz:
                 mz = float(self.filters[time].split('@')[0].split(' ')[-1])            
-            
-            
+
             if self.prec_info:
                 accessid = self.data.extra_info(scanName)['Access Id']
                 assert accessid, scanName
@@ -459,7 +461,7 @@ class _extractor_(object):
                 
                 if not charge:
                     charge = self.default_charge                
-            
+
             if not mz:
                 import warnings
                 errmgf = os.path.abspath(self.filename)
@@ -468,7 +470,7 @@ class _extractor_(object):
                 if (self.maximum_mass and
                     remove_protons(mz, charge) > self.maximum_mass):
                     continue
-                    
+
                 if self.labels:
                     if self.region_based_labels:
                         scan_labels = self.read_labels_by_region(scan)

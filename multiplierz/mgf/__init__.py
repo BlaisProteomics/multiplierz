@@ -423,7 +423,8 @@ def extract(datafile, outputfile = None, default_charge = 2, centroid = True,
             isobaric_labels = None, label_tolerance = 0.01,
             channel_corrections = None,
             prec_info_file = None,
-            region_based_labels = False):
+            region_based_labels = False,
+            target_scan_list = None):
     """
     Converts a mzAPI-compatible data file to MGF.
     
@@ -457,7 +458,8 @@ def extract(datafile, outputfile = None, default_charge = 2, centroid = True,
                             maximum_precursor_mass, long_ms1,
                             deisotope_and_reduce_MS1_args, deisotope_and_reduce_MS2_args,
                             min_mz, precursor_tolerance, isobaric_labels, label_tolerance,
-                            channel_corrections, prec_info_file, region_based_labels)
+                            channel_corrections, prec_info_file, region_based_labels,
+                            target_scan_list)
     writer = MGF_Writer(outputfile)
     
     for scan, title, mz, charge in extractor.run():
