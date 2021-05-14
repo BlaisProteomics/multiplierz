@@ -1,15 +1,16 @@
 from setuptools import setup, find_packages, dist
-
 from codecs import open
 from os import path
-
-
-
+import platform
 
 install_requires = ['numpy', 'matplotlib', 'openpyxl', 'xlrd',
-                    'xlwt', 'requests', 'beautifulsoup4', 'pythonnet',
-                    'pypiwin32; platform_system == "Windows"',
-                    'comtypes; platform_system == "Windows"']
+                    'xlwt', 'requests', 'beautifulsoup4', 'pythonnet']
+if 'windows' in platform.lower():
+    install_requires += ['pypiwin32', 'comtypes']
+
+
+
+
 
 
 
