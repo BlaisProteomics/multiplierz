@@ -1,7 +1,7 @@
 import clr
 import sys, os
 
-dll_path = 'thermo_dlls'
+dll_path = 'rawdlls'
 dlls = ['ThermoFisher.CommonCore.Data',
         'ThermoFisher.CommonCore.RawFileReader',
         'ThermoFisher.CommonCore.BackgroundSubtraction',
@@ -10,12 +10,10 @@ dlls = ['ThermoFisher.CommonCore.Data',
 
 # DLLs cannot be loaded from network mounts!
 
+assert(os.path.exists(os.path.join(os.path.dirname(__file__))))
 sys.path += [os.path.join(os.path.dirname(__file__), dll_path)]
-#base_path = os.getcwd()
-#os.chdir(dll_path)
 for dll in dlls:
     clr.AddReference(dll)
-#os.chdir(base_path)
 
 from ThermoFisher.CommonCore.Data import ToleranceUnits
 from ThermoFisher.CommonCore.Data.Business import (ChromatogramSignal, ChromatogramTraceSettings,
