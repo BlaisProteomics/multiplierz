@@ -5,7 +5,7 @@ import platform
 
 install_requires = ['numpy', 'matplotlib', 'openpyxl', 'xlrd',
                     'xlwt', 'requests', 'beautifulsoup4', 'pythonnet']
-if 'windows' in platform.lower():
+if 'windows' in platform.platform().lower():
     install_requires += ['pypiwin32', 'comtypes']
 
 
