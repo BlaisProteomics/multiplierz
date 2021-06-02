@@ -34,12 +34,11 @@ def besttype(x):
         return x
 
 class mzFile(object):
-    def __init__(self, filename, *etc, **etcetc):
+    def __init__(self, filename, instrument = 1, *etc, **etcetc):
         self.source = RawFileReaderAdapter.FileFactory(filename)
         if self.source.InstrumentCount > 1:
-            print("%s has data from %d instruments, but only one is supported." 
-                  % (os.path.basename(filename), self.source.InstrumentCount))
-        self.source.SelectInstrument(Device.MS, 1)
+            print("%s has data from %d instruments" % (os.path.basename(filename), self.source.InstrumentCount))
+        self.source.SelectInstrument(Device.MS, instrument)
         
         self.data_file = filename
         self.file_type = 'RAW'
