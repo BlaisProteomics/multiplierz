@@ -56,6 +56,7 @@ class _extractor_(object):
         self.derive_precursor_via = derive_precursor_via
         self.deisoreduce_MS1_args = deisotope_and_reduce_MS1_args
         self.deisoreduce_MS2_args = deisotope_and_reduce_MS2_args
+        self.precursor_peak_intensity_sum = deisotope_and_reduce_MS1_args.get('min_peaks', 2)
         self.min_mz = min_mz
         self.precursor_tolerance = precursor_tolerance
         #self.isobaric_labels = isobaric_labels
@@ -146,11 +147,13 @@ class _extractor_(object):
         if self.possible_precursors == None:
             self.calculate_precursors()        
         try:
-            return min([x for x in self.possible_precursors
-                        if (charge == None or x[1] == charge)],
-                       key = lambda x: abs(x[0] - mz))
+            mz, envelope, charge = min([x for x in self.possible_precursors
+                                        if (charge == None or x[2] == charge)],
+                                        key = lambda x: abs(x[0] - mz))
+            intensity = sum([x[1] for x in envelope[:self.precursor_peak_intensity_sum]])
+            return mz, charge, intensity
         except ValueError:
-            return None, None    
+            return None, None, None
 
     def read_labels(self, scan):
         partscan = [x for x in scan if x[0] < self.labels[-1][1] + 3]
@@ -382,7 +385,7 @@ class _extractor_(object):
                     lastMS1 = centroid_func(self.data.scan(self.lastMS1ScanName))      
                     
             envelopes = peak_pick(lastMS1, **self.deisoreduce_MS1_args)[0]
-            self.possible_precursors = sum([[(x[0][0], c) for x in xs]
+            self.possible_precursors = sum([[(x[0][0], c, x) for x in xs]
                                             for c, xs in list(envelopes.items())], [])    
         
     
@@ -436,9 +439,11 @@ class _extractor_(object):
                 assert mzP and chargeP, (scanName, accessid, mzP, chargeP)
                 mz = mzP
                 charge = chargeP
+                prec_int = None # prec_info supply could include this, but I have no current use case?
             else:
                 mzP = None
                 chargeP = None
+                intP = None
                 if ("scanPrecursor" in dir(self.data) and 
                     self.derive_precursor_via in ['All', 'Thermo']):
                     assert isinstance(scanName, int)
@@ -446,18 +451,20 @@ class _extractor_(object):
                     
                 if (not mzP) or self.derive_precursor_via in ['Direct']: # 'and derive_precursor_via not in ['Thermo']', except why would you?
                     # .scanPrecursor sometimes returns charge and not mzP.
-                    mzP, chargeP = self.get_precursor(mz, chargeP)
+                    mzP, chargeP, intP = self.get_precursor(mz, chargeP)
                     if not mzP:
                         # Release presumed charge possibly obtained from scanPrecursor.
-                        mzP, chargeP = self.get_precursor(mz, None)
+                        mzP, chargeP, intP = self.get_precursor(mz, None)
                         if mz and chargeP:
                             self.inconsistent_precursors += 1     
-                
+
                 if mzP and (abs(mz - mzP) < 2 or not mz): 
                     mz = mzP
                     charge = chargeP
+                    prec_int = intP
                 else:
                     charge = self.default_charge
+                    prec_int = None
                 
                 if not charge:
                     charge = self.default_charge                
@@ -503,8 +510,9 @@ class _extractor_(object):
                             pass
                     
                 
-                title = standard_title_write(self.filename, rt = time, mz = mz,
-                                             mode = scanMode, scan = scanNum,
+                title = standard_title_write(self.filename, rt=time, mz=mz,
+                                             mode=scanMode, scan=scanNum,
+                                             ms1int=prec_int,
                                              **scan_labels)
             
                 if self.deisoreduce and self.centroid:
