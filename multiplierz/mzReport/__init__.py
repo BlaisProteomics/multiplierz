@@ -296,25 +296,33 @@ def reader(report_file, **kwargs):
     """
 
     file_type = os.path.splitext(report_file)[1][1:].lower()
+    if file_type == 'gz':
+        file_type = report_file.split('.')[-2]
+        compressed = True
+    else:
+        compressed = False
 
     report_file = os.path.abspath(report_file)
         
     if not os.path.exists(report_file): raise IOError("%s not found." % report_file)
 
-    if file_type == 'xls' or file_type == 'xlsx':
+    if (file_type == 'xls' or file_type == 'xlsx') and not compressed:
         import multiplierz.mzReport.mzSpreadsheet as mzSpreadsheet
         return mzSpreadsheet.XLSheetReader(report_file, **kwargs)
-    elif file_type == 'csv' or file_type == 'gz':
+    elif file_type == 'csv' or file_type == 'tsv':
         import multiplierz.mzReport.mzCSV as mzCSV
         return mzCSV.CSVReportReader(report_file, **kwargs)
-    elif file_type == 'mzd':
+    elif file_type == 'mzd' and not compressed:
         import multiplierz.mzReport.mzDB as mzDB
         return mzDB.SQLiteReader(report_file, **kwargs)
     elif file_type == 'mzid':
         import multiplierz.mzReport.mzIdentML as mzIdentML
         return mzIdentML.mzIdentMLReader(report_file, **kwargs)
     else:
-        raise IOError('File extension %s is not supported.' % file_type)
+        if compressed:
+            raise IOError('Gzipped files of type %s are not supported.' % file_type)
+        else:
+            raise IOError('File extension %s is not supported.' % file_type)
 
 
 # writer factory returns a ReportWriter

@@ -5,6 +5,7 @@ from itertools import chain as ch
 from multiplierz.mzAPI import mzFile
 from multiplierz import __version__
 
+from multiplierz.internalAlgorithms import gzOptOpen
 
 
 __all__ = ['mzIdentML']
@@ -69,7 +70,7 @@ def renderModificationString(modList):
 class mzIdentML(object):
     def __init__(self, filename):
         self.filename = filename
-        self.mzid = open(filename, "r")
+        self.mzid = gzOptOpen(filename, "r")
         self.tree = xml.parse(self.mzid)
         self.root = self.tree.getroot()
 
