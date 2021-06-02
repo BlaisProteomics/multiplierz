@@ -158,7 +158,7 @@ class _extractor_(object):
     def read_labels(self, scan):
         partscan = [x for x in scan if x[0] < self.labels[-1][1] + 3]
         if not partscan:
-            return dict([(str(l), '0') for l in zip(*self.labels)[0]])
+            return dict([(str(l), '0') for l in list(zip(*self.labels))[0]])
 
         ## This should probably actually sum all points within
         ## the tolerance range.
