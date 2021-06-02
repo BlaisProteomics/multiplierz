@@ -193,7 +193,8 @@ EnzymeSpecification = {'Arg-C':          '[R][A-Z]',
                        'Proteinase K':   '[YWF][A-Z]',
                        'Subtilisin':     '[^RHK][A-Z]',
                        'Thermolysin':    '[LFIVMA][^P]',
-                       'Trypsin':        '[KR][^P]'
+                       'Trypsin':        '[KR][^P]',
+                       'SimpleTrypsin':  '[KR][A-Z]',
                        }
 
 
