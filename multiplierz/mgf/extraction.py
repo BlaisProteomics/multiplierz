@@ -147,13 +147,14 @@ class _extractor_(object):
         if self.possible_precursors == None:
             self.calculate_precursors()        
         try:
-            mz, envelope, charge = min([x for x in self.possible_precursors
+            mz, charge, envelope = min([x for x in self.possible_precursors
                                         if (charge == None or x[2] == charge)],
                                         key = lambda x: abs(x[0] - mz))
-            intensity = sum([x[1] for x in envelope[:self.precursor_peak_intensity_sum]])
-            return mz, charge, intensity
         except ValueError:
             return None, None, None
+
+        intensity = sum([x[1] for x in envelope[:self.precursor_peak_intensity_sum]])
+        return mz, charge, intensity
 
     def read_labels(self, scan):
         partscan = [x for x in scan if x[0] < self.labels[-1][1] + 3]
