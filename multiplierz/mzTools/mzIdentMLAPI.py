@@ -119,13 +119,17 @@ class mzIdentML(object):
         analysissoft_list = next((x for x in self.root if 'AnalysisSoftwareList' in x.tag), [])
         self.mode = None
         for software in analysissoft_list:
-            soft_name = software.attrib['name']
+            soft_name = software.attrib.get('name', 'Unknown')
             if 'Mascot' in soft_name:
                 self.mode = "mascot"
                 break
             elif 'MS-GF+' in soft_name:
                 self.mode = 'msgf+'
                 break
+            elif 'myrimatch' in software.attrib.get('uri', ''):
+                self.mode = 'myrimatch'
+            else:
+                raise Exception
 
     def numberOfProteins(self):
         return len(self.proteinLookup)
@@ -214,8 +218,12 @@ class mzIdentML(object):
         elif self.mode == 'msgf+':
             spectrum_expect = spectCVs['MS-GF:SpecEValue']
             spectrum_score = spectCVs['MS-GF:RawScore']
+        elif self.mode == 'myrimatch':
+            # It seems like MVH is potentially the better measure?  Documentation on myrimatch is slim to none.
+            spectrum_expect = spectCVs['MyriMatch:MVH']
+            spectrum_score = spectCVs['MyriMatch:mzFidelity']
         else:
-            raise NotImplementedError("Not an MSGF or Mascot report.")
+            raise NotImplementedError("Not an MSGF/Mascot/Myrimatch report.")
 
         resultCVs = self.giveCVs(resultEl)
         try:
@@ -518,3 +526,4 @@ class mzIdentML(object):
 
     def close(self):
         self.mzid.close()
+

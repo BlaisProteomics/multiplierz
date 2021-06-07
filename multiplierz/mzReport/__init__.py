@@ -309,7 +309,7 @@ def reader(report_file, **kwargs):
     if (file_type == 'xls' or file_type == 'xlsx') and not compressed:
         import multiplierz.mzReport.mzSpreadsheet as mzSpreadsheet
         return mzSpreadsheet.XLSheetReader(report_file, **kwargs)
-    elif file_type == 'csv' or file_type == 'tsv':
+    elif file_type == 'csv' or file_type == 'tsv' or file_type == 'txt':
         import multiplierz.mzReport.mzCSV as mzCSV
         return mzCSV.CSVReportReader(report_file, **kwargs)
     elif file_type == 'mzd' and not compressed:
