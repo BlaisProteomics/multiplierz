@@ -59,25 +59,27 @@ class CSVReportReader(ReportReader):
     '''The CSV implementation of the mzReport class. Python's CSV module
     is actually fine for what we need, so this is mostly a wrapper of
     its functionality.'''
-    def __init__(self, file_name, infer_types = True, sheet_name = None):
+    def __init__(self, file_name, infer_types = True, sheet_name = None, **csv_kwargs):
         if not os.path.exists(file_name):
             raise IOError("No such file: '%s'" % os.path.basename(file_name))
         self.file_name = file_name
         self.fh = gzOptOpen(self.file_name, 'rt')
-        self.csv = csv.reader(self.fh)
+        self.csv = csv.reader(self.fh, **csv_kwargs)
         try:
             self.columns = next(self.csv)
+            if len(self.columns) == 1:
+                self.columns = next(self.csv) # This is a temporary hack!
         except StopIteration:
             raise IOError("CSV file contains no header, is empty: %s" % file_name)
         self.infer_types = infer_types
         
-        if len(self.columns) == 1 and '\t' in self.columns[0]:
-            # Retry with tab-delimiting dialect
-            
-            self.fh.close()
-            self.fh = open(self.file_name, 'rt')
-            self.csv = csv.reader(self.fh, dialect = 'excel-tab')
-            self.columns = self.csv.next()[:]            
+        # if len(self.columns) == 1 and '\t' in self.columns[0]:
+        #     # Retry with tab-delimiting dialect
+        #
+        #     self.fh.close()
+        #     self.fh = gzOptOpen(self.file_name, 'rt')
+        #     self.csv = csv.reader(self.fh, **csv_kwargs)
+        #     self.columns = next(self.csv)
             
             
 
