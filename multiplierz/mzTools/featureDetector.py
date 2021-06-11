@@ -118,7 +118,7 @@ class Feature():
         
         self.regions = [(absolute_scan_lookup[x], y) for x, y in self.regions]
         
-        minMZs = [min(select(1, peaks)) for y, peaks in self.regions]
+        minMZs = [min(select(0, peaks)) for y, peaks in self.regions]
         avgC12 = average(minMZs)
         while not all([abs(x - avgC12) < 0.05 for x in minMZs]):
             oddOneOut = max(minMZs, key = lambda x: abs(x - avgC12))
@@ -131,8 +131,6 @@ class Feature():
         ints = [0.0] + select(1, xic) + [0.0]
         self.skewness = skew(ints)
         self.kurtosis = kurtosis(ints)
-        
-        
   
     def containsPoint(self, mz, scan, charge):
         return (charge == self.charge and abs(mz - self.mz) < featureMatchupTolerance
@@ -535,15 +533,17 @@ def detect_features(datafile, **constants):
     if os.path.exists(featurefile) and not force:
         vprint("Feature data file already exists: %s" % featurefile)
         return featurefile
-    
+
+    multithread_read = constants.get('multithread_read', True)
+
     setGlobals(constants)
 
     
     times = []
-    times.append(time.clock())
+    # times.append(time.clock())
     data = mzFile(datafile)
     
-    times.append(time.clock())
+    # times.append(time.clock())
     vprint("Opened data file; getting isotopes...")
 
     scaninfo = [x for x in data.scan_info(0, 99999999) if x[3] == 'MS1']
@@ -553,32 +553,45 @@ def detect_features(datafile, **constants):
     if scanrange:
         scaninfo = [x for x in scaninfo if scanrange[0] < x < scanrange[1]]
 
-    data.close()
-    
-    que = multiprocessing.Queue(maxsize = 20)
-    reader = multiprocessing.Process(target = dataReaderProc,
-                                     args = (datafile, que, scaninfo))
-    reader.start()
-    
+
+
     isotopeData = deque()
-    thing = que.get(block = True)
-    bar = 0
-    while thing != 'done':
-        scanNum, scan = thing
-        foo = time.clock()
-        isotopeData.append((scanNum, peak_pick_PPM(scan, **peak_pick_params)[0]))
-        bar += time.clock() - foo
-        
+    if multithread_read:
+        print("Threaded mode")
+        data.close()
+
+        que = multiprocessing.Queue(maxsize = 20)
+        reader = multiprocessing.Process(target = dataReaderProc,
+                                         args = (datafile, que, scaninfo))
+        reader.start()
+
         thing = que.get(block = True)
-        
-        if verbose_mode and len(isotopeData) % 100 == 0:
-            print((len(isotopeData))) # Shielded by explicit verbose_mode check.
-    
-    reader.join()
+        bar = 0
+        while thing != 'done':
+            scanNum, scan = thing
+            # foo = time.clock()
+            isotopeData.append((scanNum, peak_pick_PPM(scan, **peak_pick_params)[0]))
+            # bar += time.clock() - foo
+
+            thing = que.get(block = True)
+
+            if verbose_mode and len(isotopeData) % 100 == 0:
+                print((len(isotopeData))) # Shielded by explicit verbose_mode check.
+
+        reader.join()
+    else:
+        print("Nonthreaded mode")
+        for sn in scaninfo:
+            scan = data.scan(sn, centroid=True)
+            isotopeData.append((sn, peak_pick_PPM(scan, **peak_pick_params)[0]))
+
+        data.close()
+
+
     # Could just discard the un-feature'd peaks immediately.
     vprint("Isotopic features acquired; finding features over time...")
 
-    times.append(time.clock())
+    # times.append(time.clock())
 
     ms1ToIndex = {}
     indexToMS1 = {}
@@ -626,7 +639,7 @@ def detect_features(datafile, **constants):
     
 
     
-    times.append(time.clock())    
+    # times.append(time.clock())
     
     seenIsotopes = set()
     # Can assume isotopic sequences are unique because floats.
@@ -715,7 +728,7 @@ def detect_features(datafile, **constants):
         
         for _, iso in newFeature:
             seenIsotopes.add(tuple(iso))
-    times.append(time.clock())
+    # times.append(time.clock())
     
     for chg, feature in featureList:
         for stage in feature:
@@ -751,7 +764,7 @@ def detect_features(datafile, **constants):
     save_feature_database(featureObjects, featurefile)
     
     vprint("Saved feature file.")
-    times.append(time.clock())
+    # times.append(time.clock())
     
     return featurefile
 
