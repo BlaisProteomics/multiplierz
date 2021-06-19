@@ -240,8 +240,8 @@ class mzIdentML(object):
                          "Spectrum ID" : spectEl.get("id"),
                          "Spectrum Description" : spectDesc,
                          "File" : dataEl.get("location").replace(r'file:///', ''),
-                         "Peptide Score":spectrum_score,
-                         "Expectation Value":spectrum_expect
+                         "Peptide Score":float(spectrum_score),
+                         "Expectation Value":float(spectrum_expect)
                         }
         # How is this not a function of the peptide assignment?
         spectrum_info['Delta'] = (float(spectrum_info['Experimental mz']) -
