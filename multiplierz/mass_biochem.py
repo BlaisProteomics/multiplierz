@@ -171,7 +171,6 @@ ModificationFormulae = {'Phospho':{'H':1, 'O':3, 'P':1},
                         'Label:13C(6)': {'13C':6, 'C':-6},
                         'Label:13C(6)15N(4)':{'13C':6, 'C':-6, '15N':4, 'N':-4}}
 
-
 EnzymeSpecification = {'Arg-C':          '[R][A-Z]',
                        'Asp-N':          '[A-Z][D]',
                        'Bromelain':      '[KAY][A-Z]',
@@ -220,7 +219,9 @@ AminoAcidMasses = {'A': (71.03711, 71.0788),
                    'T': (101.04768, 101.1051),
                    'V': (99.06841, 99.1326),
                    'W': (186.07931, 186.2132),
-                   'Y': (163.06333, 163.176)}
+                   'Y': (163.06333, 163.176),
+                   'U': (150.95363, 150.3079) # Selenocysteine
+                   }
 
 # These all include a bound H2O.
 AminoAcidFormulas = {'A': {'C': 3, 'H': 7, 'N': 1, 'O': 2},
@@ -242,7 +243,11 @@ AminoAcidFormulas = {'A': {'C': 3, 'H': 7, 'N': 1, 'O': 2},
                      'T': {'C': 4, 'H': 9, 'N': 1, 'O': 3},
                      'V': {'C': 5, 'H': 11, 'N': 1, 'O': 2},
                      'W': {'C': 11, 'H': 12, 'N': 2, 'O': 2},
-                     'Y': {'C': 9, 'H': 11, 'N': 1, 'O': 3}}
+                     'Y': {'C': 9, 'H': 11, 'N': 1, 'O': 3},
+                     'U': {'C': 3, 'H': 5, 'N': 1, 'O': 1, 'Se': 1} # Selenocysteine
+                     }
+
+#C3H5NOSe
 
 H2Omass = 18.010565
 NH3mass = 17.026549
@@ -978,7 +983,7 @@ def _placeCharge(mass, chg): # Assume uncharged to start.
 
 knownNeutralLosses = {'Phospho':chemicalFormulaMass('H3PO4')}
 
-def fragment(peptide, mods = [], charges = [1], 
+def fragment(peptide, mods = [], charges = [1],
              ions = ['b', 'y'], 
              neutralPhosLoss = False,
              neutralLossDynamics = None,
@@ -1044,10 +1049,8 @@ def fragment(peptide, mods = [], charges = [1],
                     modBySite[site].append(modmass)
         
     
-    fragmentSetsByIonType = {}
+    fragmentSetsByIonType = defaultdict(list)
     if 'b' in ions or 'c' in ions:
-        bfrags = []
-        cfrags = []
         bmass = nterminusMass
         presentmods = []
         for site in range(1, len(peptide)): # 1-indexed.
@@ -1062,23 +1065,29 @@ def fragment(peptide, mods = [], charges = [1],
                     neutralLoss -= neutralLossDynamics[mod]            
 
             if 'b' in ions:
-                bfrags.append(('b'+str(site), bmass))
+                fragmentSetsByIonType['b'].append(('b'+str(site), bmass))
             if 'c' in ions:
-                cfrags.append(('c'+str(site), bmass + cLoss))
+                fragmentSetsByIonType['c'].append(('c'+str(site), bmass + cLoss))
 
             if neutralLoss:
                 if 'b' in ions:
-                    bfrags.append(('b%d-%.0f'%(site, abs(neutralLoss)), bmass + neutralLoss))                
+                    fragmentSetsByIonType['b'].append(('b%d-%.0f'%(site, abs(neutralLoss)), bmass + neutralLoss))
                 if 'c' in ions:
-                    cfrags.append(('c%d-%.0f'%(site, abs(neutralLoss)), bmass + neutralLoss + cLoss))
-        if 'b' in ions:
-            fragmentSetsByIonType['b'] = bfrags
-        if 'c' in ions:
-            fragmentSetsByIonType['c'] = cfrags
-    
+                    fragmentSetsByIonType['c'].append(('c%d-%.0f'%(site, abs(neutralLoss)), bmass + neutralLoss + cLoss))
+
+            if waterLoss and aa in {'D', 'E', 'S', 'T'}:
+                if 'b' in ions:
+                    fragmentSetsByIonType['b'].append(('b%d-H20' % site, bmass - H2Omass))
+                if 'c' in ions:
+                    fragmentSetsByIonType['c'].append(('c%d-H20' % site, bmass - H2Omass - zLoss))
+
+            if ammoniaLoss and aa in {'K', 'N', 'Q', 'R'}:
+                if 'b' in ions:
+                    fragmentSetsByIonType['b'].append(('b%d-NH3' % site, bmass - NH3mass))
+                if 'c' in ions:
+                    fragmentSetsByIonType['c'].append(('c%d-NH3' % site, cmass - NH3mass - zLoss))
+
     if 'y' in ions or 'z' in ions:
-        yfrags = []
-        zfrags = []
         ymass = cterminusMass
         presentmods = []
         for site in range(len(peptide)-1, 0, -1): # 0-indexed.
@@ -1086,7 +1095,6 @@ def fragment(peptide, mods = [], charges = [1],
             mods = modBySite[site+1]
             presentmods += mods
             ymass += AminoAcidMasses[aa][massType] + sum(mod_masses.get(x, x) for x in mods)
-            
 
             neutralLoss = 0
             for mod in presentmods:
@@ -1095,20 +1103,29 @@ def fragment(peptide, mods = [], charges = [1],
             
             realsite = len(peptide)-site
             if 'y' in ions:
-                yfrags.append(('y'+str(realsite), ymass))
+                fragmentSetsByIonType['y'].append(('y'+str(realsite), ymass))
             if 'z' in ions:
-                zfrags.append(('z'+str(realsite), ymass - zLoss))
+                fragmentSetsByIonType['z'].append(('z'+str(realsite), ymass - zLoss))
 
             if neutralLoss:
-                yfrags.append(('y%d-%.0f'%(realsite, abs(neutralLoss)), ymass + neutralLoss))
+                if 'y' in ions:
+                    fragmentSetsByIonType['y'].append(('y%d-%.0f'%(realsite, abs(neutralLoss)), ymass + neutralLoss))
                 if 'z' in ions:
-                    zfrags.append(('z%d-%.0f'%(realsite, abs(neutralLoss)), ymass + neutralLoss - zLoss))
-        
-        if 'y' in ions:
-            fragmentSetsByIonType['y'] = yfrags
-        if 'z' in ions:
-            fragmentSetsByIonType['z'] = zfrags
-                
+                    fragmentSetsByIonType['z'].append(('z%d-%.0f'%(realsite, abs(neutralLoss)), ymass + neutralLoss - zLoss))
+
+            if waterLoss and aa in {'D', 'E', 'S', 'T'}:
+                if 'y' in ions:
+                    fragmentSetsByIonType['y'].append(('y%d-H20' % realsite, ymass - H2Omass))
+                if 'z' in ions:
+                    fragmentSetsByIonType['z'].append(('z%d-H20' % realsite, ymass - H2Omass - zLoss))
+
+            if ammoniaLoss and aa in {'K', 'N', 'Q', 'R'}:
+                if 'y' in ions:
+                    fragmentSetsByIonType['y'].append(('y%d-NH3' % realsite, ymass - NH3mass))
+                if 'z' in ions:
+                    fragmentSetsByIonType['z'].append(('z%d-NH3' % realsite, ymass - NH3mass - zLoss))
+
+
     # Similar for z and w and whatever, I guess.
     
     if 'by-int' in ions:
@@ -1140,30 +1157,30 @@ def fragment(peptide, mods = [], charges = [1],
                 
                 
     
-    # Water-loss duplicates of ALL ions!
-    if waterLoss or ammoniaLoss:
-        for fragtype, labelions in list(chargedFragmentSets.items()):
-            waterlosses = []
-            ammonialosses = []
-            for label, ion in labelions:
-                chg = label.count('+') if '+' in label else 1
-                mass = (ion * chg) - (chg * protonMass)                
-                if waterLoss:
-                    newlabel = list(label)
-                    newlabel.insert(1, '0')
-                    newlabel = ''.join(newlabel)
-                    newmass = mass - H2Omass
-                    newion = (newmass + (chg * protonMass)) / chg
-                    waterlosses.append((newlabel, newion))
-                if ammoniaLoss:
-                    newlabel = list(label)
-                    newlabel.insert(1, '*')
-                    newlabel = ''.join(newlabel)
-                    newmass = mass - NH3mass
-                    newion = (newmass + (chg * protonMass)) / chg
-                    ammonialosses.append((newlabel, newion))
-            chargedFragmentSets[fragtype] += waterlosses
-            chargedFragmentSets[fragtype] += ammonialosses
+    # # Water-loss duplicates of ALL ions!
+    # if waterLoss or ammoniaLoss:
+    #     for fragtype, labelions in list(chargedFragmentSets.items()):
+    #         waterlosses = []
+    #         ammonialosses = []
+    #         for label, ion in labelions:
+    #             chg = label.count('+') if '+' in label else 1
+    #             mass = (ion * chg) - (chg * protonMass)
+    #             if waterLoss:
+    #                 newlabel = list(label)
+    #                 newlabel.insert(1, '0')
+    #                 newlabel = ''.join(newlabel)
+    #                 newmass = mass - H2Omass
+    #                 newion = (newmass + (chg * protonMass)) / chg
+    #                 waterlosses.append((newlabel, newion))
+    #             if ammoniaLoss:
+    #                 newlabel = list(label)
+    #                 newlabel.insert(1, '*')
+    #                 newlabel = ''.join(newlabel)
+    #                 newmass = mass - NH3mass
+    #                 newion = (newmass + (chg * protonMass)) / chg
+    #                 ammonialosses.append((newlabel, newion))
+    #         chargedFragmentSets[fragtype] += waterlosses
+    #         chargedFragmentSets[fragtype] += ammonialosses
     
     #if 1 not in charges:
         #for iontype in ions:
