@@ -251,7 +251,7 @@ def pseudo_reverse(fasta, output = None, enzyme = 'Trypsin', tag = 'rev_', inclu
     """
     
     if not output:
-        output = fasta + '.pseudo_reversed.fasta'
+        output = fasta.rsplit('.', 1)[0] + '.pseudo_reversed.fasta'
     
     fastaFile = parse_to_generator(fasta)
     outputFile = Writer(output)
@@ -272,3 +272,12 @@ def pseudo_reverse(fasta, output = None, enzyme = 'Trypsin', tag = 'rev_', inclu
 
     return output
 
+
+def normalize(inputfile, outputfile=None):
+    if not outputfile:
+        outputfile = inputfile
+    data = parse_to_dict(inputfile)
+    out = Writer(filename=outputfile)
+    for entry in data.items():
+        out.write(*entry)
+    out.close()
