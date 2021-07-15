@@ -99,7 +99,7 @@ def readLocalMapForFasta(local_map_file, accessions, accession_parser = None):
 def create_fasta_index(fasta_file, outputfile = None, labelParser = (lambda x: x),
                        distinguish_leucine = True,
                        local_mapping_file = None):
-    starttime = time.clock()
+    starttime = time.process_time()
     
     if not outputfile:
         outputfile = fasta_file + '.pep2gene'
@@ -116,19 +116,19 @@ def create_fasta_index(fasta_file, outputfile = None, labelParser = (lambda x: x
                                      (label, parser.pattern))
             return parsed.group(0)  
     
-    prevtime = time.clock()
+    prevtime = time.process_time()
     fasta = parse_to_dict(fasta_file, labelConverter = labelParser,
                           filter_string = 'rev_')
-    print("FASTA file read: %.2f" % (time.clock() - prevtime))
-    prevtime = time.clock()
+    print("FASTA file read: %.2f" % (time.process_time() - prevtime))
+    prevtime = time.process_time()
     
     if not local_mapping_file:
         prot_to_gene = convertAccessionsViaUniprot(list(fasta.keys()))
     else:
         prot_to_gene = readLocalMapForFasta(local_mapping_file, list(fasta.keys()))
     assert any(prot_to_gene.values()), 'WARNING: Gene mapping acquisition failed to find any genes.  Check your header parser?'
-    print("Gene lookup acquired: %.2f" % (time.clock() - prevtime))
-    prevtime = time.clock()
+    print("Gene lookup acquired: %.2f" % (time.process_time() - prevtime))
+    prevtime = time.process_time()
     
     if distinguish_leucine:
         isofasta = {}
@@ -146,16 +146,16 @@ def create_fasta_index(fasta_file, outputfile = None, labelParser = (lambda x: x
             if distinguish_leucine:
                 isomerLookup[fmer.replace('I', 'L')].add(protein)
     
-    print("Lookup tables created: %.2f" % (time.clock() - prevtime))
-    prevtime = time.clock()
+    print("Lookup tables created: %.2f" % (time.process_time() - prevtime))
+    prevtime = time.process_time()
     
     out = open(outputfile, 'wb')
     data = (K, fasta, fmerLookup, prot_to_gene, isofasta, isomerLookup)
     pickle.dump(data, out, protocol = 2)
     out.close()
     
-    print("Data written: %.2f" % (time.clock() - prevtime))
-    print("Overall database generation time: %.2f" % (time.clock() - starttime))
+    print("Data written: %.2f" % (time.process_time() - prevtime))
+    print("Overall database generation time: %.2f" % (time.process_time() - starttime))
     
     return outputfile
     
@@ -163,8 +163,9 @@ def create_fasta_index(fasta_file, outputfile = None, labelParser = (lambda x: x
 def add_gene_ids(target_files, p2g_database,
                  target_sheet = None,
                  outputfile = None, inPlace = False, leucine_equals_isoleucine = True,
-                 legacy_columns = True):
-    starttime = time.clock()
+                 legacy_columns = True,
+                 peptide_column = "Peptide Sequence"):
+    starttime = time.process_time()
     
     if isinstance(target_files, str):
         return_list = False
@@ -207,8 +208,8 @@ def add_gene_ids(target_files, p2g_database,
     if k_len:
         assert k_len == K, "Pep2Gene database created with kmers of length %s, not %s" % (k_len, K)
     
-    print("P2G database loaded: %.2f\n\n" % (time.clock() - starttime))
-    prevtime = time.clock()
+    print("P2G database loaded: %.2f\n\n" % (time.process_time() - starttime))
+    prevtime = time.process_time()
     
     outputfiles = []
     for target_file in target_files:
@@ -253,11 +254,8 @@ def add_gene_ids(target_files, p2g_database,
         for counter, row in enumerate(rdr):
             if counter%1000 == 0:
                 print_progress(counter)
-            try:
-                pep = row['Peptide Sequence'].upper()
-            except KeyError:
-                pep = row['Peptide'].upper()
-            
+            pep = row[peptide_column].upper()
+
             pep = ''.join([x for x in pep if x.isalpha()])
                 
             if len(pep) <= K:
@@ -315,11 +313,11 @@ def add_gene_ids(target_files, p2g_database,
             
             output.write(row)
         
-        print("\nGene lookup completed: %.2f" % (time.clock() - prevtime))
-        prevtime = time.clock()
+        print("\nGene lookup completed: %.2f" % (time.process_time() - prevtime))
+        prevtime = time.process_time()
         rdr.close()
         output.close()
-        print("Output written: %.2f" % (time.clock() - prevtime))
+        print("Output written: %.2f" % (time.process_time() - prevtime))
         outputfiles.append(outputfile)
     if return_list:
         return outputfiles
