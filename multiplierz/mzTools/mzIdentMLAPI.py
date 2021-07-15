@@ -128,6 +128,10 @@ class mzIdentML(object):
                 break
             elif 'myrimatch' in software.attrib.get('uri', ''):
                 self.mode = 'myrimatch'
+            elif 'X! Tandem' in soft_name:  # Also produced by proteowizard idConvert from, e.g., MSF outputs (?!)
+                self.mode = 'tandem'
+            elif 'ProteoWizard MzIdentML' in soft_name:
+                continue
             else:
                 raise Exception
 
@@ -222,8 +226,11 @@ class mzIdentML(object):
             # It seems like MVH is potentially the better measure?  Documentation on myrimatch is slim to none.
             spectrum_expect = spectCVs['MyriMatch:MVH']
             spectrum_score = spectCVs['MyriMatch:mzFidelity']
+        elif self.mode == 'tandem':
+            spectrum_expect = spectCVs['X!Tandem:expect']
+            spectrum_score = spectCVs['X!Tandem:hyperscore']
         else:
-            raise NotImplementedError("Not an MSGF/Mascot/Myrimatch report.")
+            raise NotImplementedError("Not an MSGF/Mascot/Myrimatch/Tandem report.")
 
         resultCVs = self.giveCVs(resultEl)
         try:
