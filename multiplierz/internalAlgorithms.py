@@ -328,7 +328,11 @@ def assign_multiprocess(function, data, pool_args = {}, **task_args):
             if isinstance(tasks, list):
                 newtask = tasks.pop()
             else:
-                newtask = next(tasks)
+                try:
+                    newtask = next(tasks)
+                except StopIteration:
+                    # This is necessary to gracefully exit from generator-fed calls
+                    break
             if isinstance(newtask, str) or len(newtask) == 1:
                 newtask = (newtask,)
             jobs.append(workforce.apply_async(function, args = newtask,
