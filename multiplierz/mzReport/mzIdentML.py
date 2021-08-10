@@ -7,8 +7,10 @@ class mzIdentMLReader(ReportReader):
         self.file_name = file_name
         self.datafile = mzIdentML(file_name)
         self.data = self.datafile.peptideSummary()
-        self.columns = list(self.data[0].keys())
-        
+        try:
+            self.columns = list(self.data[0].keys())
+        except IndexError:
+            self.columns = None # There's no results so this shouldn't case problems.
     
     #def __iter__(self):
         #for entry in self.data:
@@ -28,7 +30,10 @@ class mzIdentMLReader(ReportReader):
     def close(self):
         del self.datafile
         del self.data
-        
-        
 
-    
+
+if __name__ == '__main__':
+    # foo = mzIdentMLReader('C:\\Users\\WilliamMaxAlexander\\Projects\\K562_vs_HUVEC\\K562\\SG_2\\searchgui_out\\20100614_Velos1_TaGe_SA_K562_5.raw.msgf.mzid.gz')
+    foo = mzIdentMLReader('/mnt/c/users/WilliamMaxAlexander/projects/K562_vs_HUVEC/K562/SG_2/searchgui_out/20100614_Velos1_TaGe_SA_K562_5.raw.msgf.mzid.gz')
+    raise Exception
+    print(list(foo))
