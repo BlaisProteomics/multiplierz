@@ -63,6 +63,8 @@ def renderModificationString(modList):
             posStr = res + pos + ": "
 
         modStrs.append(posStr + name)
+    if modStrs:
+        raise Exception
     return "; ".join(modStrs)
 
 
@@ -262,7 +264,7 @@ class mzIdentML(object):
             try:
                 desc = self.giveCVs(dbSeq)['protein description']
             except KeyError:
-                desc = 'No Description'
+                desc = accessions
             pepInfo = self.peptideInfo(evidence.get("peptide_ref"))
             
             start, stop = evidence.get('start'), evidence.get('stop')
