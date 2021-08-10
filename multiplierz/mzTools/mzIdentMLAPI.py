@@ -63,8 +63,7 @@ def renderModificationString(modList):
             posStr = res + pos + ": "
 
         modStrs.append(posStr + name)
-    if modStrs:
-        raise Exception
+        
     return "; ".join(modStrs)
 
 
