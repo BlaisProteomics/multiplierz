@@ -307,7 +307,12 @@ class MultiplierzSettings(object):
         self.fields['user email'] = value
     user_email = property(get_user_email, set_user_email)
     
-
-settings = MultiplierzSettings(SettingsFile, logger_message)
+try:
+    settings = MultiplierzSettings(SettingsFile, logger_message)
+except FileNotFoundError:
+    # This will happen if multiplierz is running in an environment where the settings file
+    # cannot be written.  It will interfere with some legacy functionality which relies
+    # on the settings file.
+    settings = None
 #settings.save()
 #print "FOO"
