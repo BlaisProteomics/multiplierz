@@ -236,7 +236,11 @@ def initializeFasta():
 
 if not os.path.exists(myData):
     print(("Multiplierz directory (%s) not found; creating it." % myData))
-    os.mkdir(myData)
+    try:
+        os.makedirs(myData)
+    except Exception as err:
+        print("\tCould not create multiplierz directory (%s)" % err)
+
     
 
 requiredFiles = [('settings.txt', initialSettings),
@@ -246,15 +250,18 @@ requiredFiles = [('settings.txt', initialSettings),
 requiredSubdirs = ['TEMP', # Still used by old mzReport imaging functions.
                    'pyCometDatabases'] # Probably obsolete from fastafiles.txt?
 
+try:
+    for subdir in requiredSubdirs:
+        if not os.path.exists(os.path.join(myData, subdir)):
+            print(("Required multiplierz data directory %s not found!  Creating it." % subdir))
+            os.mkdir(os.path.join(myData, subdir))
+    for filename, initializer in requiredFiles:
+        if not os.path.exists(os.path.join(myData, filename)):
+            print(("Required multiplierz data file %s not found!  Creating it." % filename))
+            initializer()
+except Exception as err:
+    print('\tCould not create multiplierz data. (%s)  This could cause problems.' % err)
 
-for subdir in requiredSubdirs:
-    if not os.path.exists(os.path.join(myData, subdir)):
-        print(("Required multiplierz data directory %s not found!  Creating it." % subdir))
-        os.mkdir(os.path.join(myData, subdir))
-for filename, initializer in requiredFiles:
-    if not os.path.exists(os.path.join(myData, filename)):
-        print(("Required multiplierz data file %s not found!  Creating it." % filename))
-        initializer()
 
 from multiplierz.settings import settings
 protonMass = 1.0072764 # Used at various points.
