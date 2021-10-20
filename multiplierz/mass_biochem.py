@@ -33,6 +33,7 @@ from itertools import permutations
 from multiplierz import myData, logger_message, protonMass
 from multiplierz.unimod import UnimodDatabase
 
+from sqlite3 import OperationalError
 
 
 #__all__ = ['digest', 'fragment', 'mz', 'mw']
@@ -41,7 +42,7 @@ unimodpath = os.path.join(myData, 'unimod.sqlite')
 try:
     # load the unimod database
     unimod = UnimodDatabase(unimodpath)
-except IOError:
+except (IOError, OperationalError):
     print ("Unimod database not found at %s!\n"
            "This may be due to an incomplete multiplierz installation.  Please\n"
            "reinstall multiplierz or copy the unimod.sqlite file from an existing\n"
