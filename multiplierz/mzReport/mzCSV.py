@@ -106,7 +106,7 @@ class CSVReportWriter(ReportWriter):
     '''The CSV implementation of the mzReport class. Python's CSV module
     is actually fine for what we need, so this is mostly a wrapper of
     its functionality.'''
-    def __init__(self, file_name, columns=None, default_columns=False, sheet_name = None):
+    def __init__(self, file_name, columns=None, default_columns=False, sheet_name = None, **csv_kwargs):
         if sheet_name is not None:
             raise IOError("CSV files cannot have named tables.")
         
@@ -140,7 +140,7 @@ class CSVReportWriter(ReportWriter):
                 self.fh = open(self.file_name, 'wt')
             print(("Writing to %s" % self.file_name))
             
-        self.csv = csv.writer(self.fh, lineterminator = '\n')
+        self.csv = csv.writer(self.fh, lineterminator = '\n', **csv_kwargs)
         self.csv.writerow([x for x in self.columns])
             
             
