@@ -1,7 +1,14 @@
 from collections import defaultdict
 from multiplierz.internalAlgorithms import average
 from multiplierz import protonMass
-from collections import deque, Iterator
+
+#Iterable deprecated in python 3.10, import from new location if available
+try:
+    from collections.abc import Iterable
+except ImportError:
+    from collections import Iterable
+
+from collections import deque
 from numpy import std
 
 def centroid(scan, threshold = None):
