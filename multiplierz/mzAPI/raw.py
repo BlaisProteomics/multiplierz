@@ -106,7 +106,7 @@ class mzFile(object):
     def specific_filter(self, scannum):
         return IScanFilter(self.source.GetFilterForScanNumber(scannum)).ToString()
     
-    def scan(self, scannum, centroid = False):
+    def scan(self, scannum, centroid = False, mzIntsReturnOnly=False):
         # There's also apparently a "Scan.FromFile" method of getting scan data?
         
         scan_stats = self.source.GetScanStatsForScanNumber(scannum)
@@ -117,17 +117,19 @@ class mzFile(object):
             
             stream = self.source.GetCentroidStream(scannum, False)
             if stream.Masses is not None and stream.Intensities is not None:
-                return list(zip(stream.Masses, stream.Intensities))
+                if not mzIntsReturnOnly: return list(zip(stream.Masses, stream.Intensities))
+                else: return stream.Masses, stream.Intensities
             else:
                 # Fall back on "profile" mode, which seems to usually turn
                 # out centroid data for some reason.  The format is confused.
-                scan = self.source.GetSegmentedScanFromScanNumber(scannum, scan_stats)
-                return list(zip(scan.Positions, scan.Intensities))                
+                scan = self.source.GetSegmentedScanFromScanNumber(scannum, scan_stats) 
+                if not mzIntsReturnOnly: return list(zip(scan.Positions, scan.Intensities))
+                else: return scan.Positions, scan.Intensities                
         
         else: # Profile-only scan.
             scan = self.source.GetSegmentedScanFromScanNumber(scannum, scan_stats)
-            scan = list(zip(scan.Positions, scan.Intensities))
-            return scan
+            if not mzIntsReturnOnly: return list(zip(scan.Positions, scan.Intensities))
+            else: return scan.Positions, scan.Intensities
         
     def lscan(self, scannum):
         stream = self.source.GetCentroidStream(scannum, False)

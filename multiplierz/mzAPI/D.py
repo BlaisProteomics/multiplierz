@@ -188,7 +188,7 @@ class mzFile(baseFile):
     def headers(self):
         return self.scan_info()
         
-    def scan(self, scan, centroid = None):
+    def scan(self, scan, centroid = None, mzIntsReturnOnly=False):
         """
         Returns a spectrum from the specified scan index.
         
@@ -208,7 +208,8 @@ class mzFile(baseFile):
             mode = desiredModeDict['centroid' if centroid else 'profile']
         
         scanObj = self.source.GetSpectrum_8(scan, self.noFilter, self.noFilter, mode)
-        return list(zip(scanObj.XArray, scanObj.YArray))
+        if not mzIntsReturnOnly: return list(zip(scanObj.XArray, scanObj.YArray))
+        else: return scanObj.XArray, scanObj.YArray
     
     
     def cscan(self, scan):
