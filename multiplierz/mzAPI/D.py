@@ -200,13 +200,10 @@ class mzFile(baseFile):
         present, else the other.
         """
         
-        if centroid == None:
-            mode = desiredModeDict['PeakElseProfile'.lower()]
-        elif isinstance(centroid, str):
-            mode = desiredModeDict[centroid.lower()] # Usually 'profile' or 'centroid'.
-        else:
-            mode = desiredModeDict['centroid' if centroid else 'profile']
-        
+        if centroid == None: mode = desiredModeDict['peakelseprofile']
+        elif centroid: mode = desiredModeDict['centroid']
+        elif not centroid: mode = desiredModeDict['profile']
+        else: raise IOError("Specified centorid mode not available.")
         scanObj = self.source.GetSpectrum_8(scan, self.noFilter, self.noFilter, mode)
         if not mzIntsReturnOnly: return list(zip(scanObj.XArray, scanObj.YArray))
         else: return scanObj.XArray, scanObj.YArray
