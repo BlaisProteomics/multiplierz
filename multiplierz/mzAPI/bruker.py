@@ -380,7 +380,8 @@ class mzBruker(object):
     #Returns data in list of tuples for frame; (mz, k0, intensity) for .tdf and (mz, intensity) for .tsf
     def scan(self, framenum, mzIntsReturnOnly=False, start_scan = None, stop_scan = None, force = False):
         
-        scan_count = self.dbquery("SELECT COUNT(*) FROM Frames")[0]
+        if self.fileType == 'tdf': scan_count = self.dbquery("SELECT NumScans FROM Frames WHERE Id={0}".format(framenum))[0]
+        elif self.fileType == 'tsf': scan_count = self.dbquery("SELECT COUNT(*) FROM Frames WHERE Id={0}".format(framenum))[0]
         
         #Workaround for scan count bug
         if start_scan and stop_scan:    
@@ -412,7 +413,7 @@ class mzBruker(object):
             if not mzIntsReturnOnly: 
                 assert len(k0s) == len(scans), (len(k0s), len(scans))
                 k0_seq = list(chain(*[[k0 for _ in ig] for k0, ig in zip(list(k0s), int_groups)]))
-                k0_seq = k0_seq[indexes]
+                k0_seq = np.array(k0_seq)[indexes]
                 return list(zip(mz_seq, k0_seq, int_seq))
             else: 
                 return mz_seq, int_seq
@@ -602,4 +603,4 @@ class mzBruker(object):
                 in_bounds = np.where(np.logical_and(indexes >= start_index, indexes <= stop_index))[0]
                 if len(in_bounds): mob[round(k0, 2)] += np.sum(ints[in_bounds])    
         
-        return sorted(mob.items())    
+        return sorted(mob.items())
