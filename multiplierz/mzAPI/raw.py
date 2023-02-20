@@ -1,5 +1,6 @@
 import clr
 import sys, os
+import numpy as np
 
 dll_path = 'rawdlls'
 dlls = ['ThermoFisher.CommonCore.Data',

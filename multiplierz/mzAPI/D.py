@@ -12,6 +12,7 @@ from multiplierz.mzAPI import mzFile as baseFile
 from multiplierz.mzAPI import mzScan
 
 import os, sys
+import numpy as np
 from math import floor, ceil
 
 if os.path.basename(sys.executable) == 'mzDesktop.exe':
