@@ -206,9 +206,8 @@ class mzFile(baseFile):
         else: raise IOError("Specified centorid mode not available.")
         scanObj = self.source.GetSpectrum_8(scan, self.noFilter, self.noFilter, mode)
         if not mzIntsReturnOnly: return list(zip(scanObj.XArray, scanObj.YArray))
-        else: return scanObj.XArray, scanObj.YArray
-    
-    
+        else: return np.array(list(scanObj.XArray)), np.array(list(scanObj.YArray))
+        
     def cscan(self, scan):
         """
         Calculates a centroided scan from profile-mode data. If a profile

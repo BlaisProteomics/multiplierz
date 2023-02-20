@@ -118,18 +118,18 @@ class mzFile(object):
             stream = self.source.GetCentroidStream(scannum, False)
             if stream.Masses is not None and stream.Intensities is not None:
                 if not mzIntsReturnOnly: return list(zip(stream.Masses, stream.Intensities))
-                else: return stream.Masses, stream.Intensities
+                else: return np.array(list(stream.Masses)), np.array(list(stream.Intensities))
             else:
                 # Fall back on "profile" mode, which seems to usually turn
                 # out centroid data for some reason.  The format is confused.
                 scan = self.source.GetSegmentedScanFromScanNumber(scannum, scan_stats) 
                 if not mzIntsReturnOnly: return list(zip(scan.Positions, scan.Intensities))
-                else: return scan.Positions, scan.Intensities                
+                else: return np.array(list(scan.Positions)), np.array(list(scan.Intensities))
         
         else: # Profile-only scan.
             scan = self.source.GetSegmentedScanFromScanNumber(scannum, scan_stats)
             if not mzIntsReturnOnly: return list(zip(scan.Positions, scan.Intensities))
-            else: return scan.Positions, scan.Intensities
+            else: return np.array(list(scan.Positions)), np.array(list(scan.Intensities))
         
     def lscan(self, scannum):
         stream = self.source.GetCentroidStream(scannum, False)
