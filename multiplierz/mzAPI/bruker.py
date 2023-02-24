@@ -121,11 +121,14 @@ class PressureCompensationStrategy(Enum):
 
 class TimsData:
 
-    def __init__ (self, analysis_directory, fileType, use_recalibrated_state=False, pressure_compensation_strategy=PressureCompensationStrategy.NoPressureCompensation):
+    def __init__ (self, analysis_directory, fileType, use_recalibrated_state=False, pressure_compensation_strategy=PressureCompensationStrategy.NoPressureCompensation, numThreads=0):
         self.fileType = fileType
         if sys.version_info.major == 2 and not isinstance(analysis_directory, unicode): raise ValueError("analysis_directory must be a Unicode string.")
         if sys.version_info.major == 3 and not isinstance(analysis_directory, str): raise ValueError("analysis_directory must be a string.")
         self.dll = dll
+        
+        #Set the number of threads to use (0 = all, -# = how many to leave available); 0 is NOT generally optimal
+        self.dll.tims_set_num_threads(numThreads)
         
         if self.fileType == 'tdf': 
             self.handle = self.dll.tims_open_v2(analysis_directory.encode('utf-8'), 1 if use_recalibrated_state else 0, pressure_compensation_strategy.value )
@@ -340,7 +343,7 @@ class TimsData:
         if rc == 0: throwLastTimsDataError(self.dll)
 
 class mzBruker(object):
-    def __init__(self, d_directory):
+    def __init__(self, d_directory, numThreads=0):
         self.data_file = d_directory
         tdfFile = os.path.join(d_directory, 'analysis.tdf')
         tsfFile = os.path.join(d_directory, 'analysis.tsf')
@@ -351,8 +354,8 @@ class mzBruker(object):
         elif os.path.exists(tsfFile) and os.path.exists(tsfBinFile): self.fileType = 'tsf'
         else: raise IOError(".tsf/.tdf and/or .tsf_bin/.tdf_bin file(s) could not found.")
         
-        try: self.source = TimsData(str(d_directory, 'utf-8'), self.fileType, use_recalibrated_state=False)
-        except TypeError: self.source = TimsData(d_directory, self.fileType, use_recalibrated_state=False)
+        try: self.source = TimsData(str(d_directory, 'utf-8'), self.fileType, use_recalibrated_state=False, numThreads=numThreads)
+        except TypeError: self.source = TimsData(d_directory, self.fileType, use_recalibrated_state=False, numThreads=numThreads)
         
         self.db_conn = self.source.conn
         self.cur = self.db_conn.cursor()

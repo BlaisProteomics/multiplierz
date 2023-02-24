@@ -64,7 +64,7 @@ class mzScan(list):
 class mzFile(object):
     """Base class for access to MS data files"""
 
-    def __init__(self, data_file, **kwargs):
+    def __init__(self, data_file, numThreads=0, **kwargs):
         """Initializes mzAPI and opens a new file of a specified type
 
         file_type can be 'raw', 'wiff', 'mzml', or 'mzurl'
@@ -130,7 +130,7 @@ class mzFile(object):
                 import multiplierz.mzAPI.bruker as bruker
                 self.__class__ = bruker.mzBruker
                 self.format = 'Bruker'
-                bruker.mzBruker.__init__(self, data_file, **kwargs)                
+                bruker.mzBruker.__init__(self, data_file, numThreads=numThreads, **kwargs)                
             except:
                 import multiplierz.mzAPI.D as D
                 self.__class__ = D.mzFile
@@ -143,9 +143,6 @@ class mzFile(object):
             mzT2D.mzFile.__init__(self, data_file, **kwargs)
         else:
             raise NotImplementedError("Can't open %s; extension not recognized." % data_file)
-        
-        
-        
         
     def __enter__(self):
         # this method allows mzFiles to be used in with-statements
