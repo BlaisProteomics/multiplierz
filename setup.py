@@ -9,7 +9,7 @@ from os import path
 install_requires = ['numpy', 'matplotlib', 'openpyxl', 'xlrd',
                     'xlwt', 'requests', 'beautifulsoup4',
                     'pythonnet==2.5.2; platform_system == "Windows"',
-                    'pywin32==305; platform_system == "Windows"',
+                    'pywin32; platform_system == "Windows"',
                     'comtypes; platform_system == "Windows"']
 
 README = """ 

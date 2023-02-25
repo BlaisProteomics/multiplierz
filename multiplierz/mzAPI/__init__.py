@@ -31,6 +31,14 @@ __author__ = 'Jignesh Parikh, James Webber, William Max Alexander'
 
 __all__ = ['mzFile']
 
+#While these comtype imports are only needed for some filetypes, importing them only after other types, can crash due to changing thread mode
+try:
+    from comtypes.client import CreateObject, GetModule
+except ImportError as err:
+    import platform
+    if 'Windows' not in platform.platform(): pass
+    else: raise err
+
 import os
 import re
 import sys
