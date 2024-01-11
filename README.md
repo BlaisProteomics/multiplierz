@@ -10,7 +10,7 @@ See [the wiki for prior (v2.2.1) installation instructions and documentation](ht
 ## Alternative v2.2.2+ Installation
 
 ### Windows
-While the official *multiplierz* repository has not been updated for several years now, this fork has added some needed functionality and compatability, most notably: python3 compatability and Linux support for Agilent .D files.
+While the official *multiplierz* repository has not been updated for several years now, this fork has added some needed functionality and compatability. 
 To install this unofficial version on Windows you can use the following commands (May need to install git): 
 
     $ python -m pip install --upgrade pip
@@ -75,7 +75,7 @@ The mzDesktop GUI application can be found at [our Sourceforge page](https://sou
 
 ## News
 
-* 1/10/2024: Minor Update (2.2.4) Linux compatibility for Agilent .D files, update pythonnet (Yatagarasu50469)
+* 1/10/2024: Minor Update (2.2.4) Switch to pythonnet for Agilent .D files (Yatagarasu50469)
 
 * 2/10/2023: Minor Update (2.2.3) Patches for install/setup, .raw files, and python3, Bruker .tsf format (Yatagarasu50469)
 
