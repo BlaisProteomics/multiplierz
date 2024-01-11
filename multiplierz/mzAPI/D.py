@@ -8,7 +8,7 @@ import numpy as np
 from math import floor, ceil
 
 dll_path = 'agilentdlls'
-sys.path += [os.getcwd()+os.path.sep+dll_path]
+sys.path += [os.path.join(os.path.dirname(__file__), dll_path)]
 dlls = ['MassSpecDataReader', 'BaseCommon', 'BaseDataAccess']
 for dll in dlls: clr.AddReference(dll)
 import Agilent
