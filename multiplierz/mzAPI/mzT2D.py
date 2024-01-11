@@ -1,13 +1,7 @@
 from multiplierz import vprint
 import multiplierz.mzAPI
-#from comtypes.client import CreateObject
 from win32com.client import Dispatch
 import os
-
-
-
-
-
 
 class mzFile(multiplierz.mzAPI.mzFile):
     """
@@ -20,7 +14,6 @@ class mzFile(multiplierz.mzAPI.mzFile):
     """
     def __init__(self, data_file):
         self.datafile = data_file
-        #self.source = CreateObject("{7e3450b1-75e7-49b2-9be7-64cbb2458c56}")
         self.source = Dispatch("{7e3450b1-75e7-49b2-9be7-64cbb2458c56}")
         self.source.OpenFile(data_file)
         

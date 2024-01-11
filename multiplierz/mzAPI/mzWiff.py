@@ -1,12 +1,3 @@
-try:
-    from comtypes.client import CreateObject
-except ImportError as err:
-    import platform
-    if 'Windows' not in platform.platform():
-        pass
-    else:
-        raise err
-    
 import os
 from collections import defaultdict
 import warnings

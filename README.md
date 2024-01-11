@@ -1,39 +1,85 @@
 # Multiplierz
 The *Multiplierz* Proteomics Library
 
+*multiplierz* is a Python software library and associated GUI desktop environment for managing proteomic mass spectrometry workflows and data analysis. Using the mzAPI interface to native instrument data formats, *multiplierz* is provides a complete toolset for a variety of methods for peptide identification, quantitation, and experimental reporting.
 
-*multiplierz* is a Python software library and associated GUI desktop environment for managing proteomic mass spectrometry workflows and data analysis.  Using the mzAPI interface to native instrument data formats, *multiplierz* is provides a complete toolset for a variety of methods for peptide identification, quantitation, and experimental reporting.
-
-See [the wiki for installation instructions and documentation](https://github.com/MaxAlex/multiplierz/wiki/Installation).
-
-The mzDesktop GUI application can be found at [our Sourceforge page](https://sourceforge.net/projects/multiplierz/).
+See [the wiki for prior (v2.2.1) installation instructions and documentation](https://github.com/MaxAlex/multiplierz/wiki/Installation).
 
 ***
 
-### Key Features
+## Alternative v2.2.2+ Installation
 
-#### Native, Open-Source Python Codebase
+### Windows
+While the official *multiplierz* repository has not been updated for several years now, this fork has added some needed functionality and compatability, most notably: python3 compatability and Linux support for Agilent .D files.
+To install this unofficial version on Windows you can use the following commands (May need to install git): 
 
-*multiplierz* is written for and in Python, a mature and user-friendly language that is becoming a standard for scientific data analysis, and is fully open-source.  This allows researchers with programming experience full freedom in customizing and improving the *multiplierz* library for individual, novel use cases.  We expect *multiplierz* capabilities to grow alongside the rapid developments in the field of computational proteomics.
+    $ python -m pip install --upgrade pip
+    $ pip install git+https://github.com/Yatagarasu50469/multiplierz.git@master
+	
+As the original package's installation guide indicates, you will then need to either switch back to, or open a new command prompt as an Administrator and enter the following command:
 
-#### mzAPI Data Interface
+    $ python -c "from multiplierz.mzAPI.management import registerInterfaces; registerInterfaces()"
 
-Typical proteomic bioinformtics workflows use tools such as [ProteoWizard](http://proteowizard.sourceforge.net/) to first convert native instrument data into a text-based XML format such as mzML or mzXML; for high-throughput experiments, this entails substantial demands in terms of data processing, storage, and organization.  Instead, *multiplierz* offers fully transparent access to native instrument data through mzAPI, a standardized interface to Thermo, AB Sciex, and Agilent machine data formats, as well as the universal mzML format.
+If the final printout indicates actions relating to the MSI file format intended for use, then follow through as neccessary. 
 
-#### mzSearch Database Search Interface
+### Ubuntu 18.04
+**Note:** Also confirmed to run in a Docker Container and Windows Subsystem for Linux (WSL) 
 
-A key step in any proteomic workflow is peptide/protein identification, a sophisticated algorithmic problem solved by applications such as Mascot, Comet, and X! Tandem.  To support routine bioinformatic workflows it is necessary to automate the operation of these programs, so *multiplierz* offers rich, programmatic access to the applications mentioned, with full support for the wide array of parameters requested by each, so that searches can be customized and initiated through elegant Python code.
+    $ python -m pip install --upgrade pip
+    $ sudo apt-get update
+    $ sudo apt-get install -y wget git
+    $ wget -q https://packages.microsoft.com/config/ubuntu/18.04/packages-microsoft-prod.deb
+    $ sudo dpkg -i packages-microsoft-prod.deb
+    $ rm packages-microsoft-prod.deb
+    $ sudo apt-get install -y apt-transport-https clang libglib2.0-dev nuget
+    $ sudo apt-get update
+    $ sudo apt-get install -y aspnetcore-runtime-5.0
+    $ sudo apt-get install -y dotnet-sdk-5.0
+    $ sudo apt-get install -y dotnet-runtime-5.0
+    $ sudo apt-get install -y gnupg ca-certificates
+    $ sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
+    $ echo "deb https://download.mono-project.com/repo/ubuntu stable-bionic main" | sudo tee /etc/apt/sources.list.d/mono-official-stable.list
+    $ sudo apt-get update
+    $ sudo apt-get install -y mono-devel
+    $ pip3 install git+https://github.com/Yatagarasu50469/multiplierz.git@master
+    $ python -c "from multiplierz.mzAPI.management import registerInterfaces; registerInterfaces()"
 
-#### mzDesktop GUI Interface
+The last line may produce a warning that module 'ctypes' has no attribute 'windll'; this should be safe to ignore for use with XCalibur .RAW files. 
+
+***
+
+## Key Features
+
+### Native, Open-Source Python Codebase
+
+*Multiplierz* is written for and in Python, a mature and user-friendly language that is becoming a standard for scientific data analysis, and is fully open-source. This allows researchers with programming experience full freedom in customizing and improving the *multiplierz* library for individual, novel use cases. We expect *multiplierz* capabilities to grow alongside the rapid developments in the field of computational proteomics.
+
+### mzAPI Data Interface
+
+Typical proteomic bioinformtics workflows use tools such as [ProteoWizard](http://proteowizard.sourceforge.net/) to first convert native instrument data into a text-based XML format such as mzML or mzXML; for high-throughput experiments, this entails substantial demands in terms of data processing, storage, and organization. Instead, *multiplierz* offers fully transparent access to native instrument data through mzAPI, a standardized interface to Thermo, AB Sciex, and Agilent machine data formats, as well as the universal mzML format.
+
+### mzSearch Database Search Interface
+
+A key step in any proteomic workflow is peptide/protein identification, a sophisticated algorithmic problem solved by applications such as Mascot, Comet, and X! Tandem. To support routine bioinformatic workflows it is necessary to automate the operation of these programs, so *multiplierz* offers rich, programmatic access to the applications mentioned, with full support for the wide array of parameters requested by each, so that searches can be customized and initiated through elegant Python code.
+
+### mzDesktop GUI Interface
+
+**Note:** GUI Interface was released using the older, official release v2.2.1
 
 Not all biologists are computer scientists, so *multiplierz* provides a fully-graphical interface to most of its capabilities, including management of MGF and FASTA files, protein coverage visualization, and database search coordination.
+The mzDesktop GUI application can be found at [our Sourceforge page](https://sourceforge.net/projects/multiplierz/).
 
-
-#### Chromatographic Feature Detection, Quantitation Analysis, Intact Protein Charge Deconvolution, and more...
+### Chromatographic Feature Detection, Quantitation Analysis, Intact Protein Charge Deconvolution, and more...
 
 ***
 
-### News
+## News
+
+* 1/10/2024: Minor Update (2.2.4) Linux compatibility for Agilent .D files, update pythonnet (Yatagarasu50469)
+
+* 2/10/2023: Minor Update (2.2.3) Patches for install/setup, .raw files, and python3, Bruker .tsf format (Yatagarasu50469)
+
+* 1/28/2021: Minor Update (2.2.2) adds python3 compatibility (Yatagarasu50469)
 
 * 12/4/2019: Major update (2.2.0) adds Linux compatibility and Bruker data format access!
 
@@ -41,11 +87,11 @@ Not all biologists are computer scientists, so *multiplierz* provides a fully-gr
 
 * 8/01/2017: [mzStudio](https://github.com/BlaisProteomics/mzStudio), an interactive proteomics data browser built using *multiplierz*, has been [published in Proteomes](http://www.mdpi.com/2227-7382/5/3/20/html).
 
-* 5/22/2017: The 2.0 release edition of *multiplierz* is pending publication!  We will update here as features are added, bugs are fixed, etc.
+* 5/22/2017: The 2.0 release edition of *multiplierz* is pending publication! We will update here as features are added, bugs are fixed, etc.
 
 ***
 
-### Citation
+## Citation
 
 If you use *multiplierz* in an academic publication, please cite us:
 
@@ -53,6 +99,6 @@ If you use *multiplierz* in an academic publication, please cite us:
 
 ***
 
-### Contact the Author
+## Contact the Author
 
 Questions related to use and modification of the *multiplierz* library should be referred to W. Max Alexander at williamM_alexander@dfci.harvard.edu.

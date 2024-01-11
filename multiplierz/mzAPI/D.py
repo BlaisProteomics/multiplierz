@@ -1,178 +1,106 @@
-try:
-    from comtypes.client import CreateObject, GetModule
-except ImportError as err:
-    import platform
-    if 'Windows' not in platform.platform():
-        pass
-    else:
-        raise err
-
 from multiplierz import myHome, vprint
 from multiplierz.mzAPI import mzFile as baseFile
 from multiplierz.mzAPI import mzScan
 
+import clr
 import os, sys
 import numpy as np
 from math import floor, ceil
 
-if os.path.basename(sys.executable) == 'mzDesktop.exe':
-    agilentDir = os.path.join(os.path.dirname(sys.executable),
-                              'interface_modules', 'agilentdlls')
-else:
-    agilentDir = os.path.join(os.path.dirname(__file__), 'agilentdlls')
-assert os.path.exists(agilentDir), agilentDir
-# File 'MassSpecDataReader.dll' has to be regasm'd before this works.
-msdr = GetModule(os.path.join(agilentDir, r'MassSpecDataReader.tlb'))
-bc = GetModule(os.path.join(agilentDir, r'BaseCommon.tlb'))
-bda = GetModule(os.path.join(agilentDir, r'BaseDataAccess.tlb'))
+dll_path = 'agilentdlls'
+sys.path += [os.getcwd()+os.path.sep+dll_path]
+dlls = ['MassSpecDataReader', 'BaseCommon', 'BaseDataAccess']
+for dll in dlls: clr.AddReference(dll)
+import Agilent
+from Agilent.MassSpectrometry.DataAnalysis import *
 
-
-
-
-# Scan type and ion mode are actually binary flags,
-# which may cause problems for combined cases.
-scanTypeDict = {7951 : "All",
-                15 : "AllMS",
-                7936 : "AllMSN",
-                4 : "HighResolutionScan",
-                256 : "MultipleReaction",
-                4096 : "NeutralGain",
-                2048 : "NeutralLoss",
-                1024 : "PrecursorIon",
-                512 : "ProductIon",
-                1 : "Scan",
-                2 : "SelectedIon",
-                8 : "TotalIon",
-                0 : "Unspecified"}
-scanLevelDict = {0 : "All",
-                 1 : "ms",
-                 2 : "ms2"}
-ionModeDict = {32 : "Apci",
-               16 : "Appi",
-               4 : "CI",
-               2 : "EI",
-               64 : "ESI",
-               1024 : "ICP",
-               2048 : "Jetstream",
-               8 : "Maldi",
-               1 : "Mixed",
-               512 : "MsChip",
-               128 : "NanoEsi",
-               0 : "Unspecified"}
-scanModeDict = {1 : "m", # Mixed
-                3 : "c", # Peak
-                2 : "p", # Profile
-                0 : "Unspecified"}
-deviceTypeDict = {20 : "ALS",
-                  16 : "AnalogDigitalConverter",
-                  31 : "BinaryPump",
-                  31 : "CANValves",
-                  42 : "CapillaryPump",
-                  33 : "ChipCube",
-                  41 : "CTC",
-                  23 : "DiodeArrayDetector",
-                  14 : "ElectronCaptureDetector",
-                  17 : "EvaporativeLightScatteringDetector",
-                  19 : "FlameIonizationDetector",
-                  10 : "FlourescenceDetector",
-                  18 : "GCDetector",
-                  50 : "IonTrap",
-                  3 : "IsocraticPump",
-                  22 : "MicroWellPlateSampler",
-                  1 : "Mixed",
-                  13 : "MultiWavelengthDetector",
-                  34 : "Nanopump",
-                  2 : "Quadrupole",
-                  6 : "QTOF",
-                  32 : "QuaternaryPump",
-                  12 : "RefractiveIndexDetector",
-                  5 : "TandemQuadrupole",
-                  11 : "ThermalConductivityDetector",
-                  40 : "ThermostattedColumnCompartment",
-                  4 : "TOF",
-                  0 : "Unknown",
-                  15 : "VariableWavelengthDetector",
-                  21 : "WellPlateSampler"}
-
-ionPolarityDict = {3 : "+-",
-                   1 : "-",
-                   0 : "+", 
-                   2 : "No Polarity"}
-desiredModeDict = {'profile':0,
-                   'peak':1,
-                   'centroid':1,
-                   'profileelsepeak':2,
-                   'peakelseprofile':3}
+#pythonnet does not auto-transfer methods/vars from implemented classes.
+#Only transferred those relevant to classes used, though more functionality
+#could potentially be added. Note: .dll files inspectable with ILDASM via VS
+for item in dir(IMsdrDataReader): 
+    try: setattr(MassSpecDataReader, item, getattr(IMsdrDataReader, item))
+    except: pass
+for item in dir(IBDAChromFilter): 
+    try: setattr(BDAChromFilter, item, getattr(IBDAChromFilter, item))
+    except: pass
+for item in dir(IMsdrChargeStateAssignmentFilter): 
+    try: setattr(MsdrChargeStateAssignmentFilter, item, getattr(IMsdrChargeStateAssignmentFilter, item))
+    except: pass
 
 class mzFile(baseFile):
+    
     def __init__(self, datafile, **kwargs):
-        self.file_type = '.d'
+        self.file_type= '.d'
         self.data_file = datafile
         self._filters = None
-        
         self.ticObj = None
         self.info = None
-        self.noFilter = CreateObject(r'Agilent.MassSpectrometry.DataAnalysis.MsdrPeakFilter')
-        
-        self.source = CreateObject(r'Agilent.MassSpectrometry.DataAnalysis.MassSpecDataReader')
-        
-        s = self.source.OpenDataFile(datafile)
-        if not s:
-            raise IOError("Error opening %s" % datafile)
+        self.scanRange = None
+        self.noFilter = MsdrPeakFilter()
+        self.source = MassSpecDataReader()
+        s = self.source.OpenDataFile(self.source, datafile)
+        if not s: raise IOError("Error opening %s" % datafile)
         
     def close(self):
-        self.source.CloseDataFile()
+        self.source.CloseDataFile(self.source)
         
     def time_range(self):
-        if not self.ticObj:
-            self.ticObj = self.source.GetTIC()
-            
-        # DEEP IN OBSCURE AND FORGOTTEN COMTYPES DOCUMENTATION, I DISCOVERED
-        # THE LONG-LOST METHOD OF BENDING POINTER(IUnknown) TO OBEY HUMAN
-        # COMMAND!
-        ranges = self.ticObj.AcquiredTimeRange
-        assert len(ranges) == 1, "Multiple time ranges per file not currently supported."
-        timerange = ranges[0].QueryInterface(bc.IRange)
-        return timerange.Start, timerange.End
+        if not self.ticObj: self.ticObj = self.source.GetTIC(self.source)
+        assert ticObj.AcquiredTimeRange.Length == 1, "Multiple time ranges are not supported"
+        return ranges.GetValue(0).Min, ranges.GetValue(0).Max
     
     def scan_range(self):
-        # There's probably a more efficient way of doing this.
-        info = list(zip(*self.scan_info()))[2]
-        return min(info), max(info)
+        return 0, self.source.FileInformation.MSScanFileInformation.TotalScansPresent
     
+    def scan_info(self, start_time=None, stop_time=None, start_mz=None, stop_mz=None):
+        if self.info == None:
+            self.info = []
+            for index in range(self.source.FileInformation.MSScanFileInformation.TotalScansPresent):
+                infoObj = self.source.GetScanRecord(self.source, index)
+                rt = infoObj.RetentionTime
+                mz = infoObj.MZOfInterest
+                if not rt: break
+                if start_time != None and rt <= start_time: continue
+                if stop_time != None and rt >= stop_time: continue
+                if start_mz != None and mz <= start_mz: continue
+                if stop_mz != None and mz >= stop_mz: continue
+                level = 'MS%d' % int(infoObj.MSLevel)
+                polarity = str(infoObj.IonPolarity)
+                #scanType = str(infoObj.MSScanType)
+                self.info.append((rt, mz, index, level, polarity))
+        return self.info
     
+    def headers(self):
+        return self.scan_info()
+    
+    #Thermo-style filter strings for all spectra; legacy compatibility
     def filters(self):
-        """
-        Thermo-style filter strings for all spectra; used for compatibility with
-        various legacy functions.
-        """
-    
-        ionization = self.source.MSScanFileInformation.IonModes
+        ionization = str(self.source.MSScanFileInformation.IonModes)
+
         if not ionization:
             vprint("Could not determine separation/ionization; defaulting to GCMS.")
             separator = 'GC'
-        elif ionization & (4|2): # Bitwise OR and AND.
+        elif ionization and (ionization == "CI" or ionization == "EI"):
             separator = 'GC'
         else:
             separator = 'TOF'
-    
+
         colEs = self.source.MSScanFileInformation.CollisionEnergy
-        if len(colEs) == 1:
-            colE = colEs[0]
+        if colEs.Length == 1:
+            colE = colEs.GetValue(0)
         else:
             colE = None
-    
+
         if not self._filters:
             self._filters = []
             for rt, mz, index, level, polarity in self.scan_info():
-                scanObj = self.source.GetSpectrum_6(index)
-                rangeobj = scanObj.MeasuredMassRange.QueryInterface(bc.IRange) # Yep, definitely spectrum-specific.
-                
+                scanObj = self.source.GetSpectrum(self.source, index)
+
                 if colE: # Singular collision energy in the file.
                     energy = colE
                 else:
-                    energy = float(scanObj.CollisionEnergy)
-                
+                    energy = scanObj.CollisionEnergy
+
                 if level != 'MS1':
                     precstr = '%.4f@%.2f' % (mz, energy)
                 else:
@@ -180,36 +108,38 @@ class mzFile(baseFile):
                 string = "%s MS %s NSI Full ms%s %s[%.2f-%.2f]" % (separator, polarity, 
                                                                int(level[2]) if level != 'MS1' else '',
                                                                precstr,
-                                                               (rangeobj.Start),
-                                                               (rangeobj.End))
+                                                               (scanObj.MeasuredMassRange.Start),
+                                                               (scanObj.MeasuredMassRange.End))
                 self._filters.append((rt, string))
-        
+
         return self._filters
+    
+    def scan(self, index, mode=None):
         
-    def headers(self):
-        return self.scan_info()
-        
-    def scan(self, scan, centroid = None, mzIntsReturnOnly=False):
         """
-        Returns a spectrum from the specified scan index.
-        
-        If both centroided and profile-mode data are present in the file,
-        which is returned can be controlled by setting the mode argument to
-        'profile' or 'centroid'. If the requested mode is not present, an
-        empty spectrum will be returned. 'ProfileElsePeak' or
-        'PeakElseProfile' will return spectrum of the preferred kind if
-        present, else the other.
+        Returns a spectrum from the specified scan index, where type is
+        controlled by mode argument; defaults to prioiritize Peak (Centroid) 
+        and then try Profile. If the requested mode is not present, an empty 
+        spectrum  will be returned. Alternative modes are 'profile', 'centroid' 
+        or  'profileElsePeak'. 
         """
         
-        if centroid == None: mode = desiredModeDict['peakelseprofile']
-        elif centroid: mode = desiredModeDict['centroid']
-        elif not centroid: mode = desiredModeDict['profile']
-        else: raise IOError("Specified centorid mode not available.")
-        scanObj = self.source.GetSpectrum_8(scan, self.noFilter, self.noFilter, mode)
-        if not mzIntsReturnOnly: return list(zip(scanObj.XArray, scanObj.YArray))
-        else: return np.array(list(scanObj.XArray)), np.array(list(scanObj.YArray))
+        if mode != None: mode = mode.lower()
+        if mode == None or mode == 'peakelseprofile':
+            mode = DesiredMSStorageType.PeakElseProfile
+        elif mode == 'profileelsepeak':
+            mode = DesiredMSStorageType.ProfileElsePeak
+        elif mode == 'profile':
+            mode = DesiredMSStorageType.Profile
+        elif mode == 'peak':
+            mode = DesiredMSStorageType.Peak
+        else: 
+            return []
+        scanObj = self.source.GetSpectrum(self.source, index, self.noFilter, self.noFilter, mode)
+        return list(zip(scanObj.XArray, scanObj.YArray))
+    
+    def cscan(self, index):
         
-    def cscan(self, scan):
         """
         Calculates a centroided scan from profile-mode data. If a profile
         mode copy of the specified scan is not available, this raises an
@@ -217,11 +147,11 @@ class mzFile(baseFile):
         'centroid' to return the machine-centroided scan.
         """
         
-        mode = desiredModeDict['profile']
-        scanObj = self.source.GetSpectrum_8(scan, self.noFilter, self.noFilter, mode)        
-        mzs, ints = scanObj.XArray, scanObj.YArray
+        mode = DesiredMSStorageType.Profile
+        scanObj = self.source.GetSpectrum(self.source, index, self.noFilter, self.noFilter, mode)
+        mzs, ints = list(scanObj.XArray), list(scanObj.YArray)
         if not mzs:
-            raise IOError("Profile data for scan %s not available." % scan)
+            raise IOError("Profile data for scan index %s not available." % index)
         
         threshold = average(ints)
         peaks = []
@@ -236,83 +166,55 @@ class mzFile(baseFile):
                 peak = []
                 
         return peaks
-        
-        
     
-    def scan_info(self, start_time = 0, stop_time = 999999, start_mz = 0, stop_mz = 99999):
-        if self.info == None:
-            self.info = []
-            for index in range(1000000): # Largenum.
-                infoObj = self.source.GetScanRecord(index)
-                rt = infoObj.RetentionTime
-                mz = infoObj.MZOfInterest # I *think* this is MZ when applicable?
-                if not rt:
-                    break
-                if not (start_time <= rt <= stop_time and start_mz <= mz <= stop_mz):
-                    continue
-                
-                level = 'MS%d' % infoObj.MSLevel
-                #scantype = infoObj.MSScanType
-                polarity = infoObj.IonPolarity
-                
-                self.info.append((rt, mz, index, level,
-                                  ionPolarityDict[polarity]))
-            if index == 1000000:
-                raise IOError("File too large for constant!")
-            
-        return self.info
-    
-    def xic(self, start_time = 0, stop_time = None, start_mz = 0, stop_mz = None, filter = None, UV = False):
+    def xic(self, start_time=None, stop_time=None, start_mz=None, stop_mz=None, filter=None, UV=False):
         if filter:
             assert filter.strip().lower() == 'full ms', 'Thermo-style XIC filters are not supported for Agilent files.'
-        
-        # A full XIC can be performed with the TIC object that may have been
-        # retrieved regardless.
+
+        #A full XIC can be performed with an existing TIC object
         if self.ticObj and not any([start_time, stop_time, start_mz, stop_mz]):
             return list(zip(self.ticObj.XArray, self.ticObj.YArray))
-        
-        if stop_time == None:
-            stop_time = 999999
-        if stop_mz == None:
-            stop_mz = 999999
-               
-        chromFilter = CreateObject(r'Agilent.MassSpectrometry.DataAnalysis.BDAChromFilter')
-        
-        chromFilter.MSLevelFilter = 0 # "All", should perhaps instead be 1 for "ms1"?
-        if not UV:
-            chromFilter.ChromatogramType = 7 # Extracted-Ion
-        else:
-            chromFilter.ChromatogramType = 4 # ExtractedWavelength
-        chromFilter.SingleChromatogramForAllMasses = True        
-        
-        mzRange = CreateObject(r'Agilent.MassSpectrometry.DataAnalysis.MinMaxRange')
-        mzRange.Min = start_mz
-        mzRange.Max = stop_mz
-        mzRangeIR = mzRange.QueryInterface(bc.IRange)
-        chromFilter.IncludeMassRanges = (mzRange,)
-        # If THAT works...!
-        
-        rtRange = CreateObject(r'Agilent.MassSpectrometry.DataAnalysis.MinMaxRange')
-        rtRange.Min = start_time
-        rtRange.Max = stop_time
-        rtRangeIR = rtRange.QueryInterface(bc.IRange)
-        chromFilter.ScanRange = rtRangeIR
-        
 
-        
-        xic = self.source.GetChromatogram(chromFilter)[0].QueryInterface(bda.IBDAChromData)
+        if start_time == None: start_time = 0
+        if stop_time == None: stop_time = 999999
+        if start_mz == None: start_mz = 0
+        if stop_mz == None: stop_mz = 999999
+
+        chromFilter = BDAChromFilter()
+
+        chromFilter.set_MSLevelFilter(chromFilter, MSLevel.MS) #Alt value is MSLevel.MSMS
+        if not UV:
+            chromFilter.set_ChromatogramType(chromFilter, ChromType.ExtractedIon)
+        else:
+            chromFilter.set_ChromatogramType(chromFilter, ChromType.ExtractedWavelength)
+        chromFilter.set_SingleChromatogramForAllMasses(chromFilter, True)
+
+        mzRange = MinMaxRange()
+        mzRange.set_Min(start_mz)
+        mzRange.set_Max(stop_mz)
+        chromFilter.set_IncludeMassRanges(chromFilter, (mzRange, ))
+
+        rtRange = MinMaxRange()
+        rtRange.set_Min(start_time)
+        rtRange.set_Max(stop_time)
+        chromFilter.set_ScanRange(chromFilter, rtRange)
+
+        xic = self.source.GetChromatogram(self.source, chromFilter).Get(0)
         return list(zip(xic.XArray, xic.YArray))
-    
-    
+
     def uv_trace(self):
-        nonmsSource = self.source.QueryInterface(msdr.INonmsDataReader)
-        nonmsDevs = nonmsSource.GetNonmsDevices()
-        return nonmsSource.GetTWC(nonmsDevs[0])
         
-    
-    def deisotope_scan(self, scan,
-                       tolerance_da = 0.0025, tolerance_ppm = 7,
-                       max_charge = None, require_peptide_profile = False):
+        #Cannot verify functionality, so leaving a couple potential methods here
+        nonmsDevs  = self.source.GetNonmsDevices()
+        if not nonmsDevs.Length: raise IOError("No NonmsDevices were available")
+        return self.source.GetTWC(nonmsDevs[0])
+
+        #nonmsSource = INonmsDataReader(self.source)
+        #nonmsDevs = nonmsSource.GetNonmsDevices()
+        #if not nonmsDevs.Length: raise IOError("No NonmsDevices were available")
+        #return nonmsSource.GetTWC(nonmsDevs[0])
+        
+    def deisotope_scan(self, index, tolerance_da=0.0025, tolerance_ppm=7, max_charge=None, require_peptide_profile=False):
         """
         The Agilent MassHunter DAC has the neat feature of including its own
         deisotoping algorithm!  This function uses that to return the specified
@@ -328,23 +230,24 @@ class mzFile(baseFile):
         the relative intensity profile caused by standard relative isotopic
         abundances.
         """
-        scanObj = self.source.GetSpectrum_6(scan)
         
-        deisoFilter = CreateObject(r'Agilent.MassSpectrometry.DataAnalysis.MsdrChargeStateAssignmentFilter')
-        if not (tolerance_da == 0.0025 and tolerance_ppm == 7
-                and not (max_charge or require_peptide_profile)):
-            
-            deisoFilter.AbsoluteTolerance = tolerance_da
-            if max_charge:
-                deisoFilter.LimitMaxChargeState = max_charge
-            deisoFilter.RelativeTolerance = tolerance_ppm
-            deisoFilter.RequirePeptideLikeAbundanceProfile = require_peptide_profile
-            
-        self.source.Deisotope(scanObj, deisoFilter) # Void type, not even a success return value.
+        scanObj = self.source.GetSpectrum(self.source, index)
+        deisoFilter = MsdrChargeStateAssignmentFilter()
         
+        deisoFilter.set_AbsoluteTolerance(deisoFilter, tolerance_da)
+        deisoFilter.set_RelativeTolerance(deisoFilter, tolerance_ppm)
+        if max_charge: 
+            deisoFilter.set_LimitMaxChargeState(deisoFilter, True)
+            deisoFilter.set_MaximumChargeState(deisoFilter, max_charge)
+        else: 
+            deisoFilter.set_LimitMaxChargeState(deisoFilter, False)
+        deisoFilter.set_RequirePeptideLikeAbundanceProfile(deisoFilter, require_peptide_profile)
+        
+        self.source.Deisotope(self.source, scanObj, deisoFilter)
         return list(zip(scanObj.XArray, scanObj.YArray))
         
         
-if __name__ == '__main__':
-    foo = mzFile(r'\\rc-data1\blaise\ms_data_share\Max\mzStudio\2016-04-13-Equil1.D')
-    foo.uv_trace()
+#Not sure if this was intended for testing as file is not available
+#if __name__ == '__main__':
+#    foo = mzFile(r'\\rc-data1\blaise\ms_data_share\Max\mzStudio\2016-04-13-Equil1.D')
+#    foo.uv_trace()
