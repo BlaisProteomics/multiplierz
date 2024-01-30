@@ -36,7 +36,7 @@ If the final printout indicates actions relating to the MSI file format intended
     $ sudo apt-get install -y aspnetcore-runtime-5.0
     $ sudo apt-get install -y dotnet-sdk-5.0
     $ sudo apt-get install -y dotnet-runtime-5.0
-    $ sudo apt-get install -y gnupg ca-certificates
+    ###$ sudo apt-get install -y gnupg ca-certificates
     $ sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
     $ echo "deb https://download.mono-project.com/repo/ubuntu stable-bionic main" | sudo tee /etc/apt/sources.list.d/mono-official-stable.list
     $ sudo apt-get update
@@ -93,9 +93,9 @@ The mzDesktop GUI application can be found at [our Sourceforge page](https://sou
 
 ## Citation
 
-If you use *multiplierz* in an academic publication, please cite us:
+Please cite if you use *multiplierz* in an academic publication:
 
-**Alexander, William M., et al. "multiplierz v2. 0: a Python‐based ecosystem for shared access and analysis of native mass spectrometry data." Proteomics (2017).**
+**Alexander, William M., et al. "multiplierz v2.0: a Python-based ecosystem for shared access and analysis of native mass spectrometry data." Proteomics (2017).**
 
 ***
 
