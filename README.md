@@ -32,9 +32,9 @@ The mzDesktop GUI application can be found at [our Sourceforge page](https://sou
 
 ## News
 
-* 1/28/2021: Minor Update (2.2.2) Python3 compatibility; pythonnet for .D (Agilent) files; patches/instructions for install, .raw and.tsf (Bruker) file formats (Yatagarasu50469; David Helminiak)
+* 4/09/2024: Minor Update (2.2.2) Python3 compatibility; pythonnet for .D (Agilent) files; patches/instructions for install, .raw and.tsf (Bruker) file formats (Yatagarasu50469; David Helminiak)
 
-* 12/4/2019: Major Update (2.2.0) adds Linux compatibility and Bruker data format access!
+* 12/04/2019: Major Update (2.2.0) adds Linux compatibility and Bruker data format access!
 
 * 8/22/2017: The paper on *multiplierz*'s 2.0 release has been [published in Proteomics](http://onlinelibrary.wiley.com/doi/10.1002/pmic.201700091/full).
 
