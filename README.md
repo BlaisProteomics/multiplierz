@@ -3,50 +3,7 @@ The *Multiplierz* Proteomics Library
 
 *multiplierz* is a Python software library and associated GUI desktop environment for managing proteomic mass spectrometry workflows and data analysis. Using the mzAPI interface to native instrument data formats, *multiplierz* is provides a complete toolset for a variety of methods for peptide identification, quantitation, and experimental reporting.
 
-See [the wiki for prior (v2.2.1) installation instructions and documentation](https://github.com/MaxAlex/multiplierz/wiki/Installation).
-
-***
-
-## Alternative v2.2.2+ Installation
-
-### Windows
-While the official *multiplierz* repository has not been updated for several years now, this fork has added some needed functionality and compatability. 
-To install this unofficial version on Windows you can use the following commands (May need to install git): 
-
-    $ python -m pip install --upgrade pip
-    $ pip install git+https://github.com/Yatagarasu50469/multiplierz.git@master
-	
-As the original package's installation guide indicates, you will then need to either switch back to, or open a new command prompt as an Administrator and enter the following command:
-
-    $ python -c "from multiplierz.mzAPI.management import registerInterfaces; registerInterfaces()"
-
-If the final printout indicates actions relating to the MSI file format intended for use, then follow through as neccessary. 
-
-### Ubuntu 18.04
-**Note:** Also confirmed to run in a Docker Container and Windows Subsystem for Linux (WSL) 
-
-    $ python -m pip install --upgrade pip
-    $ sudo apt-get update
-    $ sudo apt-get install -y wget git
-    $ wget -q https://packages.microsoft.com/config/ubuntu/18.04/packages-microsoft-prod.deb
-    $ sudo dpkg -i packages-microsoft-prod.deb
-    $ rm packages-microsoft-prod.deb
-    $ sudo apt-get install -y apt-transport-https clang libglib2.0-dev nuget
-    $ sudo apt-get update
-    $ sudo apt-get install -y aspnetcore-runtime-5.0
-    $ sudo apt-get install -y dotnet-sdk-5.0
-    $ sudo apt-get install -y dotnet-runtime-5.0
-    ###$ sudo apt-get install -y gnupg ca-certificates
-    $ sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
-    $ echo "deb https://download.mono-project.com/repo/ubuntu stable-bionic main" | sudo tee /etc/apt/sources.list.d/mono-official-stable.list
-    $ sudo apt-get update
-    $ sudo apt-get install -y mono-devel
-    $ pip3 install git+https://github.com/Yatagarasu50469/multiplierz.git@master
-    $ python -c "from multiplierz.mzAPI.management import registerInterfaces; registerInterfaces()"
-
-The last line may produce a warning that module 'ctypes' has no attribute 'windll'; this should be safe to ignore for use with XCalibur .RAW files. 
-
-***
+See [the wiki for installation instructions and documentation](https://github.com/MaxAlex/multiplierz/wiki/Installation) or at the end of this document for installation instructions to have limited functionality on Linux distributions.
 
 ## Key Features
 
@@ -64,7 +21,7 @@ A key step in any proteomic workflow is peptide/protein identification, a sophis
 
 ### mzDesktop GUI Interface
 
-**Note:** GUI Interface was released using the older, official release v2.2.1
+**Note:** GUI Interface was released using release v2.2.1 and does not incorporate changes from v2.2.2
 
 Not all biologists are computer scientists, so *multiplierz* provides a fully-graphical interface to most of its capabilities, including management of MGF and FASTA files, protein coverage visualization, and database search coordination.
 The mzDesktop GUI application can be found at [our Sourceforge page](https://sourceforge.net/projects/multiplierz/).
@@ -75,13 +32,9 @@ The mzDesktop GUI application can be found at [our Sourceforge page](https://sou
 
 ## News
 
-* 1/10/2024: Minor Update (2.2.4) Switch to pythonnet for Agilent .D files (Yatagarasu50469)
+* 1/28/2021: Minor Update (2.2.2) Python3 compatibility; pythonnet for .D (Agilent) files; patches/instructions for install, .raw and.tsf (Bruker) file formats (Yatagarasu50469; David Helminiak)
 
-* 2/10/2023: Minor Update (2.2.3) Patches for install/setup, .raw files, and python3, Bruker .tsf format (Yatagarasu50469)
-
-* 1/28/2021: Minor Update (2.2.2) adds python3 compatibility (Yatagarasu50469)
-
-* 12/4/2019: Major update (2.2.0) adds Linux compatibility and Bruker data format access!
+* 12/4/2019: Major Update (2.2.0) adds Linux compatibility and Bruker data format access!
 
 * 8/22/2017: The paper on *multiplierz*'s 2.0 release has been [published in Proteomics](http://onlinelibrary.wiley.com/doi/10.1002/pmic.201700091/full).
 
@@ -102,3 +55,31 @@ Please cite if you use *multiplierz* in an academic publication:
 ## Contact the Author
 
 Questions related to use and modification of the *multiplierz* library should be referred to W. Max Alexander at williamM_alexander@dfci.harvard.edu.
+
+***
+
+### Installation/Setup on Ubuntu 18.04
+**Note:** Also confirmed to run in a Docker Container (run on CentOS 7/8)and Windows Subsystem for Linux (WSL)
+
+    $ python -m pip install --upgrade pip
+    $ sudo apt-get update
+    $ sudo apt-get install -y wget git
+    $ wget -q https://packages.microsoft.com/config/ubuntu/18.04/packages-microsoft-prod.deb
+    $ sudo dpkg -i packages-microsoft-prod.deb
+    $ rm packages-microsoft-prod.deb
+    $ sudo apt-get install -y apt-transport-https clang libglib2.0-dev nuget
+    $ sudo apt-get update
+    $ sudo apt-get install -y aspnetcore-runtime-5.0
+    $ sudo apt-get install -y dotnet-sdk-5.0
+    $ sudo apt-get install -y dotnet-runtime-5.0
+    $ sudo apt-get install -y gnupg ca-certificates
+    $ sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
+    $ echo "deb https://download.mono-project.com/repo/ubuntu stable-bionic main" | sudo tee /etc/apt/sources.list.d/mono-official-stable.list
+    $ sudo apt-get update
+    $ sudo apt-get install -y mono-devel
+    $ pip3 install multiplierz
+    $ python -c "from multiplierz.mzAPI.management import registerInterfaces; registerInterfaces()"
+
+The last line may produce a warning that module 'ctypes' has no attribute 'windll'; this should be safe to ignore for use with XCalibur .RAW files. 
+
+***

@@ -25,7 +25,7 @@ page](https://github.com/BlaisProteomics/multiplierz) .
 """
 
 setup(name = 'multiplierz',
-      version = '2.2.4',
+      version = '2.2.2',
       description = 'The MultiplierZ proteomics package',
       long_description = README,
       author = 'William Max Alexander (et al.)',
