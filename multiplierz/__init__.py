@@ -18,7 +18,7 @@
 
 
 __author__ = 'Jignesh Parikh, James Webber, William Max Alexander'
-__version__ = '2.2.4'
+__version__ = '2.2.2'
 
 __all__ = ['mzAPI', 'mzTools', 'mzReport',
            'myHome', 'myData', 'logger_message', 'SettingsFile']
