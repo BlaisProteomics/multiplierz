@@ -3,9 +3,6 @@ from setuptools import setup, find_packages, dist
 from codecs import open
 from os import path
 
-
-
-
 install_requires = ['numpy', 'matplotlib', 'openpyxl', 'xlrd',
                     'xlwt', 'requests', 'beautifulsoup4',
                     'pythonnet>=2.5.2',

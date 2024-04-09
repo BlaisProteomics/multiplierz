@@ -32,15 +32,17 @@ The mzDesktop GUI application can be found at [our Sourceforge page](https://sou
 
 ## News
 
-* 4/09/2024: Minor Update (2.2.2) Python3 compatibility; pythonnet for .D (Agilent) files; patches/instructions for install, .raw and.tsf (Bruker) file formats (Yatagarasu50469; David Helminiak)
+* 04/09/2024: Minor Update (2.2.2) Python3 compatibility; pythonnet for .D (Agilent) files; patches/instructions for install, .raw and.tsf (Bruker) file formats
+
+* 12/04/2019: Minor Update (2.2.1) Python 3 compatibility fixes
 
 * 12/04/2019: Major Update (2.2.0) adds Linux compatibility and Bruker data format access!
 
-* 8/22/2017: The paper on *multiplierz*'s 2.0 release has been [published in Proteomics](http://onlinelibrary.wiley.com/doi/10.1002/pmic.201700091/full).
+* 08/22/2017: The paper on *multiplierz*'s 2.0 release has been [published in Proteomics](http://onlinelibrary.wiley.com/doi/10.1002/pmic.201700091/full).
 
-* 8/01/2017: [mzStudio](https://github.com/BlaisProteomics/mzStudio), an interactive proteomics data browser built using *multiplierz*, has been [published in Proteomes](http://www.mdpi.com/2227-7382/5/3/20/html).
+* 08/01/2017: [mzStudio](https://github.com/BlaisProteomics/mzStudio), an interactive proteomics data browser built using *multiplierz*, has been [published in Proteomes](http://www.mdpi.com/2227-7382/5/3/20/html).
 
-* 5/22/2017: The 2.0 release edition of *multiplierz* is pending publication! We will update here as features are added, bugs are fixed, etc.
+* 05/22/2017: Major Update (2.0.0) The 2.0 release edition of *multiplierz* is pending publication! We will update here as features are added, bugs are fixed, etc.
 
 ***
 
