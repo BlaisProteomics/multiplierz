@@ -229,7 +229,7 @@ class mzBruker(object):
         return min(ms1 + pasef), max(ms1 + pasef)
 
     def frame(self, framenum, start_scan = None, stop_scan = None,
-              force = False):
+              force = False, mzIntsReturnOnly=False):
         """
         Returns all points from the specified frame; each point is a 3D
         coordinate (mz, k0, intensity).
@@ -266,7 +266,11 @@ class mzBruker(object):
         index_seq = list(chain(*index_groups))
         int_seq = list(chain(*int_groups))
         mz_seq = self.source.indexToMz(framenum, index_seq)
-        return list(zip(mz_seq, k0_seq, int_seq))
+
+        if mzIntsReturnOnly:
+            return np.array(mz_seq), np.array(int_seq)
+        else:
+            return list(zip(mz_seq, k0_seq, int_seq))
  
     def frame_int(framenum):
         scans = self.source.readScans(framenum, start_scan, stop_scan)

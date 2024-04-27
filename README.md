@@ -32,7 +32,7 @@ The mzDesktop GUI application can be found at [our Sourceforge page](https://sou
 
 ## News
 
-* 04/09/2024: Minor Update (2.2.2) Python3 compatibility; pythonnet for .D (Agilent) files; patches/instructions for install, .raw and .tsf (Bruker) file formats
+* 04/09/2024: Minor Update (2.2.2) Python3 compatibility; pythonnet for .D (Agilent) files; patches/instructions for install and .raw format access.
 
 * 12/04/2019: Minor Update (2.2.1) Python 3 compatibility fixes
 
